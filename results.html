@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ro">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MAGNETO - Rezultate</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@500;700;800&family=Manrope:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="aurora aurora-1" aria-hidden="true"></div>
+    <div class="aurora aurora-2" aria-hidden="true"></div>
+    <div class="grid-overlay" aria-hidden="true"></div>
+
+    <main class="page-shell results-shell">
+      <header class="hero">
+        <p class="badge">MAGNETO Results</p>
+        <h1 id="resultsQuery">Rezultate pentru cautarea ta</h1>
+        <p id="resultsMeta" class="subtitle">
+          Pregatim cele mai relevante surse pentru tine.
+        </p>
+      </header>
+
+      <section class="results-panel" aria-label="Rezultate cautare">
+        <ul id="resultsList" class="results-list"></ul>
+      </section>
+
+      <p class="results-back-wrap">
+        <a href="index.html" class="results-back-link">Inapoi la cautare</a>
+      </p>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>

@@ -8,5 +8,6 @@
   "files.insertFinalNewline": true,
   "emmet.includeLanguages": {
     "javascript": "javascriptreact"
-  }
+  },
+  "git.path": "C:\\Program Files\\Git\\cmd\\git.exe"
 }
