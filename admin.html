@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MAGNETO - Admin Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@500;700;800&family=Manrope:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="aurora aurora-1" aria-hidden="true"></div>
+    <div class="aurora aurora-2" aria-hidden="true"></div>
+    <div class="grid-overlay" aria-hidden="true"></div>
+
+    <main class="page-shell results-shell">
+      <header class="hero">
+        <p class="badge">MAGNETO Admin</p>
+        <h1>Control Panel</h1>
+        <p class="subtitle">
+          Monitor traffic, search activity, and query percentages.
+        </p>
+      </header>
+
+      <section
+        id="adminAuthPanel"
+        class="results-panel"
+        aria-label="Admin login"
+      >
+        <h2 class="admin-section-title">Sign In</h2>
+        <form id="adminLoginForm" class="admin-login-form">
+          <label class="sr-only" for="adminUsername">Username</label>
+          <input
+            id="adminUsername"
+            type="text"
+            placeholder="Username"
+            autocomplete="username"
+            required
+          />
+
+          <label class="sr-only" for="adminPassword">Password</label>
+          <input
+            id="adminPassword"
+            type="password"
+            placeholder="Password"
+            autocomplete="current-password"
+            required
+          />
+
+          <button type="submit" class="search-btn">Sign In</button>
+        </form>
+        <p id="adminAuthStatus" class="status" aria-live="polite">
+          Enter your admin credentials.
+        </p>
+      </section>
+
+      <section
+        id="adminDashboard"
+        class="results-panel admin-dashboard"
+        aria-label="Admin analytics"
+        hidden
+      >
+        <div class="admin-header-row">
+          <h2 class="admin-section-title">Analytics Overview</h2>
+          <div class="admin-actions">
+            <label for="adminRange" class="sr-only">Filter time range</label>
+            <select
+              id="adminRange"
+              class="admin-range-select"
+              aria-label="Filter time range"
+            >
+              <option value="all">All time</option>
+              <option value="24h">Last 24 hours</option>
+              <option value="7d">Last 7 days</option>
+              <option value="30d">Last 30 days</option>
+            </select>
+            <button
+              id="adminRefreshBtn"
+              type="button"
+              class="results-back-link"
+            >
+              Refresh
+            </button>
+            <button id="adminExportBtn" type="button" class="results-back-link">
+              Export CSV
+            </button>
+            <button id="adminLogoutBtn" type="button" class="results-back-link">
+              Sign Out
+            </button>
+          </div>
+        </div>
+
+        <div class="admin-kpis">
+          <article class="result-card">
+            <p class="admin-kpi-label">Total Searches</p>
+            <p id="kpiTotalSearches" class="admin-kpi-value">0</p>
+            <p id="kpiSearchesDelta" class="admin-kpi-delta">No comparison</p>
+          </article>
+          <article class="result-card">
+            <p class="admin-kpi-label">Total Page Views</p>
+            <p id="kpiTotalViews" class="admin-kpi-value">0</p>
+            <p id="kpiViewsDelta" class="admin-kpi-delta">No comparison</p>
+          </article>
+          <article class="result-card">
+            <p class="admin-kpi-label">Unique Queries</p>
+            <p id="kpiUniqueQueries" class="admin-kpi-value">0</p>
+            <p id="kpiUniqueDelta" class="admin-kpi-delta">No comparison</p>
+          </article>
+        </div>
+
+        <section class="result-card admin-backup-wrap">
+          <div class="admin-header-row admin-backup-header">
+            <h3 class="admin-block-title">Analytics Backups</h3>
+            <div class="admin-actions">
+              <label for="adminBackupReason" class="sr-only"
+                >Filter backups by reason</label
+              >
+              <select
+                id="adminBackupReason"
+                class="admin-range-select"
+                aria-label="Filter backups by reason"
+              >
+                <option value="all">All reasons</option>
+                <option value="manual">Manual</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="write">Write-triggered</option>
+                <option value="startup">Startup</option>
+                <option value="pre-restore">Pre-restore</option>
+                <option value="restored">Restored</option>
+                <option value="unknown">Unknown</option>
+              </select>
+              <button
+                id="adminBackupCreateBtn"
+                type="button"
+                class="results-back-link"
+              >
+                Create Backup
+              </button>
+              <button
+                id="adminBackupRefreshBtn"
+                type="button"
+                class="results-back-link"
+              >
+                Refresh Backups
+              </button>
+            </div>
+          </div>
+          <ul id="adminBackupList" class="admin-list admin-list-scroll"></ul>
+        </section>
+
+        <section class="result-card admin-trends-wrap">
+          <h3 class="admin-block-title">Search and Traffic Trends</h3>
+          <p class="admin-trends-hint">
+            Daily trend shows the last 14 days. Weekly trend shows the last 8
+            weeks.
+          </p>
+
+          <div class="admin-columns">
+            <section class="admin-trend-panel">
+              <h4 class="admin-subtitle">Daily Trend</h4>
+              <div class="admin-trend-legend">
+                <span class="legend-chip legend-search">Searches</span>
+                <span class="legend-chip legend-views">Page Views</span>
+              </div>
+              <div
+                id="dailyTrendChart"
+                class="admin-trend-chart"
+                aria-label="Daily trend chart"
+              ></div>
+            </section>
+
+            <section class="admin-trend-panel">
+              <h4 class="admin-subtitle">Weekly Trend</h4>
+              <div class="admin-trend-legend">
+                <span class="legend-chip legend-search">Searches</span>
+                <span class="legend-chip legend-views">Page Views</span>
+              </div>
+              <div
+                id="weeklyTrendChart"
+                class="admin-trend-chart"
+                aria-label="Weekly trend chart"
+              ></div>
+            </section>
+          </div>
+        </section>
+
+        <div class="admin-columns">
+          <section class="result-card">
+            <h3 class="admin-block-title">Top Queries by %</h3>
+            <div
+              id="topQueriesChart"
+              class="admin-chart"
+              aria-label="Top queries chart"
+            ></div>
+            <ul id="topQueriesList" class="admin-list"></ul>
+          </section>
+
+          <section class="result-card">
+            <h3 class="admin-block-title">Traffic by Page</h3>
+            <div
+              id="trafficChart"
+              class="admin-chart"
+              aria-label="Traffic chart"
+            ></div>
+            <ul id="trafficList" class="admin-list"></ul>
+          </section>
+        </div>
+
+        <section class="result-card">
+          <h3 class="admin-block-title">Latest Searches</h3>
+          <ul id="latestSearchesList" class="admin-list admin-list-scroll"></ul>
+        </section>
+      </section>
+
+      <p class="results-back-wrap">
+        <a href="index.html" class="results-back-link">Back to homepage</a>
+      </p>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>

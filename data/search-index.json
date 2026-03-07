@@ -1,0 +1,98 @@
+[
+  {
+    "id": "doc-1",
+    "title": "Global Technology News",
+    "url": "https://news.ycombinator.com/",
+    "summary": "Daily tech stories, startup launches, and developer discussions.",
+    "tags": ["technology", "news", "startups", "developers"],
+    "category": "Technology"
+  },
+  {
+    "id": "doc-2",
+    "title": "MDN Web Docs",
+    "url": "https://developer.mozilla.org/",
+    "summary": "Official documentation for HTML, CSS, JavaScript, and web APIs.",
+    "tags": ["javascript", "css", "html", "web development"],
+    "category": "Development"
+  },
+  {
+    "id": "doc-3",
+    "title": "Stack Overflow",
+    "url": "https://stackoverflow.com/",
+    "summary": "Community answers for coding problems across all major languages.",
+    "tags": ["coding", "programming", "questions", "answers"],
+    "category": "Development"
+  },
+  {
+    "id": "doc-4",
+    "title": "BBC World",
+    "url": "https://www.bbc.com/news",
+    "summary": "International news coverage, business updates, and live reports.",
+    "tags": ["world", "news", "politics", "business"],
+    "category": "News"
+  },
+  {
+    "id": "doc-5",
+    "title": "ESPN",
+    "url": "https://www.espn.com/",
+    "summary": "Sports scores, live events, highlights, and match analysis.",
+    "tags": ["sports", "football", "basketball", "live scores"],
+    "category": "Sports"
+  },
+  {
+    "id": "doc-6",
+    "title": "Open-Meteo",
+    "url": "https://open-meteo.com/",
+    "summary": "Weather forecasts and climate APIs for global locations.",
+    "tags": ["weather", "forecast", "climate", "api"],
+    "category": "Weather"
+  },
+  {
+    "id": "doc-7",
+    "title": "Wikipedia",
+    "url": "https://www.wikipedia.org/",
+    "summary": "General knowledge articles in multiple languages.",
+    "tags": ["knowledge", "encyclopedia", "research", "education"],
+    "category": "Knowledge"
+  },
+  {
+    "id": "doc-8",
+    "title": "GitHub",
+    "url": "https://github.com/",
+    "summary": "Code repositories, open-source projects, and software collaboration.",
+    "tags": ["git", "repositories", "open source", "development"],
+    "category": "Development"
+  },
+  {
+    "id": "doc-9",
+    "title": "YouTube",
+    "url": "https://www.youtube.com/",
+    "summary": "Video tutorials, entertainment, and educational channels.",
+    "tags": ["video", "tutorials", "music", "learning"],
+    "category": "Media"
+  },
+  {
+    "id": "doc-10",
+    "title": "Coursera",
+    "url": "https://www.coursera.org/",
+    "summary": "Online courses from universities and industry partners.",
+    "tags": ["courses", "learning", "career", "certificates"],
+    "category": "Education"
+  },
+  {
+    "id": "doc-11",
+    "title": "LinkedIn Jobs",
+    "url": "https://www.linkedin.com/jobs/",
+    "summary": "Job listings, remote opportunities, and hiring trends.",
+    "tags": ["jobs", "career", "remote", "recruitment"],
+    "category": "Career"
+  },
+  {
+    "id": "doc-12",
+    "title": "Google Scholar",
+    "url": "https://scholar.google.com/",
+    "summary": "Academic papers, citations, and research references.",
+    "tags": ["research", "science", "papers", "citations"],
+    "category": "Research"
+  }
+]

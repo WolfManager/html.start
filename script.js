@@ -1,13 +1,14 @@
 const searchForm = document.getElementById("searchForm");
 const searchQuery = document.getElementById("searchQuery");
-const searchEngine = document.getElementById("searchEngine");
-const searchLanguage = document.getElementById("searchLanguage");
 const statusMessage = document.getElementById("statusMessage");
 const quickTags = document.querySelectorAll(".quick-tags .tag");
+
 const weatherIcon = document.getElementById("weatherIcon");
 const weatherTemp = document.getElementById("weatherTemp");
 const weatherSummary = document.getElementById("weatherSummary");
 const weatherLocation = document.getElementById("weatherLocation");
+const weatherForecast = document.getElementById("weatherForecast");
+
 const assistantThread = document.getElementById("assistantThread");
 const assistantSuggestions = document.getElementById("assistantSuggestions");
 const assistantForm = document.getElementById("assistantForm");
@@ -17,91 +18,36 @@ const resultsQuery = document.getElementById("resultsQuery");
 const resultsMeta = document.getElementById("resultsMeta");
 const resultsList = document.getElementById("resultsList");
 
-const STORAGE_KEY = "magneto.preferences";
+const adminAuthPanel = document.getElementById("adminAuthPanel");
+const adminDashboard = document.getElementById("adminDashboard");
+const adminLoginForm = document.getElementById("adminLoginForm");
+const adminAuthStatus = document.getElementById("adminAuthStatus");
+const adminLogoutBtn = document.getElementById("adminLogoutBtn");
+const adminRange = document.getElementById("adminRange");
+const adminRefreshBtn = document.getElementById("adminRefreshBtn");
+const adminExportBtn = document.getElementById("adminExportBtn");
 
-const languageLabel = {
-  all: "toate limbile",
-  ro: "romana",
-  en: "engleza",
-  es: "spaniola",
-  fr: "franceza",
-  de: "germana",
-  it: "italiana",
-  pt: "portugheza",
-  nl: "olandeza",
-  pl: "poloneza",
-  tr: "turca",
-  ar: "araba",
-  hi: "hindi",
-  ja: "japoneza",
-  ko: "coreeana",
-  "zh-CN": "chineza simplificata",
-  "zh-TW": "chineza traditionala",
-  ru: "rusa",
-  uk: "ucraineana",
-  el: "greaca",
-  sv: "suedeza",
-  da: "daneza",
-  fi: "finlandeza",
-  no: "norvegiana",
-  cs: "ceha",
-  hu: "maghiara",
-  vi: "vietnameza",
-  th: "tailandeza",
-  id: "indoneziana",
-  ms: "malaeziana",
-  he: "ebraica",
-};
+const kpiTotalSearches = document.getElementById("kpiTotalSearches");
+const kpiTotalViews = document.getElementById("kpiTotalViews");
+const kpiUniqueQueries = document.getElementById("kpiUniqueQueries");
+const kpiSearchesDelta = document.getElementById("kpiSearchesDelta");
+const kpiViewsDelta = document.getElementById("kpiViewsDelta");
+const kpiUniqueDelta = document.getElementById("kpiUniqueDelta");
+const topQueriesList = document.getElementById("topQueriesList");
+const trafficList = document.getElementById("trafficList");
+const latestSearchesList = document.getElementById("latestSearchesList");
+const topQueriesChart = document.getElementById("topQueriesChart");
+const trafficChart = document.getElementById("trafficChart");
+const dailyTrendChart = document.getElementById("dailyTrendChart");
+const weeklyTrendChart = document.getElementById("weeklyTrendChart");
+const adminBackupList = document.getElementById("adminBackupList");
+const adminBackupRefreshBtn = document.getElementById("adminBackupRefreshBtn");
+const adminBackupCreateBtn = document.getElementById("adminBackupCreateBtn");
+const adminBackupReason = document.getElementById("adminBackupReason");
 
-const engineLabel = {
-  google: "Google",
-  duckduckgo: "DuckDuckGo",
-  bing: "Bing",
-};
-
-function buildSearchUrl(engine, query, language) {
-  const encodedQuery = encodeURIComponent(query);
-
-  if (engine === "google") {
-    if (language === "all") {
-      return `https://www.google.com/search?q=${encodedQuery}`;
-    }
-
-    const languageCode = encodeURIComponent(language);
-    const lrCode = encodeURIComponent(`lang_${language}`);
-    return `https://www.google.com/search?q=${encodedQuery}&hl=${languageCode}&lr=${lrCode}`;
-  }
-
-  if (engine === "duckduckgo") {
-    if (language === "all") {
-      return `https://duckduckgo.com/?q=${encodedQuery}`;
-    }
-
-    return `https://duckduckgo.com/?q=${encodedQuery}%20language:${encodeURIComponent(language)}`;
-  }
-
-  if (engine === "bing") {
-    if (language === "all") {
-      return `https://www.bing.com/search?q=${encodedQuery}`;
-    }
-
-    const languageCode = encodeURIComponent(language);
-    return `https://www.bing.com/search?q=${encodedQuery}&setlang=${languageCode}`;
-  }
-
-  return `https://www.google.com/search?q=${encodedQuery}`;
-}
-
-function navigateToResults(query) {
-  if (!query) {
-    return;
-  }
-
-  const engine = searchEngine?.value || "google";
-  const language = searchLanguage?.value || "all";
-  const params = new URLSearchParams({ q: query, engine, language });
-  window.location.href = `results.html?${params.toString()}`;
-}
+const ADMIN_TOKEN_KEY = "magneto.admin.token";
+let currentAdminRange = "all";
+let currentBackupReason = "all";
 
 function updateStatus(message, isError = false) {
   if (!statusMessage) {
@@ -110,236 +56,6 @@ function updateStatus(message, isError = false) {
 
   statusMessage.textContent = message;
   statusMessage.classList.toggle("error", isError);
-}
-
-function savePreferences(engine, language) {
-  const payload = { engine, language };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-}
-
-function loadPreferences() {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
-
-function detectBrowserLanguage() {
-  const browserLanguages =
-    navigator.languages && navigator.languages.length > 0
-      ? navigator.languages
-      : [navigator.language];
-
-  if (!browserLanguages) {
-    return "all";
-  }
-
-  const values = Array.from(searchLanguage?.options || []).map((option) =>
-    option.value.toLowerCase(),
-  );
-
-  for (const locale of browserLanguages) {
-    const normalized = String(locale || "").trim();
-    if (!normalized) {
-      continue;
-    }
-
-    const exact = normalized.toLowerCase();
-    const base = exact.split("-")[0];
-
-    if (values.includes(exact)) {
-      return searchLanguage.options[values.indexOf(exact)].value;
-    }
-
-    if (values.includes(base)) {
-      return searchLanguage.options[values.indexOf(base)].value;
-    }
-  }
-
-  return "all";
-}
-
-function initHomeForm() {
-  if (!searchForm || !searchQuery || !searchEngine || !searchLanguage) {
-    return;
-  }
-
-  const stored = loadPreferences();
-
-  if (stored?.engine && engineLabel[stored.engine]) {
-    searchEngine.value = stored.engine;
-  }
-
-  if (stored?.language && languageLabel[stored.language]) {
-    searchLanguage.value = stored.language;
-    updateStatus("Preferintele tale au fost incarcate.");
-  } else {
-    const detected = detectBrowserLanguage();
-    if (detected !== "all" && languageLabel[detected]) {
-      searchLanguage.value = detected;
-      updateStatus(`Limba detectata automat: ${languageLabel[detected]}.`);
-    }
-  }
-
-  searchForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-
-    const query = searchQuery.value.trim();
-    const engine = searchEngine.value;
-    const language = searchLanguage.value;
-
-    if (!query) {
-      updateStatus("Te rog scrie un termen de cautare.", true);
-      return;
-    }
-
-    savePreferences(engine, language);
-    const params = new URLSearchParams({ q: query, engine, language });
-    window.location.href = `results.html?${params.toString()}`;
-  });
-
-  searchQuery.addEventListener("input", () => {
-    const text = searchQuery.value;
-    refreshAssistantSuggestions(text);
-  });
-
-  quickTags.forEach((tagButton) => {
-    tagButton.addEventListener("click", () => {
-      const query = tagButton.dataset.query;
-      if (!query) {
-        return;
-      }
-
-      searchQuery.value = query;
-      searchQuery.focus();
-      updateStatus(`Sugestie aplicata: ${query}`);
-      refreshAssistantSuggestions(query);
-    });
-  });
-
-  initAssistantChat();
-  refreshAssistantSuggestions(searchQuery.value);
-}
-
-function buildAssistantContent(rawQuery) {
-  const query = (rawQuery || "").trim();
-
-  if (!query) {
-    return {
-      message:
-        "Poti incepe cu o cautare simpla, apoi eu iti propun directii mai precise.",
-      suggestions: [
-        "stiri locale azi",
-        "vremea pe urmatoarele 7 zile",
-        "program transport public",
-      ],
-    };
-  }
-
-  const normalized = query.toLowerCase();
-
-  if (/vreme|ploaie|soare|temperatura/.test(normalized)) {
-    return {
-      message: "Pare o cautare meteo. Vrei si o varianta mai specifica?",
-      suggestions: [
-        `${query} in orasul meu`,
-        `${query} weekend`,
-        "prognoza meteo ora cu ora",
-      ],
-    };
-  }
-
-  if (/stiri|news|actualitate|politic/.test(normalized)) {
-    return {
-      message: "Iti pot rafina cautarea pentru noutati relevante.",
-      suggestions: [
-        `${query} ultimele 24 ore`,
-        `${query} surse oficiale`,
-        `${query} analiza`,
-      ],
-    };
-  }
-
-  if (/sport|meci|fotbal|tenis|baschet/.test(normalized)) {
-    return {
-      message: "Pentru sport, merita sa vezi rezultate + program.",
-      suggestions: [
-        `${query} rezultate live`,
-        `${query} clasament`,
-        `${query} program urmator`,
-      ],
-    };
-  }
-
-  if (/retete|mancare|restaurant|food/.test(normalized)) {
-    return {
-      message: "Iti recomand sa cauti si dupa timp de preparare.",
-      suggestions: [
-        `${query} rapid`,
-        `${query} ingrediente simple`,
-        `${query} video`,
-      ],
-    };
-  }
-
-  if (/job|loc de munca|angajare|cv|cariera/.test(normalized)) {
-    return {
-      message: "Pentru joburi, filtrele corecte fac diferenta.",
-      suggestions: [
-        `${query} remote`,
-        `${query} fara experienta`,
-        `${query} salariu`,
-      ],
-    };
-  }
-
-  return {
-    message: `Buna directie. Pentru "${query}" iti propun 3 cautari mai exacte:`,
-    suggestions: [
-      `${query} ghid complet`,
-      `${query} 2026`,
-      `${query} explicat simplu`,
-    ],
-  };
-}
-
-function updateAssistant(query) {
-  if (!assistantSuggestions) {
-    return;
-  }
-
-  const content = buildAssistantContent(query);
-  assistantSuggestions.innerHTML = "";
-
-  content.suggestions.forEach((suggestion) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "assistant-chip";
-    button.textContent = suggestion;
-    button.addEventListener("click", () => {
-      if (!searchQuery) {
-        return;
-      }
-
-      searchQuery.value = suggestion;
-      searchQuery.focus();
-      updateStatus(`MAGNETO iti propune: ${suggestion}`);
-      addAssistantMessage("user", suggestion);
-      addAssistantMessage(
-        "bot",
-        `Perfect. Te trimit catre rezultate pentru: ${suggestion}`,
-      );
-      refreshAssistantSuggestions(suggestion);
-      navigateToResults(suggestion);
-    });
-    assistantSuggestions.appendChild(button);
-  });
 }
 
 function addAssistantMessage(role, text) {
@@ -354,35 +70,100 @@ function addAssistantMessage(role, text) {
   assistantThread.scrollTop = assistantThread.scrollHeight;
 }
 
-function buildAssistantReply(userText) {
-  const query = String(userText || "").trim();
+function buildAssistantContent(rawQuery) {
+  const query = String(rawQuery || "").trim();
+
   if (!query) {
-    return "Spune-mi un subiect, iar eu iti propun o cautare mai precisa.";
+    return {
+      message: "Start with a topic and I will suggest a more precise query.",
+      suggestions: ["world news today", "javascript tutorials", "remote jobs"],
+    };
   }
 
   const normalized = query.toLowerCase();
 
-  if (/vreme|ploaie|soare|temperatura/.test(normalized)) {
-    return "Iti recomand sa adaugi orasul si intervalul de timp ca sa obtii rezultate mai bune.";
+  if (/weather|rain|sun|forecast/.test(normalized)) {
+    return {
+      message: "Add city + date for better weather results.",
+      suggestions: [
+        `${query} this weekend`,
+        `${query} in my city`,
+        "hourly weather forecast",
+      ],
+    };
   }
 
-  if (/stiri|news|actualitate|politic/.test(normalized)) {
-    return "Poti filtra dupa 'ultimele 24 ore' si 'surse oficiale' pentru informatii mai curate.";
+  if (/news|politics|economy/.test(normalized)) {
+    return {
+      message: "Try narrowing by source and timeframe.",
+      suggestions: [
+        `${query} last 24 hours`,
+        `${query} trusted sources`,
+        `${query} analysis`,
+      ],
+    };
   }
 
-  if (/sport|meci|fotbal|tenis|baschet/.test(normalized)) {
-    return "Adauga 'rezultate live' sau 'program urmator' ca sa vezi rapid ce te intereseaza.";
+  if (/sport|football|tennis|basketball/.test(normalized)) {
+    return {
+      message: "For sports, scores and schedule filters are useful.",
+      suggestions: [
+        `${query} live scores`,
+        `${query} schedule`,
+        `${query} standings`,
+      ],
+    };
   }
 
-  if (/retete|mancare|restaurant|food/.test(normalized)) {
-    return "Incearca sa adaugi 'rapid' sau 'ingrediente simple' pentru retete usor de urmat.";
+  if (/job|career|cv|hiring/.test(normalized)) {
+    return {
+      message: "Use location and seniority for a cleaner job search.",
+      suggestions: [
+        `${query} remote`,
+        `${query} entry level`,
+        `${query} salary`,
+      ],
+    };
   }
 
-  if (/job|loc de munca|angajare|cv|cariera/.test(normalized)) {
-    return "Un filtru util este combinatia dintre 'remote', 'oras' si 'nivel experienta'.";
+  return {
+    message: `Great query. Here are 3 refined versions for "${query}".`,
+    suggestions: [`${query} guide`, `${query} 2026`, `${query} explained`],
+  };
+}
+
+function updateAssistant(query) {
+  if (!assistantSuggestions) {
+    return;
   }
 
-  return "Foarte bine. Incearca sa adaugi un context clar: locatie, perioada sau scopul cautarii.";
+  assistantSuggestions.innerHTML = "";
+  const content = buildAssistantContent(query);
+
+  content.suggestions.forEach((suggestion) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "assistant-chip";
+    button.textContent = suggestion;
+
+    button.addEventListener("click", () => {
+      if (!searchQuery) {
+        return;
+      }
+
+      searchQuery.value = suggestion;
+      searchQuery.focus();
+      updateStatus(`Suggestion applied: ${suggestion}`);
+      addAssistantMessage("user", suggestion);
+      addAssistantMessage(
+        "bot",
+        "Running search with your selected suggestion.",
+      );
+      window.location.href = `results.html?q=${encodeURIComponent(suggestion)}`;
+    });
+
+    assistantSuggestions.appendChild(button);
+  });
 }
 
 function initAssistantChat() {
@@ -393,7 +174,7 @@ function initAssistantChat() {
   if (assistantThread.children.length === 0) {
     addAssistantMessage(
       "bot",
-      "Salut, sunt MAGNETO Assistant. Spune-mi ce vrei sa cauti si te ajut cu sugestii.",
+      "Hi, I am MAGNETO Assistant. Tell me what you want to search.",
     );
   }
 
@@ -406,43 +187,79 @@ function initAssistantChat() {
     }
 
     addAssistantMessage("user", userText);
-    const reply = buildAssistantReply(userText);
-    addAssistantMessage("bot", reply);
+    const content = buildAssistantContent(userText);
+    addAssistantMessage("bot", content.message);
 
     if (searchQuery) {
       searchQuery.value = userText;
     }
 
-    refreshAssistantSuggestions(userText);
+    updateAssistant(userText);
     assistantInput.value = "";
   });
+
+  updateAssistant(searchQuery?.value || "");
 }
 
-function refreshAssistantSuggestions(query) {
-  const content = buildAssistantContent(query);
-
-  if (
-    assistantThread &&
-    assistantThread.children.length === 1 &&
-    assistantThread.firstChild?.textContent?.includes("Salut")
-  ) {
-    addAssistantMessage("bot", content.message);
+function initHomeForm() {
+  if (!searchForm || !searchQuery) {
+    return;
   }
 
-  updateAssistant(query);
+  searchForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+
+    const query = searchQuery.value.trim();
+
+    if (!query) {
+      updateStatus("Please type a search query.", true);
+      return;
+    }
+
+    updateStatus("Searching with MAGNETO Core...");
+    window.location.href = `results.html?q=${encodeURIComponent(query)}`;
+  });
+
+  searchQuery.addEventListener("input", () => {
+    updateAssistant(searchQuery.value);
+  });
+
+  quickTags.forEach((tagButton) => {
+    tagButton.addEventListener("click", () => {
+      const query = tagButton.dataset.query;
+      if (!query) {
+        return;
+      }
+
+      searchQuery.value = query;
+      searchQuery.focus();
+      updateStatus(`Suggestion applied: ${query}`);
+      updateAssistant(query);
+    });
+  });
+
+  initAssistantChat();
 }
 
 function getWeatherView(weatherCode) {
   if (weatherCode === 0) {
-    return { icon: "&#9728;", summary: "Cer senin" };
+    return { icon: "☀️", summary: "Sunny" };
   }
 
-  if (weatherCode === 1 || weatherCode === 2 || weatherCode === 3) {
-    return { icon: "&#9729;", summary: "Innorat" };
+  if (weatherCode === 1) {
+    return { icon: "🌤️", summary: "Mostly sunny" };
+  }
+
+  if (weatherCode === 2) {
+    return { icon: "⛅", summary: "Partly cloudy" };
+  }
+
+  if (weatherCode === 3) {
+    return { icon: "☁️", summary: "Cloudy" };
   }
 
   if (weatherCode === 45 || weatherCode === 48) {
-    return { icon: "&#9729;&#8776;", summary: "Ceata" };
+    return { icon: "🌫️", summary: "Fog" };
   }
 
   if (
@@ -463,37 +280,129 @@ function getWeatherView(weatherCode) {
     weatherCode === 96 ||
     weatherCode === 99
   ) {
-    return { icon: "&#9729;&#8942;", summary: "Ploaie" };
+    return { icon: "🌦️", summary: "Rain" };
   }
 
-  return { icon: "&#9729;", summary: "Conditii variabile" };
+  return { icon: "🌥️", summary: "Variable conditions" };
 }
 
 async function fetchWeatherByCoords(latitude, longitude) {
   const weatherUrl =
     `https://api.open-meteo.com/v1/forecast?latitude=${encodeURIComponent(latitude)}` +
     `&longitude=${encodeURIComponent(longitude)}` +
-    "&current=temperature_2m,weather_code&timezone=auto";
+    "&current=temperature_2m,weather_code" +
+    "&daily=weather_code,temperature_2m_max,temperature_2m_min" +
+    "&forecast_days=7&timezone=auto";
 
   const response = await fetch(weatherUrl);
   if (!response.ok) {
-    throw new Error("Nu am putut obtine datele meteo.");
+    throw new Error("Could not get weather data.");
   }
 
   const data = await response.json();
   const current = data.current;
+  const daily = data.daily;
 
   if (!current || typeof current.temperature_2m !== "number") {
-    throw new Error("Date meteo incomplete.");
+    throw new Error("Incomplete weather data.");
   }
+
+  const hasDaily =
+    daily &&
+    Array.isArray(daily.time) &&
+    Array.isArray(daily.weather_code) &&
+    Array.isArray(daily.temperature_2m_max) &&
+    Array.isArray(daily.temperature_2m_min);
+
+  const forecast = hasDaily
+    ? daily.time.slice(0, 7).map((dateIso, index) => ({
+        dateIso,
+        weatherCode: Number(daily.weather_code[index]),
+        tempMax: Number(daily.temperature_2m_max[index]),
+        tempMin: Number(daily.temperature_2m_min[index]),
+      }))
+    : [];
 
   return {
     temperature: current.temperature_2m,
     weatherCode: current.weather_code,
+    forecast,
   };
 }
 
-function setWeatherUI({ temperature, weatherCode, locationText }) {
+async function fetchLocationName(latitude, longitude) {
+  const reverseUrl =
+    `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${encodeURIComponent(latitude)}` +
+    `&longitude=${encodeURIComponent(longitude)}` +
+    "&localityLanguage=en";
+
+  const response = await fetch(reverseUrl);
+  if (!response.ok) {
+    throw new Error("Could not resolve location name.");
+  }
+
+  const data = await response.json();
+  const city =
+    data.city || data.locality || data.principalSubdivision || data.countryName;
+  const country = data.countryName;
+
+  if (!city && !country) {
+    throw new Error("Location name unavailable.");
+  }
+
+  if (city && country && city.toLowerCase() !== country.toLowerCase()) {
+    return `${city}, ${country}`;
+  }
+
+  return city || country;
+}
+
+function formatForecastDay(dateIso, index) {
+  if (index === 0) {
+    return "Today";
+  }
+
+  const date = new Date(`${dateIso}T12:00:00`);
+  return date.toLocaleDateString("en-US", { weekday: "short" });
+}
+
+function renderWeatherForecast(forecast) {
+  if (!weatherForecast) {
+    return;
+  }
+
+  weatherForecast.innerHTML = "";
+
+  if (!Array.isArray(forecast) || forecast.length === 0) {
+    const message = document.createElement("p");
+    message.className = "weather-forecast-empty";
+    message.textContent = "7-day forecast unavailable.";
+    weatherForecast.appendChild(message);
+    return;
+  }
+
+  forecast.forEach((day, index) => {
+    const item = document.createElement("article");
+    item.className = "weather-day";
+
+    const label = document.createElement("p");
+    label.className = "weather-day-label";
+    label.textContent = formatForecastDay(day.dateIso, index);
+
+    const icon = document.createElement("span");
+    icon.className = "weather-day-icon";
+    icon.innerHTML = getWeatherView(day.weatherCode).icon;
+
+    const temp = document.createElement("p");
+    temp.className = "weather-day-temp";
+    temp.textContent = `${Math.round(day.tempMax)}\u00B0 / ${Math.round(day.tempMin)}\u00B0`;
+
+    item.append(label, icon, temp);
+    weatherForecast.appendChild(item);
+  });
+}
+
+function setWeatherUI({ temperature, weatherCode, locationText, forecast }) {
   if (!weatherTemp || !weatherSummary || !weatherLocation || !weatherIcon) {
     return;
   }
@@ -503,6 +412,7 @@ function setWeatherUI({ temperature, weatherCode, locationText }) {
   weatherSummary.textContent = view.summary;
   weatherLocation.textContent = locationText;
   weatherIcon.innerHTML = view.icon;
+  renderWeatherForecast(forecast || []);
 }
 
 function initWeatherWidget() {
@@ -511,8 +421,8 @@ function initWeatherWidget() {
   }
 
   if (!navigator.geolocation) {
-    weatherSummary.textContent = "GPS indisponibil";
-    weatherLocation.textContent = "Browserul tau nu suporta geolocatia.";
+    weatherSummary.textContent = "GPS unavailable";
+    weatherLocation.textContent = "Your browser does not support geolocation.";
     return;
   }
 
@@ -522,17 +432,23 @@ function initWeatherWidget() {
       const longitude = position.coords.longitude;
 
       try {
-        const weather = await fetchWeatherByCoords(latitude, longitude);
-        const locationText = `Lat ${latitude.toFixed(2)}, Lon ${longitude.toFixed(2)}`;
+        const [weather, locationName] = await Promise.all([
+          fetchWeatherByCoords(latitude, longitude),
+          fetchLocationName(latitude, longitude).catch(() => ""),
+        ]);
+        const locationText =
+          locationName ||
+          `Lat ${latitude.toFixed(2)}, Lon ${longitude.toFixed(2)}`;
         setWeatherUI({ ...weather, locationText });
       } catch {
-        weatherSummary.textContent = "Meteo indisponibil";
-        weatherLocation.textContent = "Nu am putut incarca vremea acum.";
+        weatherSummary.textContent = "Weather unavailable";
+        weatherLocation.textContent = "Could not load weather data right now.";
+        renderWeatherForecast([]);
       }
     },
     () => {
-      weatherSummary.textContent = "Permisiune GPS refuzata";
-      weatherLocation.textContent = "Activeaza localizarea pentru meteo local.";
+      weatherSummary.textContent = "GPS permission denied";
+      weatherLocation.textContent = "Enable location access for local weather.";
     },
     {
       enableHighAccuracy: false,
@@ -542,81 +458,719 @@ function initWeatherWidget() {
   );
 }
 
-function createResultLinks(query, language, engine) {
-  const engines = [engine, "google", "duckduckgo", "bing"].filter(
-    (value, index, array) => array.indexOf(value) === index,
-  );
-
-  const links = engines.map((engineName) => ({
-    title: `${engineLabel[engineName] || "Google"} - rezultate web`,
-    description: `Cauta pe ${engineLabel[engineName] || "Google"} in ${languageLabel[language] || "limba selectata"}.`,
-    href: buildSearchUrl(engineName, query, language),
-  }));
-
-  links.push({
-    title: "Wikipedia",
-    description: "Vezi articole relevante in enciclopedia online.",
-    href: `https://www.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(query)}`,
-  });
-
-  links.push({
-    title: "YouTube",
-    description: "Descopera clipuri si explicatii pentru cautarea ta.",
-    href: `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`,
-  });
-
-  links.push({
-    title: "GitHub",
-    description: "Rezultate tehnice si proiecte open-source.",
-    href: `https://github.com/search?q=${encodeURIComponent(query)}`,
-  });
-
-  return links;
+async function trackPageView(pageName) {
+  try {
+    await fetch("/api/events/page-view", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ page: pageName }),
+    });
+  } catch {
+    // No-op for tracking failures
+  }
 }
 
-function initResultsPage() {
+async function initResultsPage() {
   if (!resultsQuery || !resultsMeta || !resultsList) {
     return;
   }
 
   const params = new URLSearchParams(window.location.search);
-  const query = (params.get("q") || "").trim();
-  const engine = params.get("engine") || "google";
-  const language = params.get("language") || "all";
+  const query = String(params.get("q") || "").trim();
 
   if (!query) {
-    resultsQuery.textContent = "Nicio cautare activa";
-    resultsMeta.textContent =
-      "Intoarce-te la pagina principala si introdu un termen.";
+    resultsQuery.textContent = "No active search";
+    resultsMeta.textContent = "Go back to homepage and enter a query.";
     return;
   }
 
-  savePreferences(engine, language);
-  resultsQuery.textContent = `Rezultate pentru: ${query}`;
-  resultsMeta.textContent = `Motor preferat: ${engineLabel[engine] || "Google"} | Limba: ${languageLabel[language] || "toate limbile"}`;
+  resultsQuery.textContent = `Results for: ${query}`;
+  resultsMeta.textContent = "Loading data from MAGNETO Core...";
 
-  const links = createResultLinks(query, language, engine);
+  try {
+    const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+    const payload = await response.json();
 
-  links.forEach((item) => {
-    const li = document.createElement("li");
-    li.className = "result-card";
+    if (!response.ok) {
+      throw new Error(payload.error || "Search request failed.");
+    }
 
-    const anchor = document.createElement("a");
-    anchor.className = "result-link";
-    anchor.href = item.href;
-    anchor.target = "_blank";
-    anchor.rel = "noopener noreferrer";
-    anchor.textContent = item.title;
+    resultsMeta.textContent = `${payload.total} results from ${payload.engine}`;
+    resultsList.innerHTML = "";
 
-    const paragraph = document.createElement("p");
-    paragraph.className = "result-description";
-    paragraph.textContent = item.description;
+    for (const item of payload.results) {
+      const li = document.createElement("li");
+      li.className = "result-card";
 
-    li.append(anchor, paragraph);
-    resultsList.appendChild(li);
+      const anchor = document.createElement("a");
+      anchor.className = "result-link";
+      anchor.href = item.url;
+      anchor.target = "_blank";
+      anchor.rel = "noopener noreferrer";
+      anchor.textContent = item.title;
+
+      const description = document.createElement("p");
+      description.className = "result-description";
+      description.textContent = item.summary;
+
+      const category = document.createElement("p");
+      category.className = "result-description";
+      category.textContent = `Category: ${item.category}`;
+
+      li.append(anchor, description, category);
+      resultsList.appendChild(li);
+    }
+  } catch (error) {
+    resultsMeta.textContent = error.message || "Could not load results.";
+  }
+}
+
+function setAdminStatus(message, isError = false) {
+  if (!adminAuthStatus) {
+    return;
+  }
+
+  adminAuthStatus.textContent = message;
+  adminAuthStatus.classList.toggle("error", isError);
+}
+
+function getAdminToken() {
+  return localStorage.getItem(ADMIN_TOKEN_KEY) || "";
+}
+
+function setAdminToken(token) {
+  if (!token) {
+    localStorage.removeItem(ADMIN_TOKEN_KEY);
+    return;
+  }
+
+  localStorage.setItem(ADMIN_TOKEN_KEY, token);
+}
+
+async function fetchAdminOverview(range = "all") {
+  const token = getAdminToken();
+  const params = new URLSearchParams({ range });
+
+  const response = await fetch(`/api/admin/overview?${params.toString()}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
   });
+
+  const payload = await response.json();
+
+  if (!response.ok) {
+    throw new Error(payload.error || "Could not load admin data.");
+  }
+
+  return payload;
+}
+
+async function fetchAdminBackups(reason = "all") {
+  const token = getAdminToken();
+  const params = new URLSearchParams({ reason });
+  const response = await fetch(`/api/admin/backups?${params.toString()}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || "Could not load backup list.");
+  }
+
+  return payload.backups || [];
+}
+
+async function downloadBackupFile(fileName) {
+  const token = getAdminToken();
+  const params = new URLSearchParams({ fileName });
+  const response = await fetch(
+    `/api/admin/backups/download?${params.toString()}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.error || "Could not download backup.");
+  }
+
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function createBackupNow() {
+  const token = getAdminToken();
+  const response = await fetch("/api/admin/backups/create", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || "Could not create backup.");
+  }
+
+  return payload.backups || [];
+}
+
+async function restoreBackup(fileName) {
+  const token = getAdminToken();
+  const response = await fetch("/api/admin/backups/restore", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ fileName }),
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || "Could not restore backup.");
+  }
+
+  return payload;
+}
+
+function formatDeltaText(value) {
+  if (value == null) {
+    return "No previous period data";
+  }
+
+  if (value === 0) {
+    return "No change vs previous period";
+  }
+
+  const sign = value > 0 ? "+" : "";
+  return `${sign}${value}% vs previous period`;
+}
+
+function applyDeltaState(element, value) {
+  if (!element) {
+    return;
+  }
+
+  element.textContent = formatDeltaText(value);
+  element.classList.remove("delta-positive", "delta-negative", "delta-neutral");
+
+  if (value == null || value === 0) {
+    element.classList.add("delta-neutral");
+    return;
+  }
+
+  element.classList.add(value > 0 ? "delta-positive" : "delta-negative");
+}
+
+function renderBarChart(
+  container,
+  items,
+  { labelKey, valueKey, valueSuffix = "" },
+) {
+  if (!container) {
+    return;
+  }
+
+  container.innerHTML = "";
+
+  if (!Array.isArray(items) || items.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "admin-chart-empty";
+    empty.textContent = "No chart data yet.";
+    container.appendChild(empty);
+    return;
+  }
+
+  const maxValue = Math.max(
+    ...items.map((item) => Number(item[valueKey]) || 0),
+    1,
+  );
+
+  items.forEach((item) => {
+    const row = document.createElement("div");
+    row.className = "admin-chart-row";
+
+    const label = document.createElement("span");
+    label.className = "admin-chart-label";
+    label.textContent = String(item[labelKey] || "");
+
+    const track = document.createElement("div");
+    track.className = "admin-chart-track";
+
+    const fill = document.createElement("div");
+    fill.className = "admin-chart-fill";
+    const value = Number(item[valueKey]) || 0;
+    const widthPercent = (value / maxValue) * 100;
+    fill.style.width = `${Math.max(4, widthPercent)}%`;
+
+    const valueLabel = document.createElement("span");
+    valueLabel.className = "admin-chart-value";
+    valueLabel.textContent = `${value}${valueSuffix}`;
+
+    track.append(fill, valueLabel);
+    row.append(label, track);
+    container.appendChild(row);
+  });
+}
+
+function renderTrendChart(container, points) {
+  if (!container) {
+    return;
+  }
+
+  container.innerHTML = "";
+
+  if (!Array.isArray(points) || points.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "admin-chart-empty";
+    empty.textContent = "No trend data yet.";
+    container.appendChild(empty);
+    return;
+  }
+
+  const maxValue = Math.max(
+    ...points.map((point) =>
+      Math.max(
+        Number(point.searchCount) || 0,
+        Number(point.pageViewCount) || 0,
+      ),
+    ),
+    1,
+  );
+
+  points.forEach((point) => {
+    const row = document.createElement("div");
+    row.className = "admin-trend-row";
+
+    const label = document.createElement("span");
+    label.className = "admin-trend-label";
+    label.textContent = String(point.label || "-");
+
+    const barsWrap = document.createElement("div");
+    barsWrap.className = "admin-trend-bars";
+
+    const searchTrack = document.createElement("div");
+    searchTrack.className = "admin-trend-track";
+    const searchFill = document.createElement("div");
+    searchFill.className = "admin-trend-fill admin-trend-fill-search";
+    const searchValue = Number(point.searchCount) || 0;
+    searchFill.style.width = `${Math.max(2, (searchValue / maxValue) * 100)}%`;
+    const searchLabel = document.createElement("span");
+    searchLabel.className = "admin-trend-value";
+    searchLabel.textContent = String(searchValue);
+    searchTrack.append(searchFill, searchLabel);
+
+    const viewTrack = document.createElement("div");
+    viewTrack.className = "admin-trend-track";
+    const viewFill = document.createElement("div");
+    viewFill.className = "admin-trend-fill admin-trend-fill-views";
+    const viewValue = Number(point.pageViewCount) || 0;
+    viewFill.style.width = `${Math.max(2, (viewValue / maxValue) * 100)}%`;
+    const viewLabel = document.createElement("span");
+    viewLabel.className = "admin-trend-value";
+    viewLabel.textContent = String(viewValue);
+    viewTrack.append(viewFill, viewLabel);
+
+    barsWrap.append(searchTrack, viewTrack);
+    row.append(label, barsWrap);
+    container.appendChild(row);
+  });
+}
+
+function renderListItems(element, items, formatter) {
+  if (!element) {
+    return;
+  }
+
+  element.innerHTML = "";
+
+  if (!items || items.length === 0) {
+    const li = document.createElement("li");
+    li.textContent = "No data yet.";
+    element.appendChild(li);
+    return;
+  }
+
+  items.forEach((item) => {
+    const li = document.createElement("li");
+    li.textContent = formatter(item);
+    element.appendChild(li);
+  });
+}
+
+function renderAdminDashboard(data) {
+  if (!data) {
+    return;
+  }
+
+  if (kpiTotalSearches) {
+    kpiTotalSearches.textContent = String(data.totals?.totalSearches || 0);
+  }
+
+  if (kpiTotalViews) {
+    kpiTotalViews.textContent = String(data.totals?.totalPageViews || 0);
+  }
+
+  if (kpiUniqueQueries) {
+    kpiUniqueQueries.textContent = String(data.totals?.uniqueQueries || 0);
+  }
+
+  applyDeltaState(
+    kpiSearchesDelta,
+    data.comparison?.deltaPercent?.totalSearches,
+  );
+  applyDeltaState(kpiViewsDelta, data.comparison?.deltaPercent?.totalPageViews);
+  applyDeltaState(kpiUniqueDelta, data.comparison?.deltaPercent?.uniqueQueries);
+
+  renderListItems(
+    topQueriesList,
+    data.topQueries || [],
+    (item) => `${item.query} - ${item.count} searches (${item.percent}%)`,
+  );
+
+  renderListItems(
+    trafficList,
+    data.trafficByPage || [],
+    (item) => `${item.page}: ${item.count} views (${item.percent}%)`,
+  );
+
+  renderListItems(
+    latestSearchesList,
+    data.latestSearches || [],
+    (item) =>
+      `${new Date(item.at).toLocaleString()} | ${item.query} (${item.resultCount} results)`,
+  );
+
+  renderBarChart(topQueriesChart, data.topQueries || [], {
+    labelKey: "query",
+    valueKey: "percent",
+    valueSuffix: "%",
+  });
+
+  renderBarChart(trafficChart, data.trafficByPage || [], {
+    labelKey: "page",
+    valueKey: "percent",
+    valueSuffix: "%",
+  });
+
+  renderTrendChart(dailyTrendChart, data.trends?.daily || []);
+  renderTrendChart(weeklyTrendChart, data.trends?.weekly || []);
+}
+
+function renderBackupList(items) {
+  if (!adminBackupList) {
+    return;
+  }
+
+  adminBackupList.innerHTML = "";
+
+  if (!Array.isArray(items) || items.length === 0) {
+    const li = document.createElement("li");
+    li.textContent = "No backups available yet.";
+    adminBackupList.appendChild(li);
+    return;
+  }
+
+  items.forEach((item) => {
+    const li = document.createElement("li");
+    li.className = "admin-backup-item";
+
+    const meta = document.createElement("div");
+    meta.className = "admin-backup-meta";
+    const created = new Date(item.createdAt).toLocaleString();
+    const sizeKb = Math.max(
+      1,
+      Math.round((Number(item.sizeBytes) || 0) / 1024),
+    );
+    meta.textContent = `${item.fileName} | ${created} | ${item.reason} | ${sizeKb} KB`;
+
+    const actions = document.createElement("div");
+    actions.className = "admin-backup-actions";
+
+    const downloadBtn = document.createElement("button");
+    downloadBtn.type = "button";
+    downloadBtn.className = "results-back-link admin-restore-btn";
+    downloadBtn.textContent = "Download";
+    downloadBtn.addEventListener("click", async () => {
+      downloadBtn.disabled = true;
+      try {
+        await downloadBackupFile(item.fileName);
+        setAdminStatus(`Backup downloaded: ${item.fileName}`);
+      } catch (error) {
+        setAdminStatus(error.message || "Could not download backup.", true);
+      } finally {
+        downloadBtn.disabled = false;
+      }
+    });
+
+    const restoreBtn = document.createElement("button");
+    restoreBtn.type = "button";
+    restoreBtn.className = "results-back-link admin-restore-btn";
+    restoreBtn.textContent = "Restore";
+    restoreBtn.addEventListener("click", async () => {
+      const confirmed = window.confirm(
+        `Restore analytics from backup '${item.fileName}'? Current analytics will be backed up first.`,
+      );
+      if (!confirmed) {
+        return;
+      }
+
+      restoreBtn.disabled = true;
+      try {
+        await restoreBackup(item.fileName);
+        setAdminStatus(`Backup restored: ${item.fileName}`);
+        const [overview, backups] = await Promise.all([
+          fetchAdminOverview(currentAdminRange),
+          fetchAdminBackups(),
+        ]);
+        renderAdminDashboard(overview);
+        renderBackupList(backups);
+      } catch (error) {
+        setAdminStatus(error.message || "Could not restore backup.", true);
+      } finally {
+        restoreBtn.disabled = false;
+      }
+    });
+
+    actions.append(downloadBtn, restoreBtn);
+    li.append(meta, actions);
+    adminBackupList.appendChild(li);
+  });
+}
+
+async function refreshBackupsWithStatus(okMessage) {
+  try {
+    const backups = await fetchAdminBackups(currentBackupReason);
+    renderBackupList(backups);
+    if (okMessage) {
+      setAdminStatus(okMessage);
+    }
+  } catch (error) {
+    setAdminStatus(error.message || "Could not load backups.", true);
+  }
+}
+
+async function tryAutoLogin() {
+  const token = getAdminToken();
+  if (!token) {
+    return false;
+  }
+
+  try {
+    if (adminRange) {
+      currentAdminRange = adminRange.value || "all";
+    }
+    const data = await fetchAdminOverview(currentAdminRange);
+    adminAuthPanel.hidden = true;
+    adminDashboard.hidden = false;
+    renderAdminDashboard(data);
+    await refreshBackupsWithStatus("");
+    return true;
+  } catch {
+    setAdminToken("");
+    return false;
+  }
+}
+
+function initAdminPage() {
+  if (!adminLoginForm || !adminAuthPanel || !adminDashboard) {
+    return;
+  }
+
+  if (adminRange) {
+    adminRange.value = currentAdminRange;
+  }
+
+  if (adminBackupReason) {
+    adminBackupReason.value = currentBackupReason;
+  }
+
+  tryAutoLogin();
+
+  adminLoginForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const username =
+      document.getElementById("adminUsername")?.value?.trim() || "";
+    const password = document.getElementById("adminPassword")?.value || "";
+
+    if (!username || !password) {
+      setAdminStatus("Please enter username and password.", true);
+      return;
+    }
+
+    setAdminStatus("Authenticating...");
+
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload.error || "Sign in failed.");
+      }
+
+      setAdminToken(payload.token);
+      currentAdminRange = adminRange?.value || "all";
+      const data = await fetchAdminOverview(currentAdminRange);
+      adminAuthPanel.hidden = true;
+      adminDashboard.hidden = false;
+      renderAdminDashboard(data);
+      await refreshBackupsWithStatus("");
+      setAdminStatus("Signed in.");
+    } catch (error) {
+      setAdminStatus(error.message || "Could not sign in.", true);
+    }
+  });
+
+  if (adminLogoutBtn) {
+    adminLogoutBtn.addEventListener("click", () => {
+      setAdminToken("");
+      adminDashboard.hidden = true;
+      adminAuthPanel.hidden = false;
+      setAdminStatus("Signed out.");
+    });
+  }
+
+  if (adminRange) {
+    adminRange.addEventListener("change", async () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+
+      currentAdminRange = adminRange.value || "all";
+      try {
+        const data = await fetchAdminOverview(currentAdminRange);
+        renderAdminDashboard(data);
+      } catch (error) {
+        setAdminStatus(error.message || "Could not refresh analytics.", true);
+      }
+    });
+  }
+
+  if (adminRefreshBtn) {
+    adminRefreshBtn.addEventListener("click", async () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+
+      try {
+        const data = await fetchAdminOverview(currentAdminRange);
+        renderAdminDashboard(data);
+        setAdminStatus("Analytics refreshed.");
+      } catch (error) {
+        setAdminStatus(error.message || "Could not refresh analytics.", true);
+      }
+    });
+  }
+
+  if (adminExportBtn) {
+    adminExportBtn.addEventListener("click", async () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+
+      try {
+        const token = getAdminToken();
+        const params = new URLSearchParams({ range: currentAdminRange });
+        const response = await fetch(
+          `/api/admin/export.csv?${params.toString()}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}));
+          throw new Error(payload.error || "Could not export CSV.");
+        }
+
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `magneto-analytics-${currentAdminRange}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        setAdminStatus("CSV export completed.");
+      } catch (error) {
+        setAdminStatus(error.message || "Could not export CSV.", true);
+      }
+    });
+  }
+
+  if (adminBackupRefreshBtn) {
+    adminBackupRefreshBtn.addEventListener("click", async () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+      await refreshBackupsWithStatus("Backup list refreshed.");
+    });
+  }
+
+  if (adminBackupReason) {
+    adminBackupReason.addEventListener("change", async () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+
+      currentBackupReason = adminBackupReason.value || "all";
+      await refreshBackupsWithStatus("Backup filter applied.");
+    });
+  }
+
+  if (adminBackupCreateBtn) {
+    adminBackupCreateBtn.addEventListener("click", async () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+
+      try {
+        const backups = await createBackupNow();
+        renderBackupList(backups);
+        setAdminStatus("Manual backup created.");
+      } catch (error) {
+        setAdminStatus(error.message || "Could not create backup.", true);
+      }
+    });
+  }
+}
+
+function getPageNameFromPath() {
+  const fileName = window.location.pathname.split("/").pop() || "index.html";
+
+  if (!fileName || fileName === "/") {
+    return "index.html";
+  }
+
+  return fileName;
 }
 
 initHomeForm();
 initWeatherWidget();
 initResultsPage();
+initAdminPage();
+trackPageView(getPageNameFromPath());

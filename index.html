@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="ro">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>www.magneto.com - Motor de cautare</title>
+    <title>www.magneto.com - Custom Search Engine</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -18,8 +18,7 @@
     <div class="grid-overlay" aria-hidden="true"></div>
 
     <main class="page-shell home-layout">
-      <aside class="side-panel weather-panel" aria-label="Stare vreme locala">
-        <p class="badge">Meteo local</p>
+      <aside class="side-panel weather-panel" aria-label="Local weather status">
         <div class="weather-row">
           <span id="weatherIcon" class="weather-icon" aria-hidden="true"
             >&#9729;</span
@@ -27,122 +26,79 @@
           <div>
             <p id="weatherTemp" class="weather-temp">--&#176;C</p>
             <p id="weatherSummary" class="weather-summary">
-              Se incarca vremea...
+              Loading weather...
             </p>
           </div>
         </div>
         <p id="weatherLocation" class="weather-location">
-          Detectam pozitia prin GPS.
+          Detecting GPS location.
         </p>
+        <div
+          id="weatherForecast"
+          class="weather-forecast"
+          aria-label="7 day weather forecast"
+        ></div>
       </aside>
 
-      <section class="center-panel" aria-label="Cautare MAGNETO">
-        <p class="site-label">www.magneto.com</p>
-        <h1>MAGNETO</h1>
+      <section class="center-panel" aria-label="MAGNETO search">
+        <h1>Magneto</h1>
 
-        <section class="search-panel" aria-label="Formular de cautare">
+        <section class="search-panel" aria-label="Search form">
           <form id="searchForm" class="search-form">
-            <label for="searchQuery" class="sr-only">Ce vrei sa cauti?</label>
+            <label for="searchQuery" class="sr-only"
+              >What do you want to search?</label
+            >
             <input
               id="searchQuery"
               name="q"
               type="search"
-              placeholder="Scrie ce vrei sa cauti"
+              placeholder="Type your search"
               list="quickSuggestions"
               required
             />
             <datalist id="quickSuggestions">
-              <option value="stiri tehnologie 2026"></option>
-              <option value="top trenduri web design"></option>
-              <option value="cursuri javascript gratuite"></option>
-              <option value="cele mai bune laptopuri 2026"></option>
+              <option value="technology news 2026"></option>
+              <option value="top web design trends"></option>
+              <option value="free javascript courses"></option>
+              <option value="best laptops 2026"></option>
             </datalist>
 
-            <label for="searchEngine" class="sr-only">Alege motorul</label>
-            <select
-              id="searchEngine"
-              name="engine"
-              aria-label="Alege motorul de cautare"
-            >
-              <option value="google">Google</option>
-              <option value="duckduckgo">DuckDuckGo</option>
-              <option value="bing">Bing</option>
-            </select>
-
-            <label for="searchLanguage" class="sr-only"
-              >Alege limba cautarii</label
-            >
-            <select
-              id="searchLanguage"
-              name="language"
-              aria-label="Alege limba cautarii"
-            >
-              <option value="all">Toate limbile</option>
-              <option value="ro">Romana</option>
-              <option value="en">Engleza</option>
-              <option value="es">Spaniola</option>
-              <option value="fr">Franceza</option>
-              <option value="de">Germana</option>
-              <option value="it">Italiana</option>
-              <option value="pt">Portugheza</option>
-              <option value="nl">Olandeza</option>
-              <option value="pl">Poloneza</option>
-              <option value="tr">Turca</option>
-              <option value="ar">Araba</option>
-              <option value="hi">Hindi</option>
-              <option value="ja">Japoneza</option>
-              <option value="ko">Coreeana</option>
-              <option value="zh-CN">Chineza (Simplificata)</option>
-              <option value="zh-TW">Chineza (Traditionala)</option>
-              <option value="ru">Rusa</option>
-              <option value="uk">Ucraineana</option>
-              <option value="el">Greaca</option>
-              <option value="sv">Suedeza</option>
-              <option value="da">Daneza</option>
-              <option value="fi">Finlandeza</option>
-              <option value="no">Norvegiana</option>
-              <option value="cs">Ceha</option>
-              <option value="hu">Maghiara</option>
-              <option value="vi">Vietnameza</option>
-              <option value="th">Tailandeza</option>
-              <option value="id">Indoneziana</option>
-              <option value="ms">Malaeziana</option>
-              <option value="he">Ebraica</option>
-            </select>
-
-            <button type="submit" class="search-btn">Cauta acum</button>
+            <button type="submit" class="search-btn">Search Now</button>
           </form>
 
           <p id="statusMessage" class="status" aria-live="polite">
-            Introdu un termen si apasa Enter.
+            Enter a term and press Enter.
           </p>
-          <p class="hint">
-            Poti cauta in orice limba alegand limba dorita sau "Toate limbile".
-          </p>
+          <p class="hint">MAGNETO Core runs your own controlled search flow.</p>
 
-          <div class="quick-tags" aria-label="Cautari populare">
-            <button class="tag" type="button" data-query="vremea maine">
-              #vreme
+          <div class="quick-tags" aria-label="Popular searches">
+            <button class="tag" type="button" data-query="weather tomorrow">
+              #weather
             </button>
-            <button class="tag" type="button" data-query="ultimele stiri sport">
-              #sport
+            <button class="tag" type="button" data-query="latest sport news">
+              #sports
             </button>
-            <button class="tag" type="button" data-query="wallpaper 4k">
+            <button class="tag" type="button" data-query="4k wallpapers">
               #wallpapers
             </button>
-            <button class="tag" type="button" data-query="retete sanatoase">
+            <button class="tag" type="button" data-query="healthy recipes">
               #food
             </button>
           </div>
+
+          <p class="admin-entry">
+            Need control panel access?
+            <a href="admin.html" class="admin-link">Open Admin Dashboard</a>
+          </p>
         </section>
       </section>
 
       <aside
         class="side-panel right-panel"
-        aria-label="Asistent sugestii MAGNETO"
+        aria-label="MAGNETO suggestion assistant"
       >
         <p class="badge">MAGNETO Assistant</p>
-        <h2>Chat de sugestii</h2>
+        <h2>Suggestion Chat</h2>
         <div
           id="assistantThread"
           class="assistant-thread"
@@ -151,22 +107,22 @@
 
         <form id="assistantForm" class="assistant-form">
           <label for="assistantInput" class="sr-only"
-            >Scrie un mesaj pentru asistent</label
+            >Write a message to the assistant</label
           >
           <input
             id="assistantInput"
             type="text"
-            placeholder="Intreaba MAGNETO ce sa cauti..."
+            placeholder="Ask MAGNETO what to search..."
             maxlength="160"
             autocomplete="off"
           />
-          <button type="submit" class="assistant-send">Trimite</button>
+          <button type="submit" class="assistant-send">Send</button>
         </form>
 
         <div
           id="assistantSuggestions"
           class="assistant-suggestions"
-          aria-label="Propuneri rapide"
+          aria-label="Quick suggestions"
         ></div>
       </aside>
     </main>

@@ -1,0 +1,20 @@
+{
+  "searches": [
+    {
+      "id": "s-1772890734240-7152",
+      "query": "javascript",
+      "resultCount": 1,
+      "ip": "::1",
+      "at": "2026-03-07T13:38:54.240Z"
+    }
+  ],
+  "pageViews": [
+    {
+      "id": "p-1772890734317-734",
+      "page": "index.html",
+      "ip": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT; Windows NT 10.0; ro-RO) WindowsPowerShell/5.1.26100.7920",
+      "at": "2026-03-07T13:38:54.317Z"
+    }
+  ]
+}
