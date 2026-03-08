@@ -9,5 +9,6 @@
   "emmet.includeLanguages": {
     "javascript": "javascriptreact"
   },
+  "python.analysis.typeCheckingMode": "basic",
   "git.path": "C:\\Program Files\\Git\\cmd\\git.exe"
 }
