@@ -56,8 +56,24 @@ const adminAssistantStatusRefreshBtn = document.getElementById(
 );
 
 const ADMIN_TOKEN_KEY = "magneto.admin.token";
+const API_BASE_URL = String(window.MAGNETO_API_BASE_URL || "")
+  .trim()
+  .replace(/\/+$/, "");
 let currentAdminRange = "all";
 let currentBackupReason = "all";
+
+function buildApiUrl(path) {
+  const target = String(path || "").trim();
+  if (!target.startsWith("/api/")) {
+    return target;
+  }
+
+  return API_BASE_URL ? `${API_BASE_URL}${target}` : target;
+}
+
+function apiFetch(path, options) {
+  return fetch(buildApiUrl(path), options);
+}
 
 function syncSidePanelHeights() {
   if (!rightPanel) {
@@ -209,7 +225,7 @@ async function requestAssistantResponse(userText) {
     : [];
 
   try {
-    const response = await fetch("/api/assistant/chat", {
+    const response = await apiFetch("/api/assistant/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message: userText, history }),
@@ -703,7 +719,7 @@ async function fetchLocationByIp() {
 }
 
 async function fetchLocationFromBackend() {
-  const response = await fetch("/api/location/auto");
+  const response = await apiFetch("/api/location/auto");
   if (!response.ok) {
     throw new Error("Backend location unavailable.");
   }
@@ -872,7 +888,7 @@ function initWeatherWidget() {
 
 async function trackPageView(pageName) {
   try {
-    await fetch("/api/events/page-view", {
+    await apiFetch("/api/events/page-view", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ page: pageName }),
@@ -900,7 +916,7 @@ async function initResultsPage() {
   resultsMeta.textContent = "Loading data from MAGNETO Core...";
 
   try {
-    const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+    const response = await apiFetch(`/api/search?q=${encodeURIComponent(query)}`);
     const payload = await response.json();
 
     if (!response.ok) {
@@ -963,7 +979,7 @@ async function fetchAdminOverview(range = "all") {
   const token = getAdminToken();
   const params = new URLSearchParams({ range });
 
-  const response = await fetch(`/api/admin/overview?${params.toString()}`, {
+  const response = await apiFetch(`/api/admin/overview?${params.toString()}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -981,7 +997,7 @@ async function fetchAdminOverview(range = "all") {
 async function fetchAdminBackups(reason = "all") {
   const token = getAdminToken();
   const params = new URLSearchParams({ reason });
-  const response = await fetch(`/api/admin/backups?${params.toString()}`, {
+  const response = await apiFetch(`/api/admin/backups?${params.toString()}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -997,7 +1013,7 @@ async function fetchAdminBackups(reason = "all") {
 
 async function fetchAdminAssistantStatus() {
   const token = getAdminToken();
-  const response = await fetch("/api/admin/assistant-status", {
+  const response = await apiFetch("/api/admin/assistant-status", {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -1014,7 +1030,7 @@ async function fetchAdminAssistantStatus() {
 async function downloadBackupFile(fileName) {
   const token = getAdminToken();
   const params = new URLSearchParams({ fileName });
-  const response = await fetch(
+  const response = await apiFetch(
     `/api/admin/backups/download?${params.toString()}`,
     {
       headers: {
@@ -1041,7 +1057,7 @@ async function downloadBackupFile(fileName) {
 
 async function createBackupNow() {
   const token = getAdminToken();
-  const response = await fetch("/api/admin/backups/create", {
+  const response = await apiFetch("/api/admin/backups/create", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -1059,7 +1075,7 @@ async function createBackupNow() {
 
 async function restoreBackup(fileName) {
   const token = getAdminToken();
-  const response = await fetch("/api/admin/backups/restore", {
+  const response = await apiFetch("/api/admin/backups/restore", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -1626,7 +1642,7 @@ function initAdminPage() {
     setAdminStatus("Authenticating...");
 
     try {
-      const response = await fetch("/api/auth/login", {
+      const response = await apiFetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
@@ -1713,7 +1729,7 @@ function initAdminPage() {
       try {
         const token = getAdminToken();
         const params = new URLSearchParams({ range: currentAdminRange });
-        const response = await fetch(
+        const response = await apiFetch(
           `/api/admin/export.csv?${params.toString()}`,
           {
             headers: {
