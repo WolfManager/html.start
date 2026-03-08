@@ -181,6 +181,95 @@ function updateAssistant(query) {
   });
 }
 
+function buildLocalAssistantFallback(query) {
+  const content = buildAssistantContent(query);
+  return {
+    reply: content.message,
+    suggestions: content.suggestions,
+  };
+}
+
+async function requestAssistantResponse(userText) {
+  const history = assistantThread
+    ? Array.from(assistantThread.querySelectorAll(".assistant-bubble"))
+        .slice(-6)
+        .map((el) => ({
+          role: el.classList.contains("user") ? "user" : "assistant",
+          content: String(el.textContent || "").trim(),
+        }))
+    : [];
+
+  try {
+    const response = await fetch("/api/assistant/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: userText, history }),
+    });
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload.error || "Assistant request failed.");
+    }
+
+    const reply = String(payload.reply || "").trim();
+    const suggestions = Array.isArray(payload.suggestions)
+      ? payload.suggestions
+          .map((item) => String(item || "").trim())
+          .filter(Boolean)
+      : [];
+
+    if (!reply) {
+      throw new Error("Assistant returned empty response.");
+    }
+
+    return {
+      reply,
+      suggestions: suggestions.slice(0, 3),
+      provider: String(payload.provider || "unknown"),
+    };
+  } catch {
+    const fallback = buildLocalAssistantFallback(userText);
+    return {
+      reply: fallback.reply,
+      suggestions: fallback.suggestions,
+      provider: "local-fallback",
+    };
+  }
+}
+
+function renderAssistantSuggestions(suggestions) {
+  if (!assistantSuggestions) {
+    return;
+  }
+
+  assistantSuggestions.innerHTML = "";
+
+  suggestions.forEach((suggestion) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "assistant-chip";
+    button.textContent = suggestion;
+
+    button.addEventListener("click", () => {
+      if (!searchQuery) {
+        return;
+      }
+
+      searchQuery.value = suggestion;
+      searchQuery.focus();
+      updateStatus(`Suggestion applied: ${suggestion}`);
+      addAssistantMessage("user", suggestion);
+      addAssistantMessage(
+        "bot",
+        "Running search with your selected suggestion.",
+      );
+      window.location.href = `results.html?q=${encodeURIComponent(suggestion)}`;
+    });
+
+    assistantSuggestions.appendChild(button);
+  });
+}
+
 function initAssistantChat() {
   if (!assistantThread || !assistantForm || !assistantInput) {
     return;
@@ -193,7 +282,7 @@ function initAssistantChat() {
     );
   }
 
-  assistantForm.addEventListener("submit", (event) => {
+  assistantForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     const userText = assistantInput.value.trim();
@@ -202,18 +291,32 @@ function initAssistantChat() {
     }
 
     addAssistantMessage("user", userText);
-    const content = buildAssistantContent(userText);
-    addAssistantMessage("bot", content.message);
+    addAssistantMessage("bot", "Thinking...");
 
     if (searchQuery) {
       searchQuery.value = userText;
     }
 
-    updateAssistant(userText);
+    const result = await requestAssistantResponse(userText);
+    if (assistantThread && assistantThread.lastElementChild) {
+      assistantThread.lastElementChild.textContent = result.reply;
+    }
+
+    renderAssistantSuggestions(result.suggestions);
+    updateStatus(
+      result.provider === "local-fallback"
+        ? "Assistant fallback active."
+        : "Assistant response ready.",
+    );
+
     assistantInput.value = "";
+    requestAnimationFrame(syncSidePanelHeights);
   });
 
-  updateAssistant(searchQuery?.value || "");
+  renderAssistantSuggestions(
+    buildAssistantContent(searchQuery?.value || "").suggestions,
+  );
+  requestAnimationFrame(syncSidePanelHeights);
 }
 
 function initHomeForm() {
@@ -1515,3 +1618,6 @@ initWeatherWidget();
 initResultsPage();
 initAdminPage();
 trackPageView(getPageNameFromPath());
+
+window.addEventListener("resize", syncSidePanelHeights);
+requestAnimationFrame(syncSidePanelHeights);

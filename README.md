@@ -10,6 +10,7 @@ MAGNETO now runs as a custom search engine with:
 ## Features
 
 - Homepage with local weather widget and suggestion assistant
+- Optional MAGNETO Assistant AI mode via backend API (with secure server-side key)
 - MAGNETO Core search endpoint (server-side ranking over your own index)
 - Results page that reads from your backend, not direct engine redirects
 - Admin dashboard (`admin.html`) protected with username/password
@@ -63,6 +64,10 @@ MAGNETO now runs as a custom search engine with:
    - admin throttling: `ADMIN_WINDOW_SECONDS`, `ADMIN_RATE_LIMIT_COUNT`
    - backup behavior: `BACKUP_MIN_INTERVAL_MINUTES`, `BACKUP_SCHEDULE_MINUTES`, `MAX_BACKUP_FILES`
    - trend windows: `TREND_DAILY_POINTS`, `TREND_WEEKLY_POINTS`
+   - assistant AI:
+     - `OPENAI_API_KEY` (required for AI mode)
+     - `OPENAI_MODEL` (default: `gpt-4o-mini`)
+     - `ASSISTANT_WINDOW_SECONDS`, `ASSISTANT_RATE_LIMIT_COUNT`, `ASSISTANT_MAX_CHARS`
 5. Start server:
    - `npm start`
 6. Open:
@@ -86,6 +91,13 @@ MAGNETO now runs as a custom search engine with:
 - Returns service status plus safe runtime configuration snapshot (rate limits, backup intervals, trend window sizes).
 - Does not expose credentials or secrets.
 
+## MAGNETO Assistant AI
+
+- Endpoint: `POST /api/assistant/chat`
+- Frontend assistant uses this endpoint automatically.
+- If `OPENAI_API_KEY` is missing or provider is unavailable, assistant falls back to local rule-based suggestions.
+- Keep `OPENAI_API_KEY` in `.env` only. Never expose it in frontend code.
+
 ## Deploy Notes
 
 This project is no longer static-only because it needs a running Node server.
@@ -101,3 +113,16 @@ This project is no longer static-only because it needs a running Node server.
 - `sitemap.xml`
 
 Update URLs when domain or routes change.
+
+## Legal and Compliance
+
+- `LICENSE` - project source code license (MIT)
+- `THIRD_PARTY_NOTICES.md` - third-party package notices and license pointers
+- `PRIVACY.md` - privacy policy template for deployment
+- `TERMS.md` - terms of use template for deployment
+
+Before public launch:
+
+- add your legal contact information in `PRIVACY.md` and `TERMS.md`
+- validate dependency licenses and keep notices up to date
+- keep API keys and secrets in `.env` only (never in frontend files)

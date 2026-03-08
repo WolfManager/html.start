@@ -11,6 +11,9 @@ const PORT = Number(process.env.PORT || 3000);
 const JWT_SECRET = process.env.JWT_SECRET || "change-this-secret";
 const ADMIN_USER = process.env.ADMIN_USER || "admin";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "change-this-password";
+const OPENAI_API_KEY = String(process.env.OPENAI_API_KEY || "").trim();
+const OPENAI_MODEL =
+  String(process.env.OPENAI_MODEL || "gpt-4o-mini").trim() || "gpt-4o-mini";
 
 const dataDir = path.join(__dirname, "data");
 const analyticsPath = path.join(dataDir, "analytics.json");
@@ -67,9 +70,20 @@ const TREND_WEEKLY_POINTS = envNumber("TREND_WEEKLY_POINTS", 8, {
   min: 4,
   max: 104,
 });
+const ASSISTANT_WINDOW_MS =
+  envNumber("ASSISTANT_WINDOW_SECONDS", 60, { min: 5, max: 600 }) * 1000;
+const ASSISTANT_RATE_LIMIT_COUNT = envNumber("ASSISTANT_RATE_LIMIT_COUNT", 30, {
+  min: 3,
+  max: 600,
+});
+const ASSISTANT_MAX_CHARS = envNumber("ASSISTANT_MAX_CHARS", 500, {
+  min: 80,
+  max: 4000,
+});
 
 const loginAttemptMap = new Map();
 const adminRateMap = new Map();
+const assistantRateMap = new Map();
 let lastBackupAt = 0;
 
 app.use(express.json({ limit: "250kb" }));
@@ -532,6 +546,142 @@ function sanitizeBackupFileName(input) {
   return fileName;
 }
 
+function getAssistantRateState(ip) {
+  const now = Date.now();
+  const state = assistantRateMap.get(ip) || { hits: [] };
+  state.hits = state.hits.filter((ts) => now - ts <= ASSISTANT_WINDOW_MS);
+  assistantRateMap.set(ip, state);
+  return state;
+}
+
+function checkAssistantRateLimit(req, res) {
+  const ip = getClientIp(req);
+  const now = Date.now();
+  const state = getAssistantRateState(ip);
+  if (state.hits.length >= ASSISTANT_RATE_LIMIT_COUNT) {
+    const retryAfter = Math.max(
+      1,
+      Math.ceil((ASSISTANT_WINDOW_MS - (now - state.hits[0])) / 1000),
+    );
+    res.setHeader("Retry-After", String(retryAfter));
+    res.status(429).json({
+      error: `Too many assistant requests. Retry in ${retryAfter} seconds.`,
+    });
+    return false;
+  }
+
+  state.hits.push(now);
+  assistantRateMap.set(ip, state);
+  return true;
+}
+
+function normalizeAssistantSuggestions(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => String(item || "").trim())
+    .filter(Boolean)
+    .slice(0, 3);
+}
+
+function extractJsonPayload(text) {
+  const raw = String(text || "").trim();
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw);
+  } catch {
+    // Continue with best-effort extraction.
+  }
+
+  const firstBrace = raw.indexOf("{");
+  const lastBrace = raw.lastIndexOf("}");
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    const slice = raw.slice(firstBrace, lastBrace + 1);
+    try {
+      return JSON.parse(slice);
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}
+
+async function generateAssistantResponse({ message, history }) {
+  if (!OPENAI_API_KEY) {
+    throw new Error("AI service not configured.");
+  }
+
+  const systemPrompt =
+    "You are MAGNETO Assistant for a web search homepage. " +
+    "Your goal is to refine user search intent and produce practical search query suggestions. " +
+    'Reply with strict JSON only: {"reply": string, "suggestions": string[3]}. ' +
+    "Keep reply under 180 characters. Suggestions must be concise search queries in English.";
+
+  const safeHistory = Array.isArray(history)
+    ? history
+        .filter(
+          (item) =>
+            item &&
+            (item.role === "user" || item.role === "assistant") &&
+            typeof item.content === "string",
+        )
+        .slice(-6)
+        .map((item) => ({
+          role: item.role,
+          content: String(item.content || "").slice(0, 400),
+        }))
+    : [];
+
+  const payload = {
+    model: OPENAI_MODEL,
+    temperature: 0.4,
+    max_tokens: 220,
+    messages: [
+      { role: "system", content: systemPrompt },
+      ...safeHistory,
+      { role: "user", content: String(message || "") },
+    ],
+  };
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const providerError =
+      data?.error?.message || `Provider error (${response.status}).`;
+    throw new Error(providerError);
+  }
+
+  const content = String(data?.choices?.[0]?.message?.content || "").trim();
+  const parsed = extractJsonPayload(content);
+
+  if (parsed && typeof parsed.reply === "string") {
+    return {
+      reply:
+        parsed.reply.trim().slice(0, 280) || "Try a narrower search query.",
+      suggestions: normalizeAssistantSuggestions(parsed.suggestions),
+    };
+  }
+
+  return {
+    reply: content.slice(0, 280) || "Try a narrower search query.",
+    suggestions: [],
+  };
+}
+
 function sanitizeIpForLookup(ip) {
   const value = String(ip || "").trim();
   if (!value || value === "unknown") {
@@ -826,6 +976,56 @@ app.post("/api/events/page-view", (req, res) => {
     userAgent: req.headers["user-agent"] || "unknown",
   });
   res.json({ ok: true });
+});
+
+app.post("/api/assistant/chat", async (req, res) => {
+  if (!checkAssistantRateLimit(req, res)) {
+    return;
+  }
+
+  const message = String(req.body?.message || "").trim();
+  const history = req.body?.history;
+
+  if (!message) {
+    res.status(400).json({ error: "Message is required." });
+    return;
+  }
+
+  if (message.length > ASSISTANT_MAX_CHARS) {
+    res.status(400).json({
+      error: `Message too long. Max ${ASSISTANT_MAX_CHARS} characters.`,
+    });
+    return;
+  }
+
+  try {
+    const ai = await generateAssistantResponse({ message, history });
+    const suggestions =
+      ai.suggestions.length > 0
+        ? ai.suggestions
+        : [`${message} guide`, `${message} 2026`, `${message} explained`];
+
+    res.json({
+      ok: true,
+      provider: OPENAI_API_KEY ? "openai" : "local",
+      model: OPENAI_MODEL,
+      reply: ai.reply,
+      suggestions,
+    });
+  } catch (error) {
+    res.json({
+      ok: true,
+      provider: "fallback",
+      model: "rule-based",
+      reply: "I can help refine this. Try one of these focused searches.",
+      suggestions: [
+        `${message} guide`,
+        `${message} latest updates`,
+        `${message} best resources`,
+      ],
+      warning: String(error?.message || "Assistant provider unavailable."),
+    });
+  }
 });
 
 app.get("/api/location/auto", async (req, res) => {
