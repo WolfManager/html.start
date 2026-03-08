@@ -26,6 +26,7 @@ from .services.analytics_service import log_page_view, log_search
 from .services.assistant_runtime_service import (
     build_status_snapshot,
     check_rate_limit,
+    get_runtime_counts,
     get_cache_entry,
     normalize_query_key,
     register_cache_hit,
@@ -36,6 +37,7 @@ from .services.assistant_runtime_service import (
     store_memory,
 )
 from .services.assistant_service import generate_assistant_response
+from .services.location_service import resolve_approx_location
 from .services.search_service import run_search
 
 
@@ -188,7 +190,85 @@ def admin_assistant_status(request):
         return auth_error
 
     snapshot = build_status_snapshot()
-    return Response(snapshot)
+    providers = snapshot.get("providers") or {}
+    limits = snapshot.get("limits") or {}
+    metrics_raw = snapshot.get("metrics") or {}
+    provider_counts = metrics_raw.get("providerCounts") or {}
+    runtime_counts = get_runtime_counts()
+
+    configured = bool(
+        providers.get("openaiConfigured")
+        or providers.get("anthropicConfigured")
+        or providers.get("geminiConfigured")
+    )
+    primary = str(providers.get("primary") or "openai")
+
+    payload = {
+        "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "assistant": {
+            "configured": configured,
+            "model": f"{primary}:default",
+            "providers": {
+                "primary": providers.get("primary") or "openai",
+                "fallback": providers.get("fallback") or "anthropic",
+            },
+            "limits": {
+                "windowSeconds": int(limits.get("assistantWindowSeconds") or 0),
+                "rateLimitCount": int(limits.get("assistantRateLimitCount") or 0),
+                "maxChars": int(os.getenv("ASSISTANT_MAX_CHARS", "4000")),
+                "simpleQueryWords": int(os.getenv("ASSISTANT_SIMPLE_QUERY_WORDS", "5")),
+            },
+            "cache": {
+                "ttlSeconds": int(limits.get("assistantCacheTtlSeconds") or 0),
+                "maxEntries": int(limits.get("assistantCacheMaxEntries") or 0),
+                "currentEntries": int(runtime_counts.get("cacheEntries") or 0),
+            },
+            "memory": {
+                "path": "data/assistant-memory.json",
+                "totalItems": int(runtime_counts.get("memoryItems") or 0),
+                "maxItems": int(limits.get("assistantMemoryMaxItems") or 0),
+            },
+            "metrics": {
+                "requestsTotal": int(metrics_raw.get("requestsTotal") or 0),
+                "cacheHits": int(metrics_raw.get("cacheHits") or 0),
+                "openaiResponses": int(provider_counts.get("openai") or 0),
+                "anthropicResponses": int(provider_counts.get("anthropic") or 0),
+                "geminiResponses": int(provider_counts.get("gemini") or 0),
+                "localHybridResponses": int(provider_counts.get("local-hybrid") or 0),
+                "fallbackResponses": int(metrics_raw.get("fallbackResponses") or 0),
+                "lastProviderError": str(metrics_raw.get("lastProviderError") or ""),
+                "lastProviderErrorAt": str(metrics_raw.get("lastProviderErrorAt") or ""),
+            },
+            "billing": {
+                "openai": {
+                    "overviewUrl": "https://platform.openai.com/settings/organization/billing/overview",
+                    "usageUrl": "https://platform.openai.com/usage",
+                },
+                "anthropic": {
+                    "overviewUrl": "https://console.anthropic.com/settings/plans",
+                    "usageUrl": "https://console.anthropic.com/settings/usage",
+                },
+                "gemini": {
+                    "overviewUrl": "https://aistudio.google.com/",
+                    "usageUrl": "https://console.cloud.google.com/apis/api/generativelanguage.googleapis.com/quotas",
+                },
+            },
+        },
+    }
+
+    return Response(payload)
+
+
+@api_view(["GET"])
+def location_auto(_request):
+    try:
+        location = resolve_approx_location()
+        return Response(location)
+    except RuntimeError:
+        return Response(
+            {"error": "Location service unavailable."},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
 
 
 @api_view(["GET"])

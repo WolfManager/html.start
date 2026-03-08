@@ -202,3 +202,23 @@ def build_status_snapshot() -> dict[str, Any]:
         },
         "metrics": metrics,
     }
+
+
+def get_runtime_counts() -> dict[str, int]:
+    with _runtime_lock:
+        cache_entries = len(_cache_map)
+
+    chats_count = 0
+    try:
+        if ASSISTANT_MEMORY_PATH.exists():
+            payload = json.loads(ASSISTANT_MEMORY_PATH.read_text(encoding="utf-8"))
+            chats = payload.get("chats") if isinstance(payload, dict) else []
+            if isinstance(chats, list):
+                chats_count = len(chats)
+    except Exception:
+        chats_count = 0
+
+    return {
+        "cacheEntries": cache_entries,
+        "memoryItems": chats_count,
+    }

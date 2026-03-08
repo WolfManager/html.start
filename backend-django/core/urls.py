@@ -11,6 +11,7 @@ from .views import (
     assistant_chat,
     auth_login,
     health,
+    location_auto,
     page_view,
     search,
 )
@@ -18,6 +19,7 @@ from .views import (
 urlpatterns = [
     path("auth/login", auth_login, name="auth-login"),
     path("health", health, name="health"),
+    path("location/auto", location_auto, name="location-auto"),
     path("search", search, name="search"),
     path("events/page-view", page_view, name="page-view"),
     path("assistant/chat", assistant_chat, name="assistant-chat"),

@@ -916,7 +916,9 @@ async function initResultsPage() {
   resultsMeta.textContent = "Loading data from MAGNETO Core...";
 
   try {
-    const response = await apiFetch(`/api/search?q=${encodeURIComponent(query)}`);
+    const response = await apiFetch(
+      `/api/search?q=${encodeURIComponent(query)}`,
+    );
     const payload = await response.json();
 
     if (!response.ok) {
