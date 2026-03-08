@@ -73,6 +73,20 @@ MAGNETO now runs as a custom search engine with:
 6. Open:
    - `http://localhost:3000`
 
+## Python and Django Track (Gradual Migration)
+
+For long-term AI evolution, this repository now includes a parallel Django backend in `backend-django/`.
+
+- Purpose: migrate endpoint-by-endpoint without breaking the current Node production flow
+- First compatible endpoint: `GET /api/health`
+- Full setup and migration notes: `backend-django/README.md`
+
+Recommended next components for enterprise growth:
+
+- `PostgreSQL` for relational data
+- `Redis` for cache and queue workloads
+- `Celery` for background AI tasks
+
 ## Admin Access
 
 - URL: `http://localhost:3000/admin.html`
@@ -94,9 +108,48 @@ MAGNETO now runs as a custom search engine with:
 ## MAGNETO Assistant AI
 
 - Endpoint: `POST /api/assistant/chat`
+- Admin status endpoint: `GET /api/admin/assistant-status` (requires admin auth)
 - Frontend assistant uses this endpoint automatically.
-- If `OPENAI_API_KEY` is missing or provider is unavailable, assistant falls back to local rule-based suggestions.
-- Keep `OPENAI_API_KEY` in `.env` only. Never expose it in frontend code.
+- Assistant supports multi-provider routing (OpenAI + Anthropic + Gemini) with primary/fallback selection.
+- Routing can be automatic (`smart`) so the assistant picks the best available provider based on helper type and recent provider health.
+- Models can auto-rotate using candidate lists when a model is deprecated or unavailable.
+- If providers are unavailable, assistant falls back to local rule-based suggestions.
+- Keep API keys in `.env` only. Never expose them in frontend code.
+- Hybrid cost-safe mode is enabled by default:
+  - cache-first responses for repeated prompts
+  - simple queries answered locally (`provider: local-hybrid`)
+  - complex queries sent to AI provider when available
+  - helper routing (`general`, `writing`, `weather-live`)
+  - persistent assistant memory stored in `data/assistant-memory.json`
+
+Assistant tuning variables:
+
+- `AI_PRIMARY_PROVIDER` (`openai`, `anthropic`, or `gemini`)
+- `AI_FALLBACK_PROVIDER` (`openai`, `anthropic`, or `gemini`)
+- `AI_ROUTING_MODE` (`smart`, `priority`, or `random`)
+- `OPENAI_API_KEY`
+- `OPENAI_MODEL`
+- `OPENAI_MODEL_CANDIDATES` (comma-separated fallback list)
+- `ANTHROPIC_API_KEY`
+- `ANTHROPIC_MODEL`
+- `ANTHROPIC_MODEL_CANDIDATES` (comma-separated fallback list)
+- `GEMINI_API_KEY`
+- `GEMINI_MODEL`
+- `GEMINI_MODEL_CANDIDATES` (comma-separated fallback list)
+- `ASSISTANT_CACHE_TTL_SECONDS`
+- `ASSISTANT_CACHE_MAX_ENTRIES`
+- `ASSISTANT_MEMORY_MAX_ITEMS`
+- `ASSISTANT_SIMPLE_QUERY_WORDS`
+
+Assistant billing observability:
+
+- Check runtime/AI status from `GET /api/admin/assistant-status`
+- This includes provider config, routing mode, provider health, helper/provider metrics, cache hits, and last provider error (for quota/billing diagnostics)
+- It also includes active model per provider and model candidate lists used for automatic model rollover.
+
+Model note:
+
+- You can set newer OpenAI models (for example `gpt-5-mini` or `gpt-5`) in `OPENAI_MODEL` if your API account has access.
 
 ## Deploy Notes
 

@@ -14,11 +14,70 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "change-this-password";
 const OPENAI_API_KEY = String(process.env.OPENAI_API_KEY || "").trim();
 const OPENAI_MODEL =
   String(process.env.OPENAI_MODEL || "gpt-4o-mini").trim() || "gpt-4o-mini";
+const ANTHROPIC_API_KEY = String(process.env.ANTHROPIC_API_KEY || "").trim();
+const ANTHROPIC_MODEL =
+  String(process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-latest").trim() ||
+  "claude-3-5-sonnet-latest";
+const GEMINI_API_KEY = String(process.env.GEMINI_API_KEY || "").trim();
+const GEMINI_MODEL =
+  String(process.env.GEMINI_MODEL || "gemini-1.5-flash").trim() ||
+  "gemini-1.5-flash";
+
+function parseModelCandidates(value, defaults) {
+  const list = String(value || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const merged = [...list, ...defaults];
+  return [...new Set(merged)];
+}
+
+const OPENAI_MODEL_CANDIDATES = parseModelCandidates(
+  process.env.OPENAI_MODEL_CANDIDATES,
+  [OPENAI_MODEL, "gpt-5-mini", "gpt-4.1-mini", "gpt-4o-mini"],
+);
+const ANTHROPIC_MODEL_CANDIDATES = parseModelCandidates(
+  process.env.ANTHROPIC_MODEL_CANDIDATES,
+  [ANTHROPIC_MODEL, "claude-3-5-sonnet-latest", "claude-3-5-haiku-latest"],
+);
+const GEMINI_MODEL_CANDIDATES = parseModelCandidates(
+  process.env.GEMINI_MODEL_CANDIDATES,
+  [GEMINI_MODEL, "gemini-1.5-flash", "gemini-1.5-pro"],
+);
+
+function normalizeAiProvider(input, fallback = "openai") {
+  const normalized = String(input || "")
+    .trim()
+    .toLowerCase();
+  if (
+    normalized === "openai" ||
+    normalized === "anthropic" ||
+    normalized === "gemini"
+  ) {
+    return normalized;
+  }
+
+  return fallback;
+}
+
+const AI_PRIMARY_PROVIDER = normalizeAiProvider(
+  process.env.AI_PRIMARY_PROVIDER,
+  "openai",
+);
+const AI_FALLBACK_PROVIDER = normalizeAiProvider(
+  process.env.AI_FALLBACK_PROVIDER,
+  AI_PRIMARY_PROVIDER === "openai" ? "anthropic" : "openai",
+);
+const AI_ROUTING_MODE =
+  String(process.env.AI_ROUTING_MODE || "smart")
+    .trim()
+    .toLowerCase() || "smart";
 
 const dataDir = path.join(__dirname, "data");
 const analyticsPath = path.join(dataDir, "analytics.json");
 const searchIndexPath = path.join(dataDir, "search-index.json");
 const backupDir = path.join(dataDir, "backups");
+const assistantMemoryPath = path.join(dataDir, "assistant-memory.json");
 
 function envNumber(
   name,
@@ -72,18 +131,109 @@ const TREND_WEEKLY_POINTS = envNumber("TREND_WEEKLY_POINTS", 8, {
 });
 const ASSISTANT_WINDOW_MS =
   envNumber("ASSISTANT_WINDOW_SECONDS", 60, { min: 5, max: 600 }) * 1000;
-const ASSISTANT_RATE_LIMIT_COUNT = envNumber("ASSISTANT_RATE_LIMIT_COUNT", 30, {
-  min: 3,
-  max: 600,
+const ASSISTANT_RATE_LIMIT_COUNT = envNumber(
+  "ASSISTANT_RATE_LIMIT_COUNT",
+  240,
+  {
+    min: 10,
+    max: 5000,
+  },
+);
+const ASSISTANT_MAX_CHARS = envNumber("ASSISTANT_MAX_CHARS", 4000, {
+  min: 200,
+  max: 12000,
 });
-const ASSISTANT_MAX_CHARS = envNumber("ASSISTANT_MAX_CHARS", 500, {
-  min: 80,
+const ASSISTANT_HISTORY_MESSAGES = envNumber("ASSISTANT_HISTORY_MESSAGES", 14, {
+  min: 4,
+  max: 40,
+});
+const ASSISTANT_HISTORY_CHARS = envNumber("ASSISTANT_HISTORY_CHARS", 1200, {
+  min: 200,
+  max: 6000,
+});
+const ASSISTANT_REPLY_MAX_CHARS = envNumber("ASSISTANT_REPLY_MAX_CHARS", 1200, {
+  min: 280,
   max: 4000,
 });
+const ASSISTANT_MODEL_TEMPERATURE = envNumber(
+  "ASSISTANT_MODEL_TEMPERATURE",
+  0.5,
+  {
+    min: 0,
+    max: 1,
+  },
+);
+const ASSISTANT_OPENAI_MAX_TOKENS = envNumber(
+  "ASSISTANT_OPENAI_MAX_TOKENS",
+  900,
+  {
+    min: 120,
+    max: 4000,
+  },
+);
+const ASSISTANT_ANTHROPIC_MAX_TOKENS = envNumber(
+  "ASSISTANT_ANTHROPIC_MAX_TOKENS",
+  900,
+  {
+    min: 120,
+    max: 4000,
+  },
+);
+const ASSISTANT_GEMINI_MAX_TOKENS = envNumber(
+  "ASSISTANT_GEMINI_MAX_TOKENS",
+  900,
+  {
+    min: 120,
+    max: 4000,
+  },
+);
+const ASSISTANT_CACHE_TTL_MS =
+  envNumber("ASSISTANT_CACHE_TTL_SECONDS", 900, { min: 30, max: 86400 }) * 1000;
+const ASSISTANT_CACHE_MAX_ENTRIES = envNumber(
+  "ASSISTANT_CACHE_MAX_ENTRIES",
+  500,
+  {
+    min: 50,
+    max: 20000,
+  },
+);
+const ASSISTANT_MEMORY_MAX_ITEMS = envNumber(
+  "ASSISTANT_MEMORY_MAX_ITEMS",
+  2000,
+  {
+    min: 100,
+    max: 100000,
+  },
+);
+const ASSISTANT_SIMPLE_QUERY_WORDS = envNumber(
+  "ASSISTANT_SIMPLE_QUERY_WORDS",
+  5,
+  {
+    min: 2,
+    max: 20,
+  },
+);
 
 const loginAttemptMap = new Map();
 const adminRateMap = new Map();
 const assistantRateMap = new Map();
+const assistantCacheMap = new Map();
+const assistantContextMap = new Map();
+const assistantProviderHealthMap = new Map();
+const assistantProviderModelStateMap = new Map();
+const assistantMetrics = {
+  requestsTotal: 0,
+  cacheHits: 0,
+  localHybridResponses: 0,
+  openaiResponses: 0,
+  anthropicResponses: 0,
+  geminiResponses: 0,
+  fallbackResponses: 0,
+  lastProviderError: "",
+  lastProviderErrorAt: "",
+  providerCounts: {},
+  helperCounts: {},
+};
 let lastBackupAt = 0;
 
 app.use(express.json({ limit: "250kb" }));
@@ -102,6 +252,14 @@ function ensureAnalyticsFile() {
     fs.writeFileSync(
       analyticsPath,
       JSON.stringify({ searches: [], pageViews: [] }, null, 2),
+      "utf8",
+    );
+  }
+
+  if (!fs.existsSync(assistantMemoryPath)) {
+    fs.writeFileSync(
+      assistantMemoryPath,
+      JSON.stringify({ chats: [] }, null, 2),
       "utf8",
     );
   }
@@ -586,6 +744,542 @@ function normalizeAssistantSuggestions(value) {
     .slice(0, 3);
 }
 
+function incrementMetricCounter(counter, key) {
+  const normalized =
+    String(key || "unknown")
+      .trim()
+      .toLowerCase() || "unknown";
+  counter[normalized] = (counter[normalized] || 0) + 1;
+}
+
+function classifyAssistantHelper(message) {
+  const normalized = normalizeAssistantQueryKey(message);
+  if (
+    /\b(weather|forecast|temperature|temp|meteo|vreme|temperatura|ploaie|rain|snow|wind|vant)\b/.test(
+      normalized,
+    )
+  ) {
+    return "weather";
+  }
+
+  if (
+    /\b(write|rewrite|summarize|summary|email|message|copy|draft|resume|cover letter|scrie|rescrie|rezuma|rezum|mesaj|mail|cv|text)\b/.test(
+      normalized,
+    )
+  ) {
+    return "writing";
+  }
+
+  return "general";
+}
+
+function normalizeAssistantQueryKey(text) {
+  return String(text || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .slice(0, 400);
+}
+
+function getAssistantCacheEntry(key) {
+  const entry = assistantCacheMap.get(key);
+  if (!entry) {
+    return null;
+  }
+
+  if (Date.now() > entry.expiresAt) {
+    assistantCacheMap.delete(key);
+    return null;
+  }
+
+  return entry.value;
+}
+
+function setAssistantCacheEntry(key, value) {
+  assistantCacheMap.set(key, {
+    value,
+    expiresAt: Date.now() + ASSISTANT_CACHE_TTL_MS,
+  });
+
+  if (assistantCacheMap.size <= ASSISTANT_CACHE_MAX_ENTRIES) {
+    return;
+  }
+
+  const overflow = assistantCacheMap.size - ASSISTANT_CACHE_MAX_ENTRIES;
+  const keys = assistantCacheMap.keys();
+  for (let i = 0; i < overflow; i += 1) {
+    const next = keys.next();
+    if (next.done) {
+      break;
+    }
+    assistantCacheMap.delete(next.value);
+  }
+}
+
+function isSimpleAssistantQuery(message) {
+  // Premium mode: route conversational requests to AI providers.
+  void message;
+  return false;
+}
+
+function buildRuleBasedAssistantResponse(message) {
+  const raw = String(message || "").trim();
+  const q = raw.toLowerCase();
+
+  if (!raw) {
+    return {
+      reply: "Tell me what you want to search and I will refine it.",
+      suggestions: [
+        "latest news today",
+        "best laptops 2026",
+        "javascript tutorial",
+      ],
+    };
+  }
+
+  if (/weather|rain|sun|forecast/.test(q)) {
+    return {
+      reply: "Add city and timeframe for more precise weather results.",
+      suggestions: [
+        `${raw} in my city`,
+        `${raw} this weekend`,
+        "hourly weather forecast",
+      ],
+    };
+  }
+
+  if (/news|politics|economy/.test(q)) {
+    return {
+      reply: "Try trusted sources and a specific timeframe.",
+      suggestions: [
+        `${raw} last 24 hours`,
+        `${raw} trusted sources`,
+        `${raw} analysis`,
+      ],
+    };
+  }
+
+  if (/job|career|cv|hiring/.test(q)) {
+    return {
+      reply: "Include location and seniority to narrow job results.",
+      suggestions: [`${raw} remote`, `${raw} entry level`, `${raw} salary`],
+    };
+  }
+
+  return {
+    reply: "Good topic. Here are refined search options.",
+    suggestions: [`${raw} guide`, `${raw} 2026`, `${raw} explained`],
+  };
+}
+
+function detectAssistantLanguage(message) {
+  const normalized = normalizeAssistantQueryKey(message);
+  if (
+    /\b(ce|vreme|acum|azi|maine|salut|buna|romanian|romana|schimba limba|in bucuresti|in romania)\b/.test(
+      normalized,
+    )
+  ) {
+    return "ro";
+  }
+
+  return "en";
+}
+
+function hasRecentWeatherContext(history) {
+  if (!Array.isArray(history) || history.length === 0) {
+    return false;
+  }
+
+  const recentText = history
+    .slice(-6)
+    .map((item) => String(item?.content || ""))
+    .join(" ")
+    .toLowerCase();
+
+  return /\b(weather|forecast|temperature|temp|meteo|vreme|temperatura|wind|vant|km\/h)\b/.test(
+    recentText,
+  );
+}
+
+function isLikelyCityFollowUp(message) {
+  const normalized = normalizeAssistantQueryKey(message);
+  return /^(si\s+)?(dar\s+)?(in|la|for|din)\s+[a-z\s\-']{2,50}\??$/.test(
+    normalized,
+  );
+}
+
+function hasIpWeatherContext(ip) {
+  const key = String(ip || "unknown");
+  const context = assistantContextMap.get(key);
+  if (!context || !context.lastWeatherAt) {
+    return false;
+  }
+
+  return Date.now() - context.lastWeatherAt <= 10 * 60 * 1000;
+}
+
+function markIpWeatherContext(ip) {
+  const key = String(ip || "unknown");
+  assistantContextMap.set(key, { lastWeatherAt: Date.now() });
+}
+
+function isWeatherAssistantQuery(message, history, ip) {
+  const normalized = normalizeAssistantQueryKey(message);
+  if (
+    /\b(weather|forecast|temperature|temp|meteo|vreme|temperatura)\b/.test(
+      normalized,
+    )
+  ) {
+    return true;
+  }
+
+  return (
+    isLikelyCityFollowUp(message) &&
+    (hasRecentWeatherContext(history) || hasIpWeatherContext(ip))
+  );
+}
+
+function extractCityFromWeatherQuery(message) {
+  const raw = String(message || "").trim();
+  if (!raw) {
+    return "";
+  }
+
+  const patterns = [
+    /\b(?:in|for|la)\s+([a-zA-Z\s\-']{2,50})/i,
+    /\b(?:din)\s+([a-zA-Z\s\-']{2,50})/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = raw.match(pattern);
+    if (!match || !match[1]) {
+      continue;
+    }
+
+    let city = String(match[1]).trim();
+    city = city
+      .replace(
+        /\b(now|right now|currently|today|tomorrow|acum|azi|maine)\b/gi,
+        "",
+      )
+      .trim();
+    city = city.replace(/[?.!,;:]+$/g, "").trim();
+    if (city) {
+      return city;
+    }
+  }
+
+  return "";
+}
+
+function getWeatherCodeDescription(code, language) {
+  const map = {
+    0: { en: "clear sky", ro: "cer senin" },
+    1: { en: "mostly clear", ro: "mai mult senin" },
+    2: { en: "partly cloudy", ro: "partial noros" },
+    3: { en: "overcast", ro: "noros" },
+    45: { en: "fog", ro: "ceata" },
+    48: { en: "fog", ro: "ceata" },
+    51: { en: "light drizzle", ro: "burnita usoara" },
+    53: { en: "drizzle", ro: "burnita" },
+    55: { en: "dense drizzle", ro: "burnita intensa" },
+    61: { en: "light rain", ro: "ploaie usoara" },
+    63: { en: "rain", ro: "ploaie" },
+    65: { en: "heavy rain", ro: "ploaie puternica" },
+    71: { en: "light snow", ro: "ninsoare usoara" },
+    73: { en: "snow", ro: "ninsoare" },
+    75: { en: "heavy snow", ro: "ninsoare abundenta" },
+    80: { en: "rain showers", ro: "averse" },
+    81: { en: "rain showers", ro: "averse" },
+    82: { en: "strong rain showers", ro: "averse puternice" },
+    95: { en: "thunderstorm", ro: "furtuna" },
+  };
+
+  const entry = map[Number(code)] || {
+    en: "variable conditions",
+    ro: "conditii variabile",
+  };
+  return language === "ro" ? entry.ro : entry.en;
+}
+
+async function geocodeCityByName(city, language) {
+  const response = await fetch(
+    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=${language}&format=json`,
+  );
+  if (!response.ok) {
+    throw new Error("Could not resolve city coordinates.");
+  }
+
+  const data = await response.json();
+  const result = Array.isArray(data?.results) ? data.results[0] : null;
+  if (!result) {
+    throw new Error("City not found.");
+  }
+
+  return {
+    city: String(result.name || city),
+    country: String(result.country || ""),
+    latitude: Number(result.latitude),
+    longitude: Number(result.longitude),
+  };
+}
+
+async function fetchCurrentWeatherForCoords(latitude, longitude) {
+  const response = await fetch(
+    `https://api.open-meteo.com/v1/forecast?latitude=${encodeURIComponent(latitude)}&longitude=${encodeURIComponent(longitude)}&current=temperature_2m,weather_code,wind_speed_10m&timezone=auto`,
+  );
+  if (!response.ok) {
+    throw new Error("Could not load current weather.");
+  }
+
+  const data = await response.json();
+  const current = data?.current;
+  if (!current || !Number.isFinite(Number(current.temperature_2m))) {
+    throw new Error("Incomplete weather data.");
+  }
+
+  return {
+    temperature: Number(current.temperature_2m),
+    weatherCode: Number(current.weather_code),
+    windSpeed: Number(current.wind_speed_10m),
+  };
+}
+
+async function buildWeatherAssistantResponse(message, ip) {
+  const language = detectAssistantLanguage(message);
+  const requestedCity = extractCityFromWeatherQuery(message);
+
+  let place = null;
+  if (requestedCity) {
+    place = await geocodeCityByName(requestedCity, language);
+  } else {
+    const approx = await resolveApproxLocationByIp(ip);
+    place = {
+      city: approx.city || (language === "ro" ? "locatia ta" : "your location"),
+      country: approx.country || "",
+      latitude: approx.latitude,
+      longitude: approx.longitude,
+    };
+  }
+
+  const weather = await fetchCurrentWeatherForCoords(
+    place.latitude,
+    place.longitude,
+  );
+  const summary = getWeatherCodeDescription(weather.weatherCode, language);
+  const cityLabel = place.country
+    ? `${place.city}, ${place.country}`
+    : String(place.city || "");
+
+  if (language === "ro") {
+    return {
+      reply: `Acum in ${cityLabel}: ${weather.temperature.toFixed(1)}C, ${summary}, vant ${weather.windSpeed.toFixed(0)} km/h.`,
+      suggestions: [
+        `prognoza meteo azi in ${place.city}`,
+        `vreme maine in ${place.city}`,
+        `temperatura saptamana aceasta in ${place.city}`,
+      ],
+    };
+  }
+
+  return {
+    reply: `Current weather in ${cityLabel}: ${weather.temperature.toFixed(1)}C, ${summary}, wind ${weather.windSpeed.toFixed(0)} km/h.`,
+    suggestions: [
+      `today weather in ${place.city}`,
+      `tomorrow forecast in ${place.city}`,
+      `weekly temperature in ${place.city}`,
+    ],
+  };
+}
+
+function isDateOrNewsAssistantQuery(message) {
+  const normalized = normalizeAssistantQueryKey(message);
+  const asksDate =
+    /\b(ce zi|ce zii|ce data|ce dat[ae] e azi|azi ce zi|today|what day|what date|current date|current day)\b/.test(
+      normalized,
+    );
+  const asksNews =
+    /\b(stiri|stire|noutati|news|headlines|breaking|ce mai e nou)\b/.test(
+      normalized,
+    );
+
+  return { asksDate, asksNews, enabled: asksDate || asksNews };
+}
+
+function formatCurrentDateLabel(language) {
+  const now = new Date();
+  const locale = language === "ro" ? "ro-RO" : "en-US";
+  const weekday = new Intl.DateTimeFormat(locale, { weekday: "long" }).format(
+    now,
+  );
+  const dateLabel = new Intl.DateTimeFormat(locale, {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(now);
+  return { weekday, dateLabel };
+}
+
+function extractHeadlinesFromRss(xmlText, limit = 3) {
+  const titles = [];
+  const regex = /<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/gi;
+  let match = regex.exec(String(xmlText || ""));
+  while (match) {
+    const raw = String(match[1] || "")
+      .replace(/&amp;/g, "&")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .trim();
+
+    if (
+      raw &&
+      !/google news|stiri google|știri google|cele mai populare subiecte/i.test(
+        raw,
+      ) &&
+      !titles.includes(raw)
+    ) {
+      titles.push(raw);
+    }
+
+    if (titles.length >= limit + 1) {
+      break;
+    }
+    match = regex.exec(String(xmlText || ""));
+  }
+
+  return titles.slice(0, limit);
+}
+
+async function fetchTopNewsHeadlines(language) {
+  const isRo = language === "ro";
+  const url = isRo
+    ? "https://news.google.com/rss?hl=ro&gl=RO&ceid=RO:ro"
+    : "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en";
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`News feed unavailable (${response.status}).`);
+  }
+
+  const xmlText = await response.text();
+  return extractHeadlinesFromRss(xmlText, 3);
+}
+
+async function buildDateNewsAssistantResponse(message) {
+  const language = detectAssistantLanguage(message);
+  const intent = isDateOrNewsAssistantQuery(message);
+  const dateNow = formatCurrentDateLabel(language);
+  let headlines = [];
+
+  if (intent.asksNews) {
+    try {
+      headlines = await fetchTopNewsHeadlines(language);
+    } catch {
+      headlines = [];
+    }
+  }
+
+  if (language === "ro") {
+    if (intent.asksDate && intent.asksNews) {
+      const newsLine =
+        headlines.length > 0
+          ? `Top stiri acum: ${headlines.join(" | ")}.`
+          : "Nu am putut incarca fluxul live de stiri chiar acum.";
+      return {
+        reply: `Astazi este ${dateNow.weekday}, ${dateNow.dateLabel}. ${newsLine}`,
+        suggestions: [
+          "rezuma prima stire",
+          "stiri business azi",
+          "stiri tech azi",
+        ],
+      };
+    }
+
+    if (intent.asksDate) {
+      return {
+        reply: `Astazi este ${dateNow.weekday}, ${dateNow.dateLabel}.`,
+        suggestions: ["ce ora este acum", "vremea de azi", "agenda pentru azi"],
+      };
+    }
+
+    return {
+      reply:
+        headlines.length > 0
+          ? `Top stiri acum: ${headlines.join(" | ")}.`
+          : "Nu am putut incarca fluxul live de stiri chiar acum.",
+      suggestions: [
+        "rezuma prima stire",
+        "stiri economice azi",
+        "stiri internationale azi",
+      ],
+    };
+  }
+
+  if (intent.asksDate && intent.asksNews) {
+    const newsLine =
+      headlines.length > 0
+        ? `Top news now: ${headlines.join(" | ")}.`
+        : "I could not load the live news feed right now.";
+    return {
+      reply: `Today is ${dateNow.weekday}, ${dateNow.dateLabel}. ${newsLine}`,
+      suggestions: [
+        "summarize headline 1",
+        "business news today",
+        "tech news today",
+      ],
+    };
+  }
+
+  if (intent.asksDate) {
+    return {
+      reply: `Today is ${dateNow.weekday}, ${dateNow.dateLabel}.`,
+      suggestions: ["current time", "today weather", "plan my day"],
+    };
+  }
+
+  return {
+    reply:
+      headlines.length > 0
+        ? `Top news now: ${headlines.join(" | ")}.`
+        : "I could not load the live news feed right now.",
+    suggestions: [
+      "summarize headline 1",
+      "economic news today",
+      "international news today",
+    ],
+  };
+}
+
+function storeAssistantMemory({ ip, message, reply, provider, helper, model }) {
+  const db = readJson(assistantMemoryPath, { chats: [] });
+  const chats = Array.isArray(db.chats) ? db.chats : [];
+  chats.push({
+    id: `a-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+    ip: String(ip || "unknown"),
+    message: String(message || "").slice(0, ASSISTANT_MAX_CHARS),
+    reply: String(reply || "").slice(0, 600),
+    provider: String(provider || "unknown"),
+    helper: String(helper || "general"),
+    model: String(model || "unknown"),
+    at: new Date().toISOString(),
+  });
+
+  db.chats = chats.slice(-ASSISTANT_MEMORY_MAX_ITEMS);
+  writeJson(assistantMemoryPath, db);
+}
+
+function getAssistantMemorySummary() {
+  const db = readJson(assistantMemoryPath, { chats: [] });
+  const chats = Array.isArray(db.chats) ? db.chats : [];
+  const last = chats[chats.length - 1] || null;
+  return {
+    totalChats: chats.length,
+    lastChatAt: last ? String(last.at || "") : "",
+  };
+}
+
 function extractJsonPayload(text) {
   const raw = String(text || "").trim();
   if (!raw) {
@@ -612,18 +1306,25 @@ function extractJsonPayload(text) {
   return null;
 }
 
-async function generateAssistantResponse({ message, history }) {
-  if (!OPENAI_API_KEY) {
-    throw new Error("AI service not configured.");
-  }
+function buildAssistantSystemPrompt(helper) {
+  const helperPrompt =
+    helper === "writing"
+      ? "Focus on writing help: drafting, rewriting, polishing tone, and concise copy improvements."
+      : "Focus on broad practical help, explanation, planning, and actionable guidance.";
 
-  const systemPrompt =
-    "You are MAGNETO Assistant for a web search homepage. " +
-    "Your goal is to refine user search intent and produce practical search query suggestions. " +
-    'Reply with strict JSON only: {"reply": string, "suggestions": string[3]}. ' +
-    "Keep reply under 180 characters. Suggestions must be concise search queries in English.";
+  return (
+    "You are MAGNETO Assistant, a universal assistant for general conversation and practical help. " +
+    `${helperPrompt} ` +
+    "Weather-specific live data is handled separately by system tools. " +
+    'Respond naturally in plain text. JSON format is optional: {"reply": string, "suggestions": string[]}. ' +
+    "Provide complete, useful answers with clear structure when needed. Match the user's language by default. " +
+    "If user asks to change language, switch immediately and continue in that language. " +
+    "Suggestions, if included, should be concise and useful next prompts in the same language as your reply unless the user requests another language."
+  );
+}
 
-  const safeHistory = Array.isArray(history)
+function buildSafeAssistantHistory(history) {
+  return Array.isArray(history)
     ? history
         .filter(
           (item) =>
@@ -631,19 +1332,46 @@ async function generateAssistantResponse({ message, history }) {
             (item.role === "user" || item.role === "assistant") &&
             typeof item.content === "string",
         )
-        .slice(-6)
+        .slice(-ASSISTANT_HISTORY_MESSAGES)
         .map((item) => ({
           role: item.role,
-          content: String(item.content || "").slice(0, 400),
+          content: String(item.content || "").slice(0, ASSISTANT_HISTORY_CHARS),
         }))
     : [];
+}
 
+function parseAssistantModelOutput(content) {
+  const parsed = extractJsonPayload(content);
+  if (parsed && typeof parsed.reply === "string") {
+    return {
+      reply:
+        parsed.reply.trim().slice(0, ASSISTANT_REPLY_MAX_CHARS) ||
+        "Try a narrower follow-up prompt.",
+      suggestions: normalizeAssistantSuggestions(parsed.suggestions),
+    };
+  }
+
+  return {
+    reply:
+      String(content || "").slice(0, ASSISTANT_REPLY_MAX_CHARS) ||
+      "Try a narrower follow-up prompt.",
+    suggestions: [],
+  };
+}
+
+async function generateAssistantResponseOpenAI({ message, history, helper }) {
+  if (!OPENAI_API_KEY) {
+    throw new Error("OpenAI is not configured.");
+  }
+
+  const model = getActiveProviderModel("openai") || OPENAI_MODEL;
+  const safeHistory = buildSafeAssistantHistory(history);
   const payload = {
-    model: OPENAI_MODEL,
-    temperature: 0.4,
-    max_tokens: 220,
+    model,
+    temperature: ASSISTANT_MODEL_TEMPERATURE,
+    max_tokens: ASSISTANT_OPENAI_MAX_TOKENS,
     messages: [
-      { role: "system", content: systemPrompt },
+      { role: "system", content: buildAssistantSystemPrompt(helper) },
       ...safeHistory,
       { role: "user", content: String(message || "") },
     ],
@@ -661,25 +1389,395 @@ async function generateAssistantResponse({ message, history }) {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const providerError =
-      data?.error?.message || `Provider error (${response.status}).`;
+      data?.error?.message || `OpenAI provider error (${response.status}).`;
     throw new Error(providerError);
   }
 
   const content = String(data?.choices?.[0]?.message?.content || "").trim();
-  const parsed = extractJsonPayload(content);
+  const parsed = parseAssistantModelOutput(content);
+  return {
+    provider: "openai",
+    model,
+    ...parsed,
+  };
+}
 
-  if (parsed && typeof parsed.reply === "string") {
-    return {
-      reply:
-        parsed.reply.trim().slice(0, 280) || "Try a narrower search query.",
-      suggestions: normalizeAssistantSuggestions(parsed.suggestions),
-    };
+async function generateAssistantResponseAnthropic({
+  message,
+  history,
+  helper,
+}) {
+  if (!ANTHROPIC_API_KEY) {
+    throw new Error("Anthropic is not configured.");
   }
 
-  return {
-    reply: content.slice(0, 280) || "Try a narrower search query.",
-    suggestions: [],
+  const model = getActiveProviderModel("anthropic") || ANTHROPIC_MODEL;
+
+  const safeHistory = buildSafeAssistantHistory(history).map((item) => ({
+    role: item.role,
+    content: item.content,
+  }));
+
+  const payload = {
+    model,
+    max_tokens: ASSISTANT_ANTHROPIC_MAX_TOKENS,
+    temperature: ASSISTANT_MODEL_TEMPERATURE,
+    system: buildAssistantSystemPrompt(helper),
+    messages: [
+      ...safeHistory,
+      { role: "user", content: String(message || "") },
+    ],
   };
+
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const providerError =
+      data?.error?.message || `Anthropic provider error (${response.status}).`;
+    throw new Error(providerError);
+  }
+
+  const content = Array.isArray(data?.content)
+    ? data.content
+        .filter((item) => item && item.type === "text")
+        .map((item) => String(item.text || ""))
+        .join("\n")
+    : "";
+  const parsed = parseAssistantModelOutput(content);
+  return {
+    provider: "anthropic",
+    model,
+    ...parsed,
+  };
+}
+
+async function generateAssistantResponseGemini({ message, history, helper }) {
+  if (!GEMINI_API_KEY) {
+    throw new Error("Gemini is not configured.");
+  }
+
+  const model = getActiveProviderModel("gemini") || GEMINI_MODEL;
+
+  const safeHistory = buildSafeAssistantHistory(history);
+  const conversation = [
+    ...safeHistory.map((item) => ({
+      role: item.role === "assistant" ? "model" : "user",
+      parts: [{ text: item.content }],
+    })),
+    { role: "user", parts: [{ text: String(message || "") }] },
+  ];
+
+  const payload = {
+    systemInstruction: {
+      parts: [{ text: buildAssistantSystemPrompt(helper) }],
+    },
+    contents: conversation,
+    generationConfig: {
+      temperature: ASSISTANT_MODEL_TEMPERATURE,
+      maxOutputTokens: ASSISTANT_GEMINI_MAX_TOKENS,
+    },
+  };
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    },
+  );
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const providerError =
+      data?.error?.message || `Gemini provider error (${response.status}).`;
+    throw new Error(providerError);
+  }
+
+  const text = Array.isArray(data?.candidates)
+    ? data.candidates
+        .flatMap((candidate) => candidate?.content?.parts || [])
+        .map((part) => String(part?.text || ""))
+        .join("\n")
+    : "";
+
+  const parsed = parseAssistantModelOutput(text);
+  return {
+    provider: "gemini",
+    model,
+    ...parsed,
+  };
+}
+
+function isProviderConfigured(provider) {
+  if (provider === "openai") {
+    return Boolean(OPENAI_API_KEY);
+  }
+
+  if (provider === "anthropic") {
+    return Boolean(ANTHROPIC_API_KEY);
+  }
+
+  if (provider === "gemini") {
+    return Boolean(GEMINI_API_KEY);
+  }
+
+  return false;
+}
+
+function getAssistantProviderOrder() {
+  const ordered = [
+    AI_PRIMARY_PROVIDER,
+    AI_FALLBACK_PROVIDER,
+    "openai",
+    "anthropic",
+    "gemini",
+  ];
+  const unique = [];
+  for (const provider of ordered) {
+    if (!unique.includes(provider)) {
+      unique.push(provider);
+    }
+  }
+
+  return unique;
+}
+
+function getHelperPreferredProviders(helper) {
+  if (helper === "writing") {
+    return ["anthropic", "openai", "gemini"];
+  }
+
+  return ["openai", "gemini", "anthropic"];
+}
+
+function getProviderHealth(provider) {
+  return (
+    assistantProviderHealthMap.get(provider) || {
+      failures: 0,
+      cooldownUntil: 0,
+      lastError: "",
+      lastErrorAt: "",
+    }
+  );
+}
+
+function getProviderModelCandidates(provider) {
+  if (provider === "openai") {
+    return OPENAI_MODEL_CANDIDATES;
+  }
+
+  if (provider === "anthropic") {
+    return ANTHROPIC_MODEL_CANDIDATES;
+  }
+
+  if (provider === "gemini") {
+    return GEMINI_MODEL_CANDIDATES;
+  }
+
+  return [];
+}
+
+function getActiveProviderModel(provider) {
+  const candidates = getProviderModelCandidates(provider);
+  if (candidates.length === 0) {
+    return "";
+  }
+
+  const state = assistantProviderModelStateMap.get(provider) || { index: 0 };
+  const safeIndex = Math.max(
+    0,
+    Math.min(state.index || 0, candidates.length - 1),
+  );
+  state.index = safeIndex;
+  assistantProviderModelStateMap.set(provider, state);
+  return candidates[safeIndex];
+}
+
+function advanceProviderModelCandidate(provider) {
+  const candidates = getProviderModelCandidates(provider);
+  if (candidates.length <= 1) {
+    return false;
+  }
+
+  const state = assistantProviderModelStateMap.get(provider) || { index: 0 };
+  if (state.index >= candidates.length - 1) {
+    return false;
+  }
+
+  state.index += 1;
+  assistantProviderModelStateMap.set(provider, state);
+  return true;
+}
+
+function shouldRotateModelOnError(error) {
+  const text = String(error?.message || "").toLowerCase();
+  return /(model|not found|unknown model|does not exist|deprecated|unsupported)/.test(
+    text,
+  );
+}
+
+function markProviderSuccess(provider) {
+  const state = getProviderHealth(provider);
+  state.failures = 0;
+  state.cooldownUntil = 0;
+  state.lastError = "";
+  state.lastErrorAt = "";
+  assistantProviderHealthMap.set(provider, state);
+}
+
+function markProviderFailure(provider, error) {
+  const state = getProviderHealth(provider);
+  state.failures += 1;
+  const cooldownSeconds = Math.min(120, 8 * state.failures);
+  state.cooldownUntil = Date.now() + cooldownSeconds * 1000;
+  state.lastError = String(error?.message || "Provider unavailable");
+  state.lastErrorAt = new Date().toISOString();
+  assistantProviderHealthMap.set(provider, state);
+}
+
+function shuffleArray(items) {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+
+  return copy;
+}
+
+function rankProvidersSmart(availableProviders, helper) {
+  const preferred = getHelperPreferredProviders(helper);
+  const now = Date.now();
+
+  return [...availableProviders]
+    .map((provider) => {
+      const prefIndex = preferred.indexOf(provider);
+      const prefScore = prefIndex === -1 ? 0 : preferred.length - prefIndex;
+      const health = getProviderHealth(provider);
+      const inCooldown = health.cooldownUntil > now ? 1 : 0;
+      const failurePenalty = Math.min(3, Number(health.failures || 0));
+      const jitter = Math.random() * 0.35;
+      const score = prefScore + jitter - failurePenalty - inCooldown * 10;
+      return { provider, score };
+    })
+    .sort((a, b) => b.score - a.score)
+    .map((item) => item.provider);
+}
+
+function selectProvidersForRequest(helper) {
+  const configured = getAssistantProviderOrder().filter((provider) =>
+    isProviderConfigured(provider),
+  );
+
+  if (AI_ROUTING_MODE === "random") {
+    return shuffleArray(configured);
+  }
+
+  if (AI_ROUTING_MODE === "priority") {
+    return configured;
+  }
+
+  return rankProvidersSmart(configured, helper);
+}
+
+async function generateAssistantResponse({ message, history, helper }) {
+  const providers = selectProvidersForRequest(helper);
+  if (providers.length === 0) {
+    throw new Error("No AI provider is configured.");
+  }
+
+  let lastError = null;
+  for (const provider of providers) {
+    try {
+      if (provider === "openai") {
+        const result = await generateAssistantResponseOpenAI({
+          message,
+          history,
+          helper,
+        });
+        markProviderSuccess(provider);
+        return result;
+      }
+
+      if (provider === "anthropic") {
+        const result = await generateAssistantResponseAnthropic({
+          message,
+          history,
+          helper,
+        });
+        markProviderSuccess(provider);
+        return result;
+      }
+
+      if (provider === "gemini") {
+        const result = await generateAssistantResponseGemini({
+          message,
+          history,
+          helper,
+        });
+        markProviderSuccess(provider);
+        return result;
+      }
+    } catch (error) {
+      if (shouldRotateModelOnError(error)) {
+        const rotated = advanceProviderModelCandidate(provider);
+        if (rotated) {
+          try {
+            if (provider === "openai") {
+              const retryOpenAi = await generateAssistantResponseOpenAI({
+                message,
+                history,
+                helper,
+              });
+              markProviderSuccess(provider);
+              return retryOpenAi;
+            }
+
+            if (provider === "anthropic") {
+              const retryAnthropic = await generateAssistantResponseAnthropic({
+                message,
+                history,
+                helper,
+              });
+              markProviderSuccess(provider);
+              return retryAnthropic;
+            }
+
+            if (provider === "gemini") {
+              const retryGemini = await generateAssistantResponseGemini({
+                message,
+                history,
+                helper,
+              });
+              markProviderSuccess(provider);
+              return retryGemini;
+            }
+          } catch (retryError) {
+            markProviderFailure(provider, retryError);
+            lastError = retryError;
+            continue;
+          }
+        }
+      }
+
+      markProviderFailure(provider, error);
+      lastError = error;
+    }
+  }
+
+  throw lastError || new Error("All AI providers failed.");
 }
 
 function sanitizeIpForLookup(ip) {
@@ -983,8 +2081,12 @@ app.post("/api/assistant/chat", async (req, res) => {
     return;
   }
 
+  assistantMetrics.requestsTotal += 1;
+
+  const ip = getClientIp(req);
   const message = String(req.body?.message || "").trim();
   const history = req.body?.history;
+  const helper = classifyAssistantHelper(message);
 
   if (!message) {
     res.status(400).json({ error: "Message is required." });
@@ -998,31 +2100,207 @@ app.post("/api/assistant/chat", async (req, res) => {
     return;
   }
 
+  const cacheKey = normalizeAssistantQueryKey(message);
+  const weatherIntent = isWeatherAssistantQuery(message, history, ip);
+  const dateNewsIntent = isDateOrNewsAssistantQuery(message);
+
+  // Weather intent has priority over stale generic cache entries.
+  if (weatherIntent) {
+    try {
+      const weather = await buildWeatherAssistantResponse(message, ip);
+      assistantMetrics.localHybridResponses += 1;
+      markIpWeatherContext(ip);
+      setAssistantCacheEntry(cacheKey, {
+        model: "weather-live",
+        helper: "weather",
+        reply: weather.reply,
+        suggestions: weather.suggestions,
+      });
+      storeAssistantMemory({
+        ip,
+        message,
+        reply: weather.reply,
+        provider: "weather-live",
+        helper: "weather",
+        model: "weather-live",
+      });
+      incrementMetricCounter(assistantMetrics.providerCounts, "weather-live");
+      incrementMetricCounter(assistantMetrics.helperCounts, "weather");
+      res.json({
+        ok: true,
+        provider: "weather-live",
+        model: "weather-live",
+        helper: "weather",
+        reply: weather.reply,
+        suggestions: weather.suggestions,
+      });
+      return;
+    } catch {
+      // Continue normal assistant flow (AI/fallback) if weather providers are unavailable.
+    }
+  }
+
+  if (dateNewsIntent.enabled) {
+    const dateNews = await buildDateNewsAssistantResponse(message);
+    assistantMetrics.localHybridResponses += 1;
+    setAssistantCacheEntry(cacheKey, {
+      model: "date-news-live",
+      helper: "general",
+      reply: dateNews.reply,
+      suggestions: dateNews.suggestions,
+    });
+    storeAssistantMemory({
+      ip,
+      message,
+      reply: dateNews.reply,
+      provider: "date-news-live",
+      helper: "general",
+      model: "date-news-live",
+    });
+    incrementMetricCounter(assistantMetrics.providerCounts, "date-news-live");
+    incrementMetricCounter(assistantMetrics.helperCounts, "general");
+    res.json({
+      ok: true,
+      provider: "date-news-live",
+      model: "date-news-live",
+      helper: "general",
+      reply: dateNews.reply,
+      suggestions: dateNews.suggestions,
+    });
+    return;
+  }
+
+  const cached = getAssistantCacheEntry(cacheKey);
+  if (cached) {
+    assistantMetrics.cacheHits += 1;
+    storeAssistantMemory({
+      ip,
+      message,
+      reply: cached.reply,
+      provider: "cache",
+      helper: cached.helper || helper,
+      model: cached.model || "hybrid",
+    });
+    incrementMetricCounter(assistantMetrics.providerCounts, "cache");
+    incrementMetricCounter(
+      assistantMetrics.helperCounts,
+      cached.helper || helper,
+    );
+    res.json({
+      ok: true,
+      provider: "cache",
+      model: cached.model || "hybrid",
+      helper: cached.helper || helper,
+      reply: cached.reply,
+      suggestions: cached.suggestions,
+    });
+    return;
+  }
+
+  if (isSimpleAssistantQuery(message)) {
+    assistantMetrics.localHybridResponses += 1;
+    const localHelper = helper === "writing" ? "writing" : "general";
+    const local = buildRuleBasedAssistantResponse(message);
+    setAssistantCacheEntry(cacheKey, {
+      model: "rule-based",
+      helper: localHelper,
+      reply: local.reply,
+      suggestions: local.suggestions,
+    });
+    storeAssistantMemory({
+      ip,
+      message,
+      reply: local.reply,
+      provider: "local-hybrid",
+      helper: localHelper,
+      model: "rule-based",
+    });
+    incrementMetricCounter(assistantMetrics.providerCounts, "local-hybrid");
+    incrementMetricCounter(assistantMetrics.helperCounts, localHelper);
+    res.json({
+      ok: true,
+      provider: "local-hybrid",
+      model: "rule-based",
+      helper: localHelper,
+      reply: local.reply,
+      suggestions: local.suggestions,
+    });
+    return;
+  }
+
   try {
-    const ai = await generateAssistantResponse({ message, history });
+    const ai = await generateAssistantResponse({ message, history, helper });
     const suggestions =
       ai.suggestions.length > 0
         ? ai.suggestions
         : [`${message} guide`, `${message} 2026`, `${message} explained`];
 
+    if (ai.provider === "openai") {
+      assistantMetrics.openaiResponses += 1;
+    } else if (ai.provider === "anthropic") {
+      assistantMetrics.anthropicResponses += 1;
+    } else if (ai.provider === "gemini") {
+      assistantMetrics.geminiResponses += 1;
+    } else {
+      assistantMetrics.localHybridResponses += 1;
+    }
+    incrementMetricCounter(assistantMetrics.providerCounts, ai.provider);
+    incrementMetricCounter(assistantMetrics.helperCounts, helper);
+    setAssistantCacheEntry(cacheKey, {
+      model: ai.model,
+      helper,
+      reply: ai.reply,
+      suggestions,
+    });
+    storeAssistantMemory({
+      ip,
+      message,
+      reply: ai.reply,
+      provider: ai.provider,
+      helper,
+      model: ai.model,
+    });
+
     res.json({
       ok: true,
-      provider: OPENAI_API_KEY ? "openai" : "local",
-      model: OPENAI_MODEL,
+      provider: ai.provider,
+      model: ai.model,
+      helper,
       reply: ai.reply,
       suggestions,
     });
   } catch (error) {
+    assistantMetrics.fallbackResponses += 1;
+    assistantMetrics.lastProviderError = String(
+      error?.message || "Assistant provider unavailable.",
+    );
+    assistantMetrics.lastProviderErrorAt = new Date().toISOString();
+
+    const fallback = buildRuleBasedAssistantResponse(message);
+    setAssistantCacheEntry(cacheKey, {
+      model: "rule-based",
+      helper,
+      reply: fallback.reply,
+      suggestions: fallback.suggestions,
+    });
+    storeAssistantMemory({
+      ip,
+      message,
+      reply: fallback.reply,
+      provider: "fallback",
+      helper,
+      model: "rule-based",
+    });
+    incrementMetricCounter(assistantMetrics.providerCounts, "fallback");
+    incrementMetricCounter(assistantMetrics.helperCounts, helper);
+
     res.json({
       ok: true,
       provider: "fallback",
       model: "rule-based",
-      reply: "I can help refine this. Try one of these focused searches.",
-      suggestions: [
-        `${message} guide`,
-        `${message} latest updates`,
-        `${message} best resources`,
-      ],
+      helper,
+      reply: fallback.reply,
+      suggestions: fallback.suggestions,
       warning: String(error?.message || "Assistant provider unavailable."),
     });
   }
@@ -1051,6 +2329,91 @@ app.get("/api/location/auto", async (req, res) => {
 });
 
 app.use("/api/admin", checkAdminRateLimit);
+
+app.get("/api/admin/assistant-status", adminAuth, (_req, res) => {
+  const memory = getAssistantMemorySummary();
+  const providers = {
+    routingMode: AI_ROUTING_MODE,
+    primary: AI_PRIMARY_PROVIDER,
+    fallback: AI_FALLBACK_PROVIDER,
+    configured: {
+      openai: Boolean(OPENAI_API_KEY),
+      anthropic: Boolean(ANTHROPIC_API_KEY),
+      gemini: Boolean(GEMINI_API_KEY),
+    },
+    models: {
+      openai: OPENAI_MODEL,
+      anthropic: ANTHROPIC_MODEL,
+      gemini: GEMINI_MODEL,
+    },
+    activeModels: {
+      openai: getActiveProviderModel("openai") || OPENAI_MODEL,
+      anthropic: getActiveProviderModel("anthropic") || ANTHROPIC_MODEL,
+      gemini: getActiveProviderModel("gemini") || GEMINI_MODEL,
+    },
+    modelCandidates: {
+      openai: OPENAI_MODEL_CANDIDATES,
+      anthropic: ANTHROPIC_MODEL_CANDIDATES,
+      gemini: GEMINI_MODEL_CANDIDATES,
+    },
+    health: Object.fromEntries(assistantProviderHealthMap.entries()),
+  };
+  const anyProviderConfigured = Object.values(providers.configured).some(
+    Boolean,
+  );
+
+  res.json({
+    generatedAt: new Date().toISOString(),
+    assistant: {
+      configured: anyProviderConfigured,
+      model: `${providers.primary}:${providers.models[providers.primary] || OPENAI_MODEL}`,
+      providers,
+      limits: {
+        windowSeconds: Math.round(ASSISTANT_WINDOW_MS / 1000),
+        rateLimitCount: ASSISTANT_RATE_LIMIT_COUNT,
+        maxChars: ASSISTANT_MAX_CHARS,
+        historyMessages: ASSISTANT_HISTORY_MESSAGES,
+        historyChars: ASSISTANT_HISTORY_CHARS,
+        replyMaxChars: ASSISTANT_REPLY_MAX_CHARS,
+        modelTemperature: ASSISTANT_MODEL_TEMPERATURE,
+        providerMaxTokens: {
+          openai: ASSISTANT_OPENAI_MAX_TOKENS,
+          anthropic: ASSISTANT_ANTHROPIC_MAX_TOKENS,
+          gemini: ASSISTANT_GEMINI_MAX_TOKENS,
+        },
+        simpleQueryWords: ASSISTANT_SIMPLE_QUERY_WORDS,
+      },
+      cache: {
+        ttlSeconds: Math.round(ASSISTANT_CACHE_TTL_MS / 1000),
+        maxEntries: ASSISTANT_CACHE_MAX_ENTRIES,
+        currentEntries: assistantCacheMap.size,
+      },
+      memory: {
+        path: "data/assistant-memory.json",
+        ...memory,
+        maxItems: ASSISTANT_MEMORY_MAX_ITEMS,
+      },
+      metrics: assistantMetrics,
+      billing: {
+        note: "Billing and quota are managed separately for each AI provider account.",
+        openai: {
+          overviewUrl:
+            "https://platform.openai.com/settings/organization/billing/overview",
+          usageUrl: "https://platform.openai.com/usage",
+        },
+        anthropic: {
+          overviewUrl: "https://console.anthropic.com/settings/plans",
+          usageUrl: "https://console.anthropic.com/settings/usage",
+        },
+        gemini: {
+          overviewUrl: "https://aistudio.google.com/",
+          usageUrl:
+            "https://console.cloud.google.com/apis/api/generativelanguage.googleapis.com/quotas",
+        },
+      },
+    },
+  });
+});
 
 app.get("/api/admin/overview", adminAuth, (req, res) => {
   const analytics = readJson(analyticsPath, { searches: [], pageViews: [] });

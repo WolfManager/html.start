@@ -112,6 +112,31 @@
           </article>
         </div>
 
+        <section class="result-card admin-assistant-status-wrap">
+          <div class="admin-header-row admin-assistant-status-header">
+            <h3 class="admin-block-title">Assistant AI Status</h3>
+            <button
+              id="adminAssistantStatusRefreshBtn"
+              type="button"
+              class="results-back-link"
+            >
+              Refresh AI Status
+            </button>
+          </div>
+
+          <div
+            id="adminAssistantStatusGrid"
+            class="admin-assistant-status-grid"
+          >
+            <p class="admin-chart-empty">Loading assistant status...</p>
+          </div>
+
+          <p
+            id="adminAssistantStatusUpdatedAt"
+            class="admin-assistant-meta"
+          ></p>
+        </section>
+
         <section class="result-card admin-backup-wrap">
           <div class="admin-header-row admin-backup-header">
             <h3 class="admin-block-title">Analytics Backups</h3>
@@ -221,6 +246,6 @@
       </p>
     </main>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=20260308d"></script>
   </body>
 </html>

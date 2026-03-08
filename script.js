@@ -12,7 +12,6 @@ const weatherPanel = document.querySelector(".weather-panel");
 const rightPanel = document.querySelector(".right-panel");
 
 const assistantThread = document.getElementById("assistantThread");
-const assistantSuggestions = document.getElementById("assistantSuggestions");
 const assistantForm = document.getElementById("assistantForm");
 const assistantInput = document.getElementById("assistantInput");
 
@@ -46,22 +45,28 @@ const adminBackupList = document.getElementById("adminBackupList");
 const adminBackupRefreshBtn = document.getElementById("adminBackupRefreshBtn");
 const adminBackupCreateBtn = document.getElementById("adminBackupCreateBtn");
 const adminBackupReason = document.getElementById("adminBackupReason");
+const adminAssistantStatusGrid = document.getElementById(
+  "adminAssistantStatusGrid",
+);
+const adminAssistantStatusUpdatedAt = document.getElementById(
+  "adminAssistantStatusUpdatedAt",
+);
+const adminAssistantStatusRefreshBtn = document.getElementById(
+  "adminAssistantStatusRefreshBtn",
+);
 
 const ADMIN_TOKEN_KEY = "magneto.admin.token";
 let currentAdminRange = "all";
 let currentBackupReason = "all";
 
 function syncSidePanelHeights() {
-  if (!weatherPanel || !rightPanel) {
+  if (!rightPanel) {
     return;
   }
 
-  // Keep assistant equal to weather height without forcing weather to grow.
+  // Keep panel sizing controlled by CSS fixed-height rules.
   rightPanel.style.minHeight = "";
-  const weatherHeight = Math.ceil(weatherPanel.getBoundingClientRect().height);
-  if (weatherHeight > 0) {
-    rightPanel.style.minHeight = `${weatherHeight}px`;
-  }
+  rightPanel.style.height = "";
 }
 
 function updateStatus(message, isError = false) {
@@ -90,8 +95,13 @@ function buildAssistantContent(rawQuery) {
 
   if (!query) {
     return {
-      message: "Start with a topic and I will suggest a more precise query.",
-      suggestions: ["world news today", "javascript tutorials", "remote jobs"],
+      message:
+        "Ask me anything. I can help with weather, writing, ideas, planning, and more.",
+      suggestions: [
+        "What can you help me with?",
+        "Summarize this text",
+        "Plan my day",
+      ],
     };
   }
 
@@ -99,11 +109,12 @@ function buildAssistantContent(rawQuery) {
 
   if (/weather|rain|sun|forecast/.test(normalized)) {
     return {
-      message: "Add city + date for better weather results.",
+      message:
+        "I can check live weather details. Include city and timeframe for best accuracy.",
       suggestions: [
-        `${query} this weekend`,
-        `${query} in my city`,
-        "hourly weather forecast",
+        "weather now in Bucharest",
+        "weather tomorrow in my city",
+        "weekend forecast in Cluj",
       ],
     };
   }
@@ -142,8 +153,12 @@ function buildAssistantContent(rawQuery) {
   }
 
   return {
-    message: `Great query. Here are 3 refined versions for "${query}".`,
-    suggestions: [`${query} guide`, `${query} 2026`, `${query} explained`],
+    message: "I can help with that. Here are some useful next prompts.",
+    suggestions: [
+      `Explain ${query} simply`,
+      `Give me practical steps for ${query}`,
+      `What are the pros and cons of ${query}?`,
+    ],
   };
 }
 
@@ -162,19 +177,13 @@ function updateAssistant(query) {
     button.textContent = suggestion;
 
     button.addEventListener("click", () => {
-      if (!searchQuery) {
+      if (!assistantInput) {
         return;
       }
 
-      searchQuery.value = suggestion;
-      searchQuery.focus();
-      updateStatus(`Suggestion applied: ${suggestion}`);
-      addAssistantMessage("user", suggestion);
-      addAssistantMessage(
-        "bot",
-        "Running search with your selected suggestion.",
-      );
-      window.location.href = `results.html?q=${encodeURIComponent(suggestion)}`;
+      assistantInput.value = suggestion;
+      assistantInput.focus();
+      updateStatus(`Assistant suggestion selected: ${suggestion}`);
     });
 
     assistantSuggestions.appendChild(button);
@@ -227,59 +236,26 @@ async function requestAssistantResponse(userText) {
       suggestions: suggestions.slice(0, 3),
       provider: String(payload.provider || "unknown"),
     };
-  } catch {
+  } catch (error) {
     const fallback = buildLocalAssistantFallback(userText);
+    const reason = String(error?.message || "Assistant unavailable.");
+    const isFileProtocol = window.location.protocol === "file:";
+    const help = isFileProtocol
+      ? "Open MAGNETO through http://localhost:3000 (not file://) so API routes are available."
+      : reason;
+
     return {
       reply: fallback.reply,
       suggestions: fallback.suggestions,
       provider: "local-fallback",
+      reason: help,
     };
   }
-}
-
-function renderAssistantSuggestions(suggestions) {
-  if (!assistantSuggestions) {
-    return;
-  }
-
-  assistantSuggestions.innerHTML = "";
-
-  suggestions.forEach((suggestion) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "assistant-chip";
-    button.textContent = suggestion;
-
-    button.addEventListener("click", () => {
-      if (!searchQuery) {
-        return;
-      }
-
-      searchQuery.value = suggestion;
-      searchQuery.focus();
-      updateStatus(`Suggestion applied: ${suggestion}`);
-      addAssistantMessage("user", suggestion);
-      addAssistantMessage(
-        "bot",
-        "Running search with your selected suggestion.",
-      );
-      window.location.href = `results.html?q=${encodeURIComponent(suggestion)}`;
-    });
-
-    assistantSuggestions.appendChild(button);
-  });
 }
 
 function initAssistantChat() {
   if (!assistantThread || !assistantForm || !assistantInput) {
     return;
-  }
-
-  if (assistantThread.children.length === 0) {
-    addAssistantMessage(
-      "bot",
-      "Hi, I am MAGNETO Assistant. Tell me what you want to search.",
-    );
   }
 
   assistantForm.addEventListener("submit", async (event) => {
@@ -293,19 +269,14 @@ function initAssistantChat() {
     addAssistantMessage("user", userText);
     addAssistantMessage("bot", "Thinking...");
 
-    if (searchQuery) {
-      searchQuery.value = userText;
-    }
-
     const result = await requestAssistantResponse(userText);
     if (assistantThread && assistantThread.lastElementChild) {
       assistantThread.lastElementChild.textContent = result.reply;
     }
 
-    renderAssistantSuggestions(result.suggestions);
     updateStatus(
       result.provider === "local-fallback"
-        ? "Assistant fallback active."
+        ? `Assistant fallback active. ${result.reason || ""}`.trim()
         : "Assistant response ready.",
     );
 
@@ -313,9 +284,6 @@ function initAssistantChat() {
     requestAnimationFrame(syncSidePanelHeights);
   });
 
-  renderAssistantSuggestions(
-    buildAssistantContent(searchQuery?.value || "").suggestions,
-  );
   requestAnimationFrame(syncSidePanelHeights);
 }
 
@@ -1027,6 +995,22 @@ async function fetchAdminBackups(reason = "all") {
   return payload.backups || [];
 }
 
+async function fetchAdminAssistantStatus() {
+  const token = getAdminToken();
+  const response = await fetch("/api/admin/assistant-status", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || "Could not load assistant status.");
+  }
+
+  return payload;
+}
+
 async function downloadBackupFile(fileName) {
   const token = getAdminToken();
   const params = new URLSearchParams({ fileName });
@@ -1397,6 +1381,186 @@ function renderBackupList(items) {
   });
 }
 
+function formatAssistantDate(value) {
+  if (!value) {
+    return "-";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+
+  return date.toLocaleString();
+}
+
+function createAssistantStatusItem(label, value) {
+  const item = document.createElement("article");
+  item.className = "admin-assistant-status-item";
+
+  const key = document.createElement("p");
+  key.className = "admin-assistant-status-key";
+  key.textContent = label;
+
+  const val = document.createElement("p");
+  val.className = "admin-assistant-status-value";
+  val.textContent = value;
+
+  item.append(key, val);
+  return item;
+}
+
+function renderAdminAssistantStatus(payload) {
+  if (!adminAssistantStatusGrid) {
+    return;
+  }
+
+  adminAssistantStatusGrid.innerHTML = "";
+
+  const assistant = payload?.assistant || {};
+  const limits = assistant.limits || {};
+  const cache = assistant.cache || {};
+  const memory = assistant.memory || {};
+  const metrics = assistant.metrics || {};
+  const billing = assistant.billing || {};
+  const providers = assistant.providers || {};
+
+  const runtimeMode = assistant.configured
+    ? "AI provider configured"
+    : "Fallback only (no API key)";
+
+  const errorSummary = metrics.lastProviderError
+    ? `${metrics.lastProviderError} (${formatAssistantDate(metrics.lastProviderErrorAt)})`
+    : "None";
+
+  const items = [
+    ["Runtime", runtimeMode],
+    ["Model", String(assistant.model || "-")],
+    [
+      "Provider Order",
+      `${String(providers.primary || "-")} -> ${String(providers.fallback || "-")}`,
+    ],
+    ["Requests Total", String(metrics.requestsTotal ?? 0)],
+    ["Cache Hits", String(metrics.cacheHits ?? 0)],
+    ["OpenAI Responses", String(metrics.openaiResponses ?? 0)],
+    ["Anthropic Responses", String(metrics.anthropicResponses ?? 0)],
+    ["Gemini Responses", String(metrics.geminiResponses ?? 0)],
+    ["Local Hybrid Responses", String(metrics.localHybridResponses ?? 0)],
+    ["Fallback Responses", String(metrics.fallbackResponses ?? 0)],
+    ["Last Provider Error", errorSummary],
+    [
+      "Rate Limit",
+      `${limits.rateLimitCount ?? "-"} / ${limits.windowSeconds ?? "-"}s`,
+    ],
+    ["Max Input", `${limits.maxChars ?? "-"} chars`],
+    ["Simple Query Threshold", `${limits.simpleQueryWords ?? "-"} words`],
+    [
+      "Cache",
+      `${cache.currentEntries ?? 0}/${cache.maxEntries ?? "-"} entries (${cache.ttlSeconds ?? "-"}s TTL)`,
+    ],
+    ["Memory", `${memory.totalItems ?? 0}/${memory.maxItems ?? "-"} items`],
+    ["Memory File", String(memory.path || "-")],
+  ];
+
+  items.forEach(([label, value]) => {
+    adminAssistantStatusGrid.appendChild(
+      createAssistantStatusItem(label, String(value)),
+    );
+  });
+
+  const linksCard = document.createElement("article");
+  linksCard.className =
+    "admin-assistant-status-item admin-assistant-status-links";
+
+  const linksTitle = document.createElement("p");
+  linksTitle.className = "admin-assistant-status-key";
+  linksTitle.textContent = "Billing Links";
+
+  const linksWrap = document.createElement("p");
+  linksWrap.className = "admin-assistant-status-value";
+
+  const billingLinks = [
+    {
+      label: "OpenAI Billing",
+      href: billing?.openai?.overviewUrl,
+    },
+    {
+      label: "OpenAI Usage",
+      href: billing?.openai?.usageUrl,
+    },
+    {
+      label: "Anthropic Billing",
+      href: billing?.anthropic?.overviewUrl,
+    },
+    {
+      label: "Anthropic Usage",
+      href: billing?.anthropic?.usageUrl,
+    },
+    {
+      label: "Gemini Billing",
+      href: billing?.gemini?.overviewUrl,
+    },
+    {
+      label: "Gemini Usage",
+      href: billing?.gemini?.usageUrl,
+    },
+  ].filter((item) => Boolean(item.href));
+
+  billingLinks.forEach((item) => {
+    const link = document.createElement("a");
+    link.href = String(item.href || "#");
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.className = "admin-assistant-link";
+    link.textContent = item.label;
+    linksWrap.append(link);
+  });
+
+  linksCard.append(linksTitle, linksWrap);
+  adminAssistantStatusGrid.appendChild(linksCard);
+
+  if (adminAssistantStatusUpdatedAt) {
+    adminAssistantStatusUpdatedAt.textContent = `Updated: ${formatAssistantDate(payload?.generatedAt)}`;
+  }
+}
+
+function renderAdminAssistantStatusError(errorMessage) {
+  if (!adminAssistantStatusGrid) {
+    return;
+  }
+
+  adminAssistantStatusGrid.innerHTML = "";
+  const fallback = document.createElement("p");
+  fallback.className = "admin-chart-empty";
+  fallback.textContent = errorMessage;
+  adminAssistantStatusGrid.appendChild(fallback);
+
+  if (adminAssistantStatusUpdatedAt) {
+    adminAssistantStatusUpdatedAt.textContent = "";
+  }
+}
+
+async function refreshAssistantStatusWithStatus(okMessage = "") {
+  if (!adminAssistantStatusGrid) {
+    return;
+  }
+
+  try {
+    const payload = await fetchAdminAssistantStatus();
+    renderAdminAssistantStatus(payload);
+    if (okMessage) {
+      setAdminStatus(okMessage);
+    }
+  } catch (error) {
+    renderAdminAssistantStatusError(
+      error.message || "Could not load assistant status.",
+    );
+    if (okMessage) {
+      setAdminStatus(error.message || "Could not load assistant status.", true);
+    }
+  }
+}
+
 async function refreshBackupsWithStatus(okMessage) {
   try {
     const backups = await fetchAdminBackups(currentBackupReason);
@@ -1424,6 +1588,7 @@ async function tryAutoLogin() {
     adminDashboard.hidden = false;
     renderAdminDashboard(data);
     await refreshBackupsWithStatus("");
+    await refreshAssistantStatusWithStatus("");
     return true;
   } catch {
     setAdminToken("");
@@ -1480,6 +1645,7 @@ function initAdminPage() {
       adminDashboard.hidden = false;
       renderAdminDashboard(data);
       await refreshBackupsWithStatus("");
+      await refreshAssistantStatusWithStatus("");
       setAdminStatus("Signed in.");
     } catch (error) {
       setAdminStatus(error.message || "Could not sign in.", true);
@@ -1520,10 +1686,21 @@ function initAdminPage() {
       try {
         const data = await fetchAdminOverview(currentAdminRange);
         renderAdminDashboard(data);
+        await refreshAssistantStatusWithStatus("");
         setAdminStatus("Analytics refreshed.");
       } catch (error) {
         setAdminStatus(error.message || "Could not refresh analytics.", true);
       }
+    });
+  }
+
+  if (adminAssistantStatusRefreshBtn) {
+    adminAssistantStatusRefreshBtn.addEventListener("click", async () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+
+      await refreshAssistantStatusWithStatus("Assistant status refreshed.");
     });
   }
 

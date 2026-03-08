@@ -1,0 +1,660 @@
+{
+  "chats": [
+    {
+      "id": "a-1772973299537-7651",
+      "ip": "::1",
+      "message": "weather tomorrow",
+      "reply": "Add city and timeframe for more precise weather results.",
+      "provider": "local-hybrid",
+      "at": "2026-03-08T12:34:59.537Z"
+    },
+    {
+      "id": "a-1772974885100-5221",
+      "ip": "::1",
+      "message": "Explain quantum computing in one sentence.",
+      "reply": "Quantum computing uses quantum bits to perform calculations at speeds unattainable by classical computers, leveraging principles of quantum mechanics.",
+      "provider": "openai",
+      "at": "2026-03-08T13:01:25.100Z"
+    },
+    {
+      "id": "a-1772975017588-4763",
+      "ip": "::1",
+      "message": "Summarize the latest AI trends in one short paragraph.",
+      "reply": "AI trends include advancements in generative models, increased focus on ethical AI, integration of AI in various industries, and improvements in natural language processing.",
+      "provider": "openai",
+      "at": "2026-03-08T13:03:37.588Z"
+    },
+    {
+      "id": "a-1772975019669-5075",
+      "ip": "::1",
+      "message": "Give me 3 practical tips to improve my website SEO today.",
+      "reply": "Here are three practical tips to improve your website SEO today: optimize page titles, enhance mobile responsiveness, and improve loading speed.",
+      "provider": "openai",
+      "at": "2026-03-08T13:03:39.669Z"
+    },
+    {
+      "id": "a-1772975021167-6706",
+      "ip": "::1",
+      "message": "Write a short friendly welcome message for Magneto users.",
+      "reply": "Welcome to Magneto! We're here to help you find exactly what you need. Let's get started!",
+      "provider": "openai",
+      "at": "2026-03-08T13:03:41.167Z"
+    },
+    {
+      "id": "a-1772975331617-2495",
+      "ip": "::1",
+      "message": "Confirm this is a live AI response in one sentence.",
+      "reply": "Yes, this is a live AI response.",
+      "provider": "openai",
+      "at": "2026-03-08T13:08:51.617Z"
+    },
+    {
+      "id": "a-1772975546032-6786",
+      "ip": "::1",
+      "message": "ce faci?",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "local-hybrid",
+      "at": "2026-03-08T13:12:26.032Z"
+    },
+    {
+      "id": "a-1772975621379-676",
+      "ip": "::1",
+      "message": "ce faci?",
+      "reply": "I'm here to help you with your search queries! What information are you looking for?",
+      "provider": "openai",
+      "at": "2026-03-08T13:13:41.379Z"
+    },
+    {
+      "id": "a-1772975815742-6995",
+      "ip": "::1",
+      "message": "ce faci ?",
+      "reply": "It seems like you're asking how I'm doing. How can I assist you today?",
+      "provider": "openai",
+      "at": "2026-03-08T13:16:55.742Z"
+    },
+    {
+      "id": "a-1772975835917-4598",
+      "ip": "::1",
+      "message": "sunt bine ., vreau sa faci ceva pentru mine",
+      "reply": "Sure! Please tell me what you need help with.",
+      "provider": "openai",
+      "at": "2026-03-08T13:17:15.917Z"
+    },
+    {
+      "id": "a-1772975858628-6011",
+      "ip": "::1",
+      "message": "poti sa schimbi in primul ranmd limba , sa vorbim in limba romana",
+      "reply": "Îmi pare rău, dar pot comunica doar în engleză. Cum te pot ajuta?",
+      "provider": "openai",
+      "at": "2026-03-08T13:17:38.628Z"
+    },
+    {
+      "id": "a-1772975861457-4356",
+      "ip": "::1",
+      "message": "poti sa schimbi in primul ranmd limba , sa vorbim in limba romana",
+      "reply": "Îmi pare rău, nu pot schimba limba. Pot să te ajut cu căutări în română. Ce anume cauți?",
+      "provider": "openai",
+      "at": "2026-03-08T13:17:41.457Z"
+    },
+    {
+      "id": "a-1772975973600-4530",
+      "ip": "::1",
+      "message": "Please switch language to Romanian.",
+      "reply": "Am schimbat limba în română. Cum te pot ajuta?",
+      "provider": "openai",
+      "at": "2026-03-08T13:19:33.600Z"
+    },
+    {
+      "id": "a-1772975977485-5809",
+      "ip": "::1",
+      "message": "ce faci?",
+      "reply": "Sunt aici să te ajut cu căutările tale! Ce informații cauți?",
+      "provider": "openai",
+      "at": "2026-03-08T13:19:37.485Z"
+    },
+    {
+      "id": "a-1772975978742-2712",
+      "ip": "::1",
+      "message": "schimba limba in engleza",
+      "reply": "Language changed to English. How can I assist you today?",
+      "provider": "openai",
+      "at": "2026-03-08T13:19:38.742Z"
+    },
+    {
+      "id": "a-1772976054608-6483",
+      "ip": "::1",
+      "message": "ce faci ?",
+      "reply": "Sunt aici să te ajut cu căutările tale. Ce informații cauți?",
+      "provider": "openai",
+      "at": "2026-03-08T13:20:54.608Z"
+    },
+    {
+      "id": "a-1772976081278-4198",
+      "ip": "::1",
+      "message": "doar vroiam sa stiu cum e vremea in Bucuresti Romania",
+      "reply": "Pentru a verifica vremea în București, România, poți căuta informații actualizate.",
+      "provider": "openai",
+      "at": "2026-03-08T13:21:21.280Z"
+    },
+    {
+      "id": "a-1772976096428-8924",
+      "ip": "::1",
+      "message": "test scroll behavior",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "local-hybrid",
+      "at": "2026-03-08T13:21:36.428Z"
+    },
+    {
+      "id": "a-1772976101107-7539",
+      "ip": "::1",
+      "message": "dece nu cauti tu si imi spui tu ?",
+      "reply": "Nu pot efectua căutări direct, dar îți pot oferi sugestii pentru a găsi informațiile dorite.",
+      "provider": "openai",
+      "at": "2026-03-08T13:21:41.107Z"
+    },
+    {
+      "id": "a-1772976114471-9669",
+      "ip": "::1",
+      "message": "unde sas caut ?",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "local-hybrid",
+      "at": "2026-03-08T13:21:54.472Z"
+    },
+    {
+      "id": "a-1772976217614-1704",
+      "ip": "::1",
+      "message": "Separate assistant test",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "local-hybrid",
+      "at": "2026-03-08T13:23:37.614Z"
+    },
+    {
+      "id": "a-1772976889871-4840",
+      "ip": "::1",
+      "message": "ce faci ?",
+      "reply": "Sunt aici să te ajut cu căutările tale. Ce informații cauți?",
+      "provider": "cache",
+      "at": "2026-03-08T13:34:49.871Z"
+    },
+    {
+      "id": "a-1772976909980-2640",
+      "ip": "::1",
+      "message": "ce vreme este in bucuresti acuma ?",
+      "reply": "Te rog să verifici aplicația meteo pentru informații actualizate despre vreme în București.",
+      "provider": "openai",
+      "at": "2026-03-08T13:35:09.980Z"
+    },
+    {
+      "id": "a-1772977050449-1165",
+      "ip": "::1",
+      "message": "ce vreme este in bucuresti acum?",
+      "reply": "Acum in București, România: 12.0C, noros, vant 10 km/h.",
+      "provider": "weather-live",
+      "at": "2026-03-08T13:37:30.449Z"
+    },
+    {
+      "id": "a-1772977050796-1697",
+      "ip": "::1",
+      "message": "what is the weather in london now?",
+      "reply": "Current weather in London, United Kingdom: 10.8C, overcast, wind 8 km/h.",
+      "provider": "weather-live",
+      "at": "2026-03-08T13:37:30.796Z"
+    },
+    {
+      "id": "a-1772977138564-6751",
+      "ip": "::1",
+      "message": "ce vreme este acum in Bucuresti ?",
+      "reply": "Acum in București, România: 12.0C, noros, vant 10 km/h.",
+      "provider": "weather-live",
+      "at": "2026-03-08T13:38:58.564Z"
+    },
+    {
+      "id": "a-1772977149300-7793",
+      "ip": "::1",
+      "message": "si in Brasov ?",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "local-hybrid",
+      "at": "2026-03-08T13:39:09.300Z"
+    },
+    {
+      "id": "a-1772977182473-339",
+      "ip": "::1",
+      "message": "ce vreme este in bucuresti acum?",
+      "reply": "Acum in București, România: 12.0C, noros, vant 10 km/h.",
+      "provider": "cache",
+      "at": "2026-03-08T13:39:42.473Z"
+    },
+    {
+      "id": "a-1772977274450-1491",
+      "ip": "::1",
+      "message": "ce vreme este acum in Bucuresti ?",
+      "reply": "Acum in București, România: 12.0C, noros, vant 10 km/h.",
+      "provider": "weather-live",
+      "at": "2026-03-08T13:41:14.450Z"
+    },
+    {
+      "id": "a-1772977274755-1082",
+      "ip": "::1",
+      "message": "si in Brasov ?",
+      "reply": "Current weather in Brasov, Romania: 11.9C, mostly clear, wind 14 km/h.",
+      "provider": "weather-live",
+      "at": "2026-03-08T13:41:14.755Z"
+    },
+    {
+      "id": "a-1772977385867-5558",
+      "ip": "::1",
+      "message": "ce vreme este acum in Bucuresti ?",
+      "reply": "Acum in București, România: 12.0C, noros, vant 10 km/h.",
+      "provider": "weather-live",
+      "at": "2026-03-08T13:43:05.867Z"
+    },
+    {
+      "id": "a-1772977386115-149",
+      "ip": "::1",
+      "message": "si in Brasov ?",
+      "reply": "Current weather in Brasov, Romania: 11.9C, mostly clear, wind 14 km/h.",
+      "provider": "weather-live",
+      "at": "2026-03-08T13:43:06.115Z"
+    },
+    {
+      "id": "a-1772977555497-2545",
+      "ip": "::1",
+      "message": "ajuta-ma sa scriu un mesaj de bun venit pentru clienti",
+      "reply": "Bun venit! Suntem încântați să vă avem alături. Aici veți găsi produse de calitate și servicii excelente. Vă dorim o experiență plăcută!",
+      "provider": "openai",
+      "at": "2026-03-08T13:45:55.497Z"
+    },
+    {
+      "id": "a-1772977555672-8435",
+      "ip": "::1",
+      "message": "spune-mi pe scurt ce este blockchain",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "local-hybrid",
+      "at": "2026-03-08T13:45:55.672Z"
+    },
+    {
+      "id": "a-1772977557503-9969",
+      "ip": "::1",
+      "message": "what are 3 ideas for improving focus at work?",
+      "reply": "1. Implement the Pomodoro Technique: Work in focused bursts with short breaks.\n2. Minimize distractions: Use noise-canceling headphones and limit notifications.\n3. Set clear goals: Break tasks into smaller, manageable objectives.",
+      "provider": "openai",
+      "at": "2026-03-08T13:45:57.503Z"
+    },
+    {
+      "id": "a-1772977628374-282",
+      "ip": "::1",
+      "message": "spune-mi pe scurt ce este blockchain",
+      "reply": "Blockchain este o tehnologie de stocare a datelor, distribuită și securizată, care permite înregistrarea tranzacțiilor într-un mod transparent și imuabil.",
+      "provider": "openai",
+      "at": "2026-03-08T13:47:08.374Z"
+    },
+    {
+      "id": "a-1772977628752-8359",
+      "ip": "::1",
+      "message": "plan vacanta",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "local-hybrid",
+      "at": "2026-03-08T13:47:08.752Z"
+    },
+    {
+      "id": "a-1772977629274-8302",
+      "ip": "::1",
+      "message": "weather now in bucharest",
+      "reply": "Current weather in Bucharest, Romania: 12.0C, overcast, wind 10 km/h.",
+      "provider": "weather-live",
+      "at": "2026-03-08T13:47:09.274Z"
+    },
+    {
+      "id": "a-1772977670118-7980",
+      "ip": "::1",
+      "message": "plan vacanta",
+      "reply": "Pentru a planifica o vacanță, alege destinația, bugetul, durata și activitățile dorite. Vrei ajutor cu un itinerar specific?",
+      "provider": "openai",
+      "at": "2026-03-08T13:47:50.118Z"
+    },
+    {
+      "id": "a-1772978157707-3180",
+      "ip": "::1",
+      "message": "ce faci",
+      "reply": "Sunt aici să te ajut! Cu ce pot să te ajut astăzi?",
+      "provider": "openai",
+      "at": "2026-03-08T13:55:57.707Z"
+    },
+    {
+      "id": "a-1772978187836-490",
+      "ip": "::1",
+      "message": "doar vroiam sa te intreb cand joaca Real Madrid urmatorul meci de for+tbal ?",
+      "reply": "Următorul meci al Real Madrid este pe 29 octombrie 2023, împotriva lui Barcelona. Verifică programul pentru detalii suplimentare!",
+      "provider": "openai",
+      "at": "2026-03-08T13:56:27.836Z"
+    },
+    {
+      "id": "a-1772978209624-7773",
+      "ip": "::1",
+      "message": "acuma suntem doar in Martie !!!",
+      "reply": "Îmi cer scuze pentru confuzie. Te rog să verifici site-urile oficiale pentru programul actualizat al meciurilor Real Madrid. Cu ce altceva te pot ajuta?",
+      "provider": "openai",
+      "at": "2026-03-08T13:56:49.624Z"
+    },
+    {
+      "id": "a-1772978599323-4681",
+      "ip": "::1",
+      "message": "scrie un mesaj de bun venit pentru clienti",
+      "reply": "Bun venit! Suntem încântați să vă avem alături. Vă stăm la dispoziție pentru orice întrebări sau nevoi. Să avem o colaborare fructuoasă!",
+      "provider": "openai",
+      "helper": "writing",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-08T14:03:19.323Z"
+    },
+    {
+      "id": "a-1772978599828-8686",
+      "ip": "::1",
+      "message": "ce vreme este in bucuresti acum?",
+      "reply": "Acum in București, România: 12.0C, mai mult senin, vant 10 km/h.",
+      "provider": "weather-live",
+      "helper": "weather",
+      "model": "weather-live",
+      "at": "2026-03-08T14:03:19.828Z"
+    },
+    {
+      "id": "a-1772978602136-2082",
+      "ip": "::1",
+      "message": "explica pe scurt ce este blockchain",
+      "reply": "Blockchain este o tehnologie de stocare a datelor care permite înregistrarea transparentă și sigură a tranzacțiilor într-o rețea distribuită.",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-08T14:03:22.136Z"
+    },
+    {
+      "id": "a-1772978661628-1465",
+      "ip": "::1",
+      "message": "ajuta-ma sa scriu un email de follow-up",
+      "reply": "Subiect: Follow-up\n\nBună [Nume],\n\nSper că acest mesaj te găsește bine. Voiam să revin asupra discuției noastre despre [subiect]. Aș aprecia orice actualizare.\n\nMulțumesc!\n\nToate cele bune,\n[Numele tău]",
+      "provider": "openai",
+      "helper": "writing",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-08T14:04:21.628Z"
+    },
+    {
+      "id": "a-1772978930859-4717",
+      "ip": "::1",
+      "message": "explica pe scurt ce este quantum computing",
+      "reply": "Quantum computing este o tehnologie care folosește principiile mecanicii cuantice pentru a procesa informația, oferind viteze de calcul mult mai mari decât computerele clasice.",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-08T14:08:50.859Z"
+    },
+    {
+      "id": "a-1772979192405-5590",
+      "ip": "::1",
+      "message": "spune-mi o idee de promovare pentru un magazin online",
+      "reply": "Oferă un discount de 20% la prima comandă și promovează-l pe rețelele sociale. Folosește un cod promoțional unic pentru a urmări eficiența.",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-08T14:13:12.405Z"
+    },
+    {
+      "id": "a-1772981868602-6363",
+      "ip": "::1",
+      "message": "vreau sa vorbim",
+      "reply": "Desigur! Despre ce ai dori să discutăm?",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-08T14:57:48.602Z"
+    },
+    {
+      "id": "a-1772981888298-4362",
+      "ip": "::1",
+      "message": "ce zii este azi , ce mai este nou la stiri . spunemi catevba lucruri !!!",
+      "reply": "Nu pot oferi date live, dar astăzi este o zi obișnuită. Te pot ajuta cu informații generale sau cu alte subiecte de interes!",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-08T14:58:08.298Z"
+    },
+    {
+      "id": "a-1772981952461-5696",
+      "ip": "::1",
+      "message": "ce zi e azi, ce mai este nou la stiri? spune-mi cateva lucruri",
+      "reply": "Astăzi este 27 octombrie 2023. Nu am acces la știri în timp real, dar poți verifica site-uri de știri pentru cele mai recente informații.",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-08T14:59:12.461Z"
+    },
+    {
+      "id": "a-1772982034623-2236",
+      "ip": "::1",
+      "message": "ce zii este azi , ce mai este nou la stiri . spunemi catevba lucruri !!!",
+      "reply": "Top stiri acum: Cele mai populare subiecte - Știri Google | Știri Google | Banca ucraineană de stat, cu banii, lingourile de aur și blindatele confiscate de Ungaria, anunță riposta pregătită - HotNews.ro.",
+      "provider": "date-news-live",
+      "helper": "general",
+      "model": "date-news-live",
+      "at": "2026-03-08T15:00:34.623Z"
+    },
+    {
+      "id": "a-1772982089282-3292",
+      "ip": "::1",
+      "message": "ce zii este azi , ce mai este nou la stiri . spunemi catevba lucruri !!!",
+      "reply": "Astazi este duminică, 8 martie 2026. Top stiri acum: Banca ucraineană de stat, cu banii, lingourile de aur și blindatele confiscate de Ungaria, anunță riposta pregătită - HotNews.ro | Cine este „aventurierul” din Ormuz, magnatul care își riscă flota uriașă de petroliere în Golful Persic... - Digi24 | Rezultate LOTO – Duminică, 8 martie 2026: Trageri speciale duble, cu premii suplimentate. Șanse mai mari... - Digi24.",
+      "provider": "date-news-live",
+      "helper": "general",
+      "model": "date-news-live",
+      "at": "2026-03-08T15:01:29.283Z"
+    },
+    {
+      "id": "a-1772982377255-4733",
+      "ip": "::1",
+      "message": "Vreau un plan clar pe 7 zile ca sa invat JavaScript, cu etape, exercitii si greseli de evitat.",
+      "reply": "Iată un plan de învățare pe 7 zile pentru JavaScript, structurat pe etape, cu exerciții și greșeli de evitat:\n\n### Ziua 1: Introducere în JavaScript\n- **Etape:**\n  - Ce este JavaScript? (istorie, utilizări)\n  - Instalarea unui mediu de dezvoltare (ex: Visual Studio Code)\n  - Scrierea primului program: \"Hello, World!\"\n  \n- **Exerciții:**\n  - Creează un fișier HTML și adaugă un script JavaScript care afișează un mesaj în consolă.\n  \n- **Greșeli de evitat:**\n  - Ignorarea documentației oficiale (MDN Web Docs).\n  - Neînțelegerea sintaxei de bază.\n\n### Ziua 2: Tipuri de date și variabile\n- **Etape:",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-08T15:06:17.255Z"
+    },
+    {
+      "id": "a-1772982459322-2077",
+      "ip": "::1",
+      "message": "vreau sa vorbim",
+      "reply": "Sigur! Despre ce ai dori să discutăm? Poate despre un subiect anume sau ai nevoie de ajutor cu ceva?",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-08T15:07:39.322Z"
+    },
+    {
+      "id": "a-1772982483673-3689",
+      "ip": "::1",
+      "message": "akarok irni neked Magyarul . lehet ?",
+      "reply": "Igen, természetesen! Írhatsz nekem magyarul. Miben segíthetek?",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-08T15:08:03.673Z"
+    },
+    {
+      "id": "a-1772982493460-3062",
+      "ip": "::1",
+      "message": "csak baratklozni akarok",
+      "reply": "Rendben, szívesen barátkozom veled! Mesélj magadról, vagy kérdezz valamit, ami érdekel. Milyen hobbijaid vannak?",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-08T15:08:13.460Z"
+    },
+    {
+      "id": "a-1772982654005-8629",
+      "ip": "::1",
+      "message": "test scroll panel",
+      "reply": "It seems like you're referring to a scroll panel, which is often used in graphical user interfaces (GUIs) to allow users to scroll through content that exceeds the visible area. \n\nIf you're looking for guidance on how to implement or use a scroll panel in a specific programming language or framework, please provide more details about your context (e.g., Java Swing, HTML/CSS, etc.), and I can help you with that! \n\nHere are some general steps to create a scroll panel in different contexts:\n\n### In Java Swing:\n1. **Import Libraries**: Make sure to import the necessary Swing libraries.\n2. **Create",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-08T15:10:54.005Z"
+    },
+    {
+      "id": "a-1772982659083-7289",
+      "ip": "::1",
+      "message": "test scroll panel",
+      "reply": "It seems like you're referring to a scroll panel, which is often used in graphical user interfaces (GUIs) to allow users to scroll through content that exceeds the visible area. \n\nIf you're looking for guidance on how to implement or use a scroll panel in a specific programming language or framework, please provide more details about your context (e.g., Java Swing, HTML/CSS, etc.), and I can help you with that! \n\nHere are some general steps to create a scroll panel in different contexts:\n\n### In Java Swing:\n1. **Import Libraries**: Make sure to import the necessary Swing libraries.\n2. **Create",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-08T15:10:59.083Z"
+    },
+    {
+      "id": "a-1772982836088-9119",
+      "ip": "::1",
+      "message": "wdasda",
+      "reply": "It seems like your message might be a typo. Could you please clarify or let me know how I can assist you?",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-08T15:13:56.088Z"
+    },
+    {
+      "id": "a-1772982837738-3027",
+      "ip": "::1",
+      "message": "sd",
+      "reply": "It looks like your message is still unclear. If you have a specific question or topic you'd like to discuss, please let me know! I'm here to help.",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-08T15:13:57.738Z"
+    },
+    {
+      "id": "a-1772982838439-2837",
+      "ip": "::1",
+      "message": "sdSAD",
+      "reply": "It seems like your message might not be clear. How can I assist you today? If you have a specific question or topic in mind, feel free to share!",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-08T15:13:58.440Z"
+    },
+    {
+      "id": "a-1772982839178-2933",
+      "ip": "::1",
+      "message": "sdSADSD",
+      "reply": "It seems like you might be typing some random letters or possibly experiencing a keyboard issue. If you have a specific question or topic you'd like to discuss, feel free to share! I'm here to help.",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-08T15:13:59.178Z"
+    },
+    {
+      "id": "a-1772982839185-3830",
+      "ip": "::1",
+      "message": "sdSAD",
+      "reply": "It looks like your messages are still unclear. If you have a specific question or topic you'd like to discuss, please let me know! I'm here to help.",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-08T15:13:59.185Z"
+    },
+    {
+      "id": "a-1772982839434-4822",
+      "ip": "::1",
+      "message": "D",
+      "reply": "It looks like your message is quite brief. If you have a specific question or topic you'd like to discuss, please let me know! I'm here to help.",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-08T15:13:59.434Z"
+    },
+    {
+      "id": "a-1772982839799-5135",
+      "ip": "::1",
+      "message": "ASD",
+      "reply": "It seems like you're typing random letters. If you have a specific question or topic you'd like to discuss, feel free to share! I'm here to assist you.",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-08T15:13:59.799Z"
+    },
+    {
+      "id": "a-1772982839977-2179",
+      "ip": "::1",
+      "message": "ASDASD",
+      "reply": "It seems like your messages are not coming through clearly. If you have a specific question or topic you'd like to discuss, please share it, and I'll do my best to assist you!",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-08T15:13:59.977Z"
+    },
+    {
+      "id": "a-1772982972430-7621",
+      "ip": "::1",
+      "message": "Plan my day",
+      "reply": "To help you plan your day effectively, I need a bit more information. Here are some questions to consider:\n\n1. **What time do you want to start your day?**\n2. **Do you have any specific commitments or appointments?**\n3. **What tasks or activities do you want to include (work, exercise, leisure, etc.)?**\n4. **How much time do you want to allocate for each activity?**\n5. **Do you have any preferences for meals or breaks?**\n\nOnce I have this information, I can help you create a structured plan!",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-08T15:16:12.430Z"
+    },
+    {
+      "id": "a-1772983066325-9379",
+      "ip": "::1",
+      "message": "ce faci ?",
+      "reply": "Sunt aici să te ajut! Cu ce pot să te asist astăzi?",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-08T15:17:46.325Z"
+    },
+    {
+      "id": "a-1772983070571-4065",
+      "ip": "::1",
+      "message": "test no suggestions",
+      "reply": "Test received! How can I assist you today?",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-08T15:17:50.571Z"
+    },
+    {
+      "id": "a-1772992906864-4514",
+      "ip": "::1",
+      "message": "dasdasdasd",
+      "reply": "Es scheint, als ob Sie etwas testen. Wie kann ich Ihnen helfen?",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-08T18:01:46.864Z"
+    },
+    {
+      "id": "a-1772992913957-1359",
+      "ip": "::1",
+      "message": "ce faci",
+      "reply": "Sunt aici să te ajut! Cu ce pot să te asist astăzi?",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-08T18:01:53.957Z"
+    },
+    {
+      "id": "a-1772992922826-701",
+      "ip": "::1",
+      "message": "ok. ajutama",
+      "reply": "Sigur! Cu ce anume ai nevoie de ajutor? Poate fi vorba despre informații, planificare sau orice altceva.",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-08T18:02:02.826Z"
+    },
+    {
+      "id": "a-1772997251808-4808",
+      "ip": "::1",
+      "message": "poti sa imi spui ce populatie are Romania ?",
+      "reply": "Populația României este estimată la aproximativ 19 milioane de locuitori, conform datelor disponibile până în 2023. Aceasta poate varia în funcție de sursele de date și de fluctuațiile demografice. Dacă ai nevoie de informații mai detaliate sau de date specifice, te pot ajuta cu plăcere! \n\nDorești să afli mai multe despre alte aspecte demografice sau sociale ale României?",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-08T19:14:11.808Z"
+    }
+  ]
+}

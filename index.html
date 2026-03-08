@@ -218,8 +218,6 @@
         </aside>
 
         <section class="center-panel" aria-label="MAGNETO search">
-          <h1>Magneto</h1>
-
           <section class="search-panel" aria-label="Search form">
             <form id="searchForm" class="search-form">
               <label for="searchQuery" class="sr-only"
@@ -230,45 +228,11 @@
                 name="q"
                 type="search"
                 placeholder="Type your search"
-                list="quickSuggestions"
                 required
               />
-              <datalist id="quickSuggestions">
-                <option value="technology news 2026"></option>
-                <option value="top web design trends"></option>
-                <option value="free javascript courses"></option>
-                <option value="best laptops 2026"></option>
-              </datalist>
 
-              <button type="submit" class="search-btn">Search Now</button>
+              <button type="submit" class="search-btn">Search</button>
             </form>
-
-            <p id="statusMessage" class="status" aria-live="polite">
-              Enter a term and press Enter.
-            </p>
-            <p class="hint">
-              MAGNETO Core runs your own controlled search flow.
-            </p>
-
-            <div class="quick-tags" aria-label="Popular searches">
-              <button class="tag" type="button" data-query="weather tomorrow">
-                #weather
-              </button>
-              <button class="tag" type="button" data-query="latest sport news">
-                #sports
-              </button>
-              <button class="tag" type="button" data-query="4k wallpapers">
-                #wallpapers
-              </button>
-              <button class="tag" type="button" data-query="healthy recipes">
-                #food
-              </button>
-            </div>
-
-            <p class="admin-entry">
-              Need control panel access?
-              <a href="admin.html" class="admin-link">Open Admin Dashboard</a>
-            </p>
           </section>
         </section>
 
@@ -277,7 +241,6 @@
           aria-label="MAGNETO suggestion assistant"
         >
           <p class="badge">MAGNETO Assistant</p>
-          <h2>Suggestion Chat</h2>
           <div
             id="assistantThread"
             class="assistant-thread"
@@ -291,22 +254,16 @@
             <input
               id="assistantInput"
               type="text"
-              placeholder="Ask MAGNETO what to search..."
+              placeholder="Ask anything..."
               maxlength="160"
               autocomplete="off"
             />
             <button type="submit" class="assistant-send">Send</button>
           </form>
-
-          <div
-            id="assistantSuggestions"
-            class="assistant-suggestions"
-            aria-label="Quick suggestions"
-          ></div>
         </aside>
       </div>
     </main>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=20260308g"></script>
   </body>
 </html>
