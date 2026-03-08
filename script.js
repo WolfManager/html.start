@@ -8,6 +8,8 @@ const weatherTemp = document.getElementById("weatherTemp");
 const weatherSummary = document.getElementById("weatherSummary");
 const weatherLocation = document.getElementById("weatherLocation");
 const weatherForecast = document.getElementById("weatherForecast");
+const weatherPanel = document.querySelector(".weather-panel");
+const rightPanel = document.querySelector(".right-panel");
 
 const assistantThread = document.getElementById("assistantThread");
 const assistantSuggestions = document.getElementById("assistantSuggestions");
@@ -48,6 +50,19 @@ const adminBackupReason = document.getElementById("adminBackupReason");
 const ADMIN_TOKEN_KEY = "magneto.admin.token";
 let currentAdminRange = "all";
 let currentBackupReason = "all";
+
+function syncSidePanelHeights() {
+  if (!weatherPanel || !rightPanel) {
+    return;
+  }
+
+  // Keep assistant equal to weather height without forcing weather to grow.
+  rightPanel.style.minHeight = "";
+  const weatherHeight = Math.ceil(weatherPanel.getBoundingClientRect().height);
+  if (weatherHeight > 0) {
+    rightPanel.style.minHeight = `${weatherHeight}px`;
+  }
+}
 
 function updateStatus(message, isError = false) {
   if (!statusMessage) {
@@ -415,47 +430,373 @@ function setWeatherUI({ temperature, weatherCode, locationText, forecast }) {
   renderWeatherForecast(forecast || []);
 }
 
+const WEATHER_IP_CACHE_KEY = "magneto.weather.ipLocation";
+const WEATHER_IP_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const WEATHER_PRECISE_CACHE_KEY = "magneto.weather.preciseLocation";
+const WEATHER_PRECISE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const WEATHER_PRECISE_PROMPT_KEY = "magneto.weather.precisePromptAt";
+const WEATHER_PRECISE_PROMPT_COOLDOWN_MS = 12 * 60 * 60 * 1000;
+
+function getBrowserTimeZone() {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+  } catch {
+    return "";
+  }
+}
+
+function readCachedIpLocation() {
+  try {
+    const raw = localStorage.getItem(WEATHER_IP_CACHE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") {
+      return null;
+    }
+
+    const age = Date.now() - Number(parsed.savedAt || 0);
+    if (age > WEATHER_IP_CACHE_TTL_MS) {
+      localStorage.removeItem(WEATHER_IP_CACHE_KEY);
+      return null;
+    }
+
+    if (
+      typeof parsed.latitude !== "number" ||
+      typeof parsed.longitude !== "number"
+    ) {
+      return null;
+    }
+
+    // Discard stale cross-country cache when timezone clearly indicates Germany.
+    const tz = getBrowserTimeZone();
+    const cachedCountry = String(parsed.country || "").toLowerCase();
+    if (
+      tz === "Europe/Berlin" &&
+      cachedCountry &&
+      cachedCountry !== "germany"
+    ) {
+      localStorage.removeItem(WEATHER_IP_CACHE_KEY);
+      return null;
+    }
+
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function saveCachedIpLocation(location) {
+  try {
+    localStorage.setItem(
+      WEATHER_IP_CACHE_KEY,
+      JSON.stringify({
+        latitude: location.latitude,
+        longitude: location.longitude,
+        city: location.city || "",
+        country: location.country || "",
+        savedAt: Date.now(),
+      }),
+    );
+  } catch {
+    // Ignore cache write failures
+  }
+}
+
+function readCachedPreciseLocation() {
+  try {
+    const raw = localStorage.getItem(WEATHER_PRECISE_CACHE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") {
+      return null;
+    }
+
+    const age = Date.now() - Number(parsed.savedAt || 0);
+    if (age > WEATHER_PRECISE_CACHE_TTL_MS) {
+      localStorage.removeItem(WEATHER_PRECISE_CACHE_KEY);
+      return null;
+    }
+
+    if (
+      typeof parsed.latitude !== "number" ||
+      typeof parsed.longitude !== "number"
+    ) {
+      return null;
+    }
+
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function saveCachedPreciseLocation(location) {
+  try {
+    localStorage.setItem(
+      WEATHER_PRECISE_CACHE_KEY,
+      JSON.stringify({
+        latitude: location.latitude,
+        longitude: location.longitude,
+        city: location.city || "",
+        country: location.country || "",
+        savedAt: Date.now(),
+      }),
+    );
+  } catch {
+    // Ignore cache write failures.
+  }
+}
+
+function canAttemptPrecisePrompt() {
+  try {
+    const lastPromptAt = Number(
+      localStorage.getItem(WEATHER_PRECISE_PROMPT_KEY) || 0,
+    );
+    return Date.now() - lastPromptAt > WEATHER_PRECISE_PROMPT_COOLDOWN_MS;
+  } catch {
+    return true;
+  }
+}
+
+function markPrecisePromptAttempt() {
+  try {
+    localStorage.setItem(WEATHER_PRECISE_PROMPT_KEY, String(Date.now()));
+  } catch {
+    // Ignore write failures.
+  }
+}
+
+async function fetchLocationByIp() {
+  const cached = readCachedIpLocation();
+  if (cached) {
+    return cached;
+  }
+
+  const providers = [
+    {
+      url: "https://ipwho.is/",
+      parse: (data) => ({
+        latitude: Number(data?.latitude),
+        longitude: Number(data?.longitude),
+        city: String(data?.city || ""),
+        country: String(data?.country || ""),
+      }),
+      isValid: (data) => data && data.success !== false,
+    },
+    {
+      url: "https://ipapi.co/json/",
+      parse: (data) => ({
+        latitude: Number(data?.latitude),
+        longitude: Number(data?.longitude),
+        city: String(data?.city || ""),
+        country: String(data?.country_name || ""),
+      }),
+      isValid: (data) => data && !data.error,
+    },
+  ];
+
+  for (const provider of providers) {
+    try {
+      const response = await fetch(provider.url);
+      if (!response.ok) {
+        continue;
+      }
+
+      const data = await response.json();
+      if (!provider.isValid(data)) {
+        continue;
+      }
+
+      const location = provider.parse(data);
+      if (
+        !Number.isFinite(location.latitude) ||
+        !Number.isFinite(location.longitude)
+      ) {
+        continue;
+      }
+
+      saveCachedIpLocation(location);
+      return location;
+    } catch {
+      // Try next provider
+    }
+  }
+
+  throw new Error("IP location detection unavailable.");
+}
+
+async function fetchLocationFromBackend() {
+  const response = await fetch("/api/location/auto");
+  if (!response.ok) {
+    throw new Error("Backend location unavailable.");
+  }
+
+  const data = await response.json();
+  const latitude = Number(data.latitude);
+  const longitude = Number(data.longitude);
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    throw new Error("Invalid backend location coordinates.");
+  }
+
+  return {
+    latitude,
+    longitude,
+    city: String(data.city || ""),
+    country: String(data.country || ""),
+    source: String(data.source || "backend"),
+  };
+}
+
+const TIMEZONE_LOCATION_FALLBACKS = {
+  "Europe/Berlin": {
+    latitude: 52.52,
+    longitude: 13.405,
+    city: "Berlin",
+    country: "Germany",
+  },
+  "Europe/Bucharest": {
+    latitude: 44.4268,
+    longitude: 26.1025,
+    city: "Bucharest",
+    country: "Romania",
+  },
+};
+
+function getTimezoneFallbackLocation() {
+  return TIMEZONE_LOCATION_FALLBACKS[getBrowserTimeZone()] || null;
+}
+
+function getBrowserLocationWithoutPrompt() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("Geolocation not supported."));
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        resolve({
+          latitude: Number(position.coords.latitude),
+          longitude: Number(position.coords.longitude),
+          city: "",
+          country: "",
+        });
+      },
+      () => reject(new Error("Geolocation unavailable.")),
+      {
+        enableHighAccuracy: false,
+        timeout: 5000,
+        maximumAge: 15 * 60 * 1000,
+      },
+    );
+  });
+}
+
+async function fetchBestAutomaticLocation() {
+  // 1) Reuse last known precise location first.
+  const preciseCache = readCachedPreciseLocation();
+  if (preciseCache) {
+    return { ...preciseCache, source: "precise-cache" };
+  }
+
+  // 2) Exact location using browser geolocation.
+  try {
+    if (navigator.permissions && navigator.permissions.query) {
+      const permission = await navigator.permissions.query({
+        name: "geolocation",
+      });
+
+      if (permission.state === "granted") {
+        const precise = await getBrowserLocationWithoutPrompt();
+        saveCachedPreciseLocation(precise);
+        return { ...precise, source: "browser-granted" };
+      }
+
+      if (permission.state === "prompt" && canAttemptPrecisePrompt()) {
+        markPrecisePromptAttempt();
+        const precise = await getBrowserLocationWithoutPrompt();
+        saveCachedPreciseLocation(precise);
+        return { ...precise, source: "browser-prompted" };
+      }
+    }
+  } catch {
+    // Continue with non-precise providers.
+  }
+
+  // 3) Server-side IP lookup.
+  try {
+    return await fetchLocationFromBackend();
+  } catch {
+    // Continue with browser-side providers.
+  }
+
+  // 4) Browser-side IP providers.
+  try {
+    return await fetchLocationByIp();
+  } catch {
+    // Continue to timezone fallback.
+  }
+
+  // 5) Timezone fallback.
+  const timezoneFallback = getTimezoneFallbackLocation();
+  if (timezoneFallback) {
+    return {
+      ...timezoneFallback,
+      source: "timezone-fallback",
+    };
+  }
+
+  // Final deterministic fallback to avoid empty weather widget.
+  return {
+    latitude: 52.52,
+    longitude: 13.405,
+    city: "Berlin",
+    country: "Germany",
+    source: "default-fallback",
+  };
+}
+
 function initWeatherWidget() {
   if (!weatherTemp || !weatherSummary || !weatherLocation || !weatherIcon) {
     return;
   }
 
-  if (!navigator.geolocation) {
-    weatherSummary.textContent = "GPS unavailable";
-    weatherLocation.textContent = "Your browser does not support geolocation.";
-    return;
-  }
+  weatherSummary.textContent = "Detecting location automatically...";
+  weatherLocation.textContent = "Using best available location without popup.";
 
-  navigator.geolocation.getCurrentPosition(
-    async (position) => {
-      const latitude = position.coords.latitude;
-      const longitude = position.coords.longitude;
+  (async () => {
+    try {
+      const ipLocation = await fetchBestAutomaticLocation();
+      const latitude = ipLocation.latitude;
+      const longitude = ipLocation.longitude;
 
-      try {
-        const [weather, locationName] = await Promise.all([
-          fetchWeatherByCoords(latitude, longitude),
-          fetchLocationName(latitude, longitude).catch(() => ""),
-        ]);
-        const locationText =
-          locationName ||
-          `Lat ${latitude.toFixed(2)}, Lon ${longitude.toFixed(2)}`;
-        setWeatherUI({ ...weather, locationText });
-      } catch {
-        weatherSummary.textContent = "Weather unavailable";
-        weatherLocation.textContent = "Could not load weather data right now.";
-        renderWeatherForecast([]);
-      }
-    },
-    () => {
-      weatherSummary.textContent = "GPS permission denied";
-      weatherLocation.textContent = "Enable location access for local weather.";
-    },
-    {
-      enableHighAccuracy: false,
-      timeout: 10000,
-      maximumAge: 600000,
-    },
-  );
+      const [weather, locationName] = await Promise.all([
+        fetchWeatherByCoords(latitude, longitude),
+        fetchLocationName(latitude, longitude).catch(() => ""),
+      ]);
+
+      const fallbackLabel = [ipLocation.city, ipLocation.country]
+        .filter(Boolean)
+        .join(", ");
+      const locationText =
+        locationName ||
+        fallbackLabel ||
+        `Lat ${latitude.toFixed(2)}, Lon ${longitude.toFixed(2)}`;
+
+      setWeatherUI({ ...weather, locationText });
+    } catch {
+      weatherSummary.textContent = "Weather unavailable";
+      weatherLocation.textContent = "Could not detect location automatically.";
+      renderWeatherForecast([]);
+    }
+  })();
 }
 
 async function trackPageView(pageName) {

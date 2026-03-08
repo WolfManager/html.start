@@ -532,6 +532,98 @@ function sanitizeBackupFileName(input) {
   return fileName;
 }
 
+function sanitizeIpForLookup(ip) {
+  const value = String(ip || "").trim();
+  if (!value || value === "unknown") {
+    return "";
+  }
+
+  if (
+    value === "::1" ||
+    value === "127.0.0.1" ||
+    value === "::ffff:127.0.0.1"
+  ) {
+    return "";
+  }
+
+  if (value.startsWith("::ffff:")) {
+    return value.slice(7);
+  }
+
+  return value;
+}
+
+async function fetchLocationFromProvider(url, parser) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Provider failed with status ${response.status}`);
+  }
+
+  const data = await response.json();
+  const parsed = parser(data);
+  if (
+    !parsed ||
+    !Number.isFinite(parsed.latitude) ||
+    !Number.isFinite(parsed.longitude)
+  ) {
+    throw new Error("Provider returned invalid coordinates.");
+  }
+
+  return parsed;
+}
+
+async function resolveApproxLocationByIp(ip) {
+  const cleanIp = sanitizeIpForLookup(ip);
+  const providers = [
+    {
+      url: cleanIp
+        ? `https://ipwho.is/${encodeURIComponent(cleanIp)}`
+        : "https://ipwho.is/",
+      parser: (data) => {
+        if (!data || data.success === false) {
+          return null;
+        }
+
+        return {
+          source: "ipwho.is",
+          latitude: Number(data.latitude),
+          longitude: Number(data.longitude),
+          city: String(data.city || ""),
+          country: String(data.country || ""),
+        };
+      },
+    },
+    {
+      url: cleanIp
+        ? `https://ipapi.co/${encodeURIComponent(cleanIp)}/json/`
+        : "https://ipapi.co/json/",
+      parser: (data) => {
+        if (!data || data.error) {
+          return null;
+        }
+
+        return {
+          source: "ipapi.co",
+          latitude: Number(data.latitude),
+          longitude: Number(data.longitude),
+          city: String(data.city || ""),
+          country: String(data.country_name || ""),
+        };
+      },
+    },
+  ];
+
+  for (const provider of providers) {
+    try {
+      return await fetchLocationFromProvider(provider.url, provider.parser);
+    } catch {
+      // Try next provider.
+    }
+  }
+
+  throw new Error("All IP location providers failed.");
+}
+
 function tokenize(query) {
   return String(query || "")
     .toLowerCase()
@@ -734,6 +826,28 @@ app.post("/api/events/page-view", (req, res) => {
     userAgent: req.headers["user-agent"] || "unknown",
   });
   res.json({ ok: true });
+});
+
+app.get("/api/location/auto", async (req, res) => {
+  const ip = getClientIp(req);
+
+  try {
+    const location = await resolveApproxLocationByIp(ip);
+    res.json({
+      ok: true,
+      source: location.source,
+      ip: sanitizeIpForLookup(ip) || "auto",
+      latitude: location.latitude,
+      longitude: location.longitude,
+      city: location.city,
+      country: location.country,
+    });
+  } catch {
+    res.status(503).json({
+      ok: false,
+      error: "Automatic location currently unavailable.",
+    });
+  }
 });
 
 app.use("/api/admin", checkAdminRateLimit);
