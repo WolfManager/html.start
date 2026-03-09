@@ -54,6 +54,18 @@ const adminAssistantStatusUpdatedAt = document.getElementById(
 const adminAssistantStatusRefreshBtn = document.getElementById(
   "adminAssistantStatusRefreshBtn",
 );
+const adminRuntimeMetricsGrid = document.getElementById(
+  "adminRuntimeMetricsGrid",
+);
+const adminRuntimeMetricsUpdatedAt = document.getElementById(
+  "adminRuntimeMetricsUpdatedAt",
+);
+const adminRuntimeMetricsRefreshBtn = document.getElementById(
+  "adminRuntimeMetricsRefreshBtn",
+);
+const adminRuntimeAutoRefreshState = document.getElementById(
+  "adminRuntimeAutoRefreshState",
+);
 
 const ADMIN_TOKEN_KEY = "magneto.admin.token";
 const API_BASE_URL = String(window.MAGNETO_API_BASE_URL || "")
@@ -61,6 +73,46 @@ const API_BASE_URL = String(window.MAGNETO_API_BASE_URL || "")
   .replace(/\/+$/, "");
 let currentAdminRange = "all";
 let currentBackupReason = "all";
+const RUNTIME_AUTO_REFRESH_MS = 30000;
+let runtimeMetricsIntervalId = null;
+let runtimeMetricsCountdownIntervalId = null;
+let runtimeNextRefreshAtMs = 0;
+let isRuntimeRefreshInFlight = false;
+
+function setRuntimeAutoRefreshState(isOn, secondsRemaining = null) {
+  if (!adminRuntimeAutoRefreshState) {
+    return;
+  }
+
+  const enabled = Boolean(isOn);
+  if (!enabled) {
+    adminRuntimeAutoRefreshState.textContent = "Auto-refresh OFF";
+  } else {
+    const secondsText = Number.isFinite(Number(secondsRemaining))
+      ? ` - next in ${Math.max(0, Math.ceil(Number(secondsRemaining)))}s`
+      : "";
+    adminRuntimeAutoRefreshState.textContent = `Auto-refresh ON${secondsText}`;
+  }
+
+  adminRuntimeAutoRefreshState.classList.toggle(
+    "admin-auto-refresh-on",
+    enabled,
+  );
+  adminRuntimeAutoRefreshState.classList.toggle(
+    "admin-auto-refresh-off",
+    !enabled,
+  );
+}
+
+function updateRuntimeAutoRefreshCountdown() {
+  if (runtimeMetricsIntervalId == null || runtimeNextRefreshAtMs <= 0) {
+    setRuntimeAutoRefreshState(false);
+    return;
+  }
+
+  const secondsRemaining = (runtimeNextRefreshAtMs - Date.now()) / 1000;
+  setRuntimeAutoRefreshState(true, secondsRemaining);
+}
 
 function buildApiUrl(path) {
   const target = String(path || "").trim();
@@ -1029,6 +1081,22 @@ async function fetchAdminAssistantStatus() {
   return payload;
 }
 
+async function fetchAdminRuntimeMetrics() {
+  const token = getAdminToken();
+  const response = await apiFetch("/api/admin/runtime-metrics", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || "Could not load runtime metrics.");
+  }
+
+  return payload;
+}
+
 async function downloadBackupFile(fileName) {
   const token = getAdminToken();
   const params = new URLSearchParams({ fileName });
@@ -1428,6 +1496,43 @@ function createAssistantStatusItem(label, value) {
   return item;
 }
 
+function createRuntimeHealthItem(level, reasons) {
+  const normalizedLevel = String(level || "ok").toLowerCase();
+  const safeLevel = ["ok", "warning", "critical"].includes(normalizedLevel)
+    ? normalizedLevel
+    : "ok";
+
+  const reasonText =
+    Array.isArray(reasons) && reasons.length
+      ? reasons
+          .map((item) => String(item || "").trim())
+          .filter(Boolean)
+          .join("; ")
+      : "No active alerts";
+
+  const item = document.createElement("article");
+  item.className = "admin-assistant-status-item";
+
+  const key = document.createElement("p");
+  key.className = "admin-assistant-status-key";
+  key.textContent = "Health";
+
+  const val = document.createElement("div");
+  val.className = "admin-assistant-status-value";
+
+  const badge = document.createElement("span");
+  badge.className = `admin-health-pill admin-health-${safeLevel}`;
+  badge.textContent = safeLevel.toUpperCase();
+
+  const reason = document.createElement("p");
+  reason.className = "admin-health-reasons";
+  reason.textContent = reasonText;
+
+  val.append(badge, reason);
+  item.append(key, val);
+  return item;
+}
+
 function renderAdminAssistantStatus(payload) {
   if (!adminAssistantStatusGrid) {
     return;
@@ -1558,6 +1663,174 @@ function renderAdminAssistantStatusError(errorMessage) {
   }
 }
 
+function renderAdminRuntimeMetrics(payload) {
+  if (!adminRuntimeMetricsGrid) {
+    return;
+  }
+
+  adminRuntimeMetricsGrid.innerHTML = "";
+
+  const runtime = payload?.runtime || {};
+  const requests = runtime.requests || {};
+  const status = requests.status || {};
+  const latency = runtime.latencyMs || {};
+  const routes = Array.isArray(requests.topRoutes) ? requests.topRoutes : [];
+  const health = runtime.health || {};
+
+  adminRuntimeMetricsGrid.appendChild(
+    createRuntimeHealthItem(health.level, health.reasons),
+  );
+
+  const items = [
+    ["Started At", formatAssistantDate(runtime.startedAt)],
+    ["Uptime", `${runtime.uptimeSeconds ?? 0}s`],
+    ["API Requests", String(requests.apiTotal ?? 0)],
+    ["Requests Last 60s", String(requests.last60s ?? 0)],
+    ["Request Rate", `${requests.ratePerMinute ?? 0} req/min`],
+    ["2xx", String(status["2xx"] ?? 0)],
+    ["4xx", String(status["4xx"] ?? 0)],
+    ["5xx", String(status["5xx"] ?? 0)],
+    ["Other Status", String(status.other ?? 0)],
+    ["Latency Avg", `${latency.avg ?? 0} ms`],
+    ["Latency P95", `${latency.p95 ?? 0} ms`],
+    ["Latency Sample Size", String(latency.sampleSize ?? 0)],
+    [
+      "Top Routes",
+      routes.length
+        ? routes
+            .map((item) => `${String(item.path || "-")} (${item.count ?? 0})`)
+            .join(" | ")
+        : "No API traffic yet",
+    ],
+  ];
+
+  items.forEach(([label, value]) => {
+    adminRuntimeMetricsGrid.appendChild(
+      createAssistantStatusItem(label, String(value)),
+    );
+  });
+
+  if (adminRuntimeMetricsUpdatedAt) {
+    adminRuntimeMetricsUpdatedAt.textContent = `Updated: ${formatAssistantDate(payload?.generatedAt)}`;
+  }
+}
+
+function renderAdminRuntimeMetricsError(errorMessage) {
+  if (!adminRuntimeMetricsGrid) {
+    return;
+  }
+
+  adminRuntimeMetricsGrid.innerHTML = "";
+  const fallback = document.createElement("p");
+  fallback.className = "admin-chart-empty";
+  fallback.textContent = errorMessage;
+  adminRuntimeMetricsGrid.appendChild(fallback);
+
+  if (adminRuntimeMetricsUpdatedAt) {
+    adminRuntimeMetricsUpdatedAt.textContent = "";
+  }
+}
+
+async function refreshRuntimeMetricsWithStatus(okMessage = "") {
+  if (!adminRuntimeMetricsGrid) {
+    return;
+  }
+
+  if (isRuntimeRefreshInFlight) {
+    return;
+  }
+
+  isRuntimeRefreshInFlight = true;
+
+  try {
+    const payload = await fetchAdminRuntimeMetrics();
+    renderAdminRuntimeMetrics(payload);
+    if (okMessage) {
+      setAdminStatus(okMessage);
+    }
+  } catch (error) {
+    renderAdminRuntimeMetricsError(
+      error.message || "Could not load runtime metrics.",
+    );
+    if (okMessage) {
+      setAdminStatus(error.message || "Could not load runtime metrics.", true);
+    }
+  } finally {
+    isRuntimeRefreshInFlight = false;
+  }
+}
+
+function stopRuntimeAutoRefresh() {
+  if (runtimeMetricsCountdownIntervalId != null) {
+    window.clearInterval(runtimeMetricsCountdownIntervalId);
+    runtimeMetricsCountdownIntervalId = null;
+  }
+  runtimeNextRefreshAtMs = 0;
+
+  if (runtimeMetricsIntervalId == null) {
+    setRuntimeAutoRefreshState(false);
+    return;
+  }
+
+  window.clearInterval(runtimeMetricsIntervalId);
+  runtimeMetricsIntervalId = null;
+  setRuntimeAutoRefreshState(false);
+}
+
+function shouldRunRuntimeAutoRefresh() {
+  if (!adminRuntimeMetricsGrid || !adminDashboard) {
+    return false;
+  }
+
+  if (adminDashboard.hidden) {
+    return false;
+  }
+
+  if (!getAdminToken()) {
+    return false;
+  }
+
+  if (document.visibilityState === "hidden") {
+    return false;
+  }
+
+  return true;
+}
+
+function ensureRuntimeAutoRefresh() {
+  if (!shouldRunRuntimeAutoRefresh()) {
+    stopRuntimeAutoRefresh();
+    return;
+  }
+
+  if (runtimeMetricsIntervalId != null) {
+    updateRuntimeAutoRefreshCountdown();
+    return;
+  }
+
+  runtimeNextRefreshAtMs = Date.now() + RUNTIME_AUTO_REFRESH_MS;
+
+  runtimeMetricsIntervalId = window.setInterval(() => {
+    if (!shouldRunRuntimeAutoRefresh()) {
+      stopRuntimeAutoRefresh();
+      return;
+    }
+
+    runtimeNextRefreshAtMs = Date.now() + RUNTIME_AUTO_REFRESH_MS;
+    updateRuntimeAutoRefreshCountdown();
+    refreshRuntimeMetricsWithStatus("");
+  }, RUNTIME_AUTO_REFRESH_MS);
+
+  if (runtimeMetricsCountdownIntervalId == null) {
+    runtimeMetricsCountdownIntervalId = window.setInterval(
+      updateRuntimeAutoRefreshCountdown,
+      1000,
+    );
+  }
+
+  updateRuntimeAutoRefreshCountdown();
+}
+
 async function refreshAssistantStatusWithStatus(okMessage = "") {
   if (!adminAssistantStatusGrid) {
     return;
@@ -1606,10 +1879,13 @@ async function tryAutoLogin() {
     adminDashboard.hidden = false;
     renderAdminDashboard(data);
     await refreshBackupsWithStatus("");
+    await refreshRuntimeMetricsWithStatus("");
     await refreshAssistantStatusWithStatus("");
+    ensureRuntimeAutoRefresh();
     return true;
   } catch {
     setAdminToken("");
+    stopRuntimeAutoRefresh();
     return false;
   }
 }
@@ -1618,6 +1894,8 @@ function initAdminPage() {
   if (!adminLoginForm || !adminAuthPanel || !adminDashboard) {
     return;
   }
+
+  setRuntimeAutoRefreshState(false);
 
   if (adminRange) {
     adminRange.value = currentAdminRange;
@@ -1628,6 +1906,18 @@ function initAdminPage() {
   }
 
   tryAutoLogin();
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      ensureRuntimeAutoRefresh();
+      if (shouldRunRuntimeAutoRefresh()) {
+        refreshRuntimeMetricsWithStatus("");
+      }
+      return;
+    }
+
+    stopRuntimeAutoRefresh();
+  });
 
   adminLoginForm.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -1663,7 +1953,9 @@ function initAdminPage() {
       adminDashboard.hidden = false;
       renderAdminDashboard(data);
       await refreshBackupsWithStatus("");
+      await refreshRuntimeMetricsWithStatus("");
       await refreshAssistantStatusWithStatus("");
+      ensureRuntimeAutoRefresh();
       setAdminStatus("Signed in.");
     } catch (error) {
       setAdminStatus(error.message || "Could not sign in.", true);
@@ -1672,6 +1964,7 @@ function initAdminPage() {
 
   if (adminLogoutBtn) {
     adminLogoutBtn.addEventListener("click", () => {
+      stopRuntimeAutoRefresh();
       setAdminToken("");
       adminDashboard.hidden = true;
       adminAuthPanel.hidden = false;
@@ -1704,7 +1997,9 @@ function initAdminPage() {
       try {
         const data = await fetchAdminOverview(currentAdminRange);
         renderAdminDashboard(data);
+        await refreshRuntimeMetricsWithStatus("");
         await refreshAssistantStatusWithStatus("");
+        ensureRuntimeAutoRefresh();
         setAdminStatus("Analytics refreshed.");
       } catch (error) {
         setAdminStatus(error.message || "Could not refresh analytics.", true);
@@ -1719,6 +2014,18 @@ function initAdminPage() {
       }
 
       await refreshAssistantStatusWithStatus("Assistant status refreshed.");
+    });
+  }
+
+  if (adminRuntimeMetricsRefreshBtn) {
+    adminRuntimeMetricsRefreshBtn.addEventListener("click", async () => {
+      if (adminDashboard.hidden) {
+        stopRuntimeAutoRefresh();
+        return;
+      }
+
+      await refreshRuntimeMetricsWithStatus("Runtime metrics refreshed.");
+      ensureRuntimeAutoRefresh();
     });
   }
 

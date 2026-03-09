@@ -1,6 +1,9 @@
 import os
 from pathlib import Path
+from django.core.exceptions import ImproperlyConfigured
 from urllib.parse import unquote, urlparse
+
+from core.services.security_config_service import collect_production_security_issues
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -28,7 +31,7 @@ def env_bool(name: str, default: bool) -> bool:
     return value in {"1", "true", "yes", "on"}
 
 
-def parse_database_url(database_url: str) -> dict[str, str] | None:
+def parse_database_url(database_url: str) -> dict[str, str | int] | None:
     raw = str(database_url or "").strip()
     if not raw:
         return None
@@ -55,6 +58,22 @@ def parse_database_url(database_url: str) -> dict[str, str] | None:
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "change-this-django-secret")
 DEBUG = env_bool("DJANGO_DEBUG", True)
 
+
+def validate_production_security() -> None:
+    problems = collect_production_security_issues(
+        os.environ,
+        debug=DEBUG,
+        enforce_prod_rules=False,
+    )
+
+    if problems:
+        raise ImproperlyConfigured(
+            "Insecure production configuration detected: " + "; ".join(problems)
+        )
+
+
+validate_production_security()
+
 allowed_hosts_raw = os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost")
 ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_raw.split(",") if host.strip()]
 
@@ -73,6 +92,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "core.middleware.RequestObservabilityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",

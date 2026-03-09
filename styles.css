@@ -846,6 +846,69 @@ select:focus,
   word-break: break-word;
 }
 
+.admin-health-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 0.73rem;
+  letter-spacing: 0.05em;
+  font-weight: 800;
+}
+
+.admin-health-ok {
+  color: #9af8d5;
+  border-color: rgba(98, 232, 183, 0.45);
+  background: rgba(19, 72, 56, 0.45);
+}
+
+.admin-health-warning {
+  color: #ffe9ad;
+  border-color: rgba(255, 210, 107, 0.5);
+  background: rgba(95, 70, 22, 0.45);
+}
+
+.admin-health-critical {
+  color: #ffd0c7;
+  border-color: rgba(255, 131, 110, 0.55);
+  background: rgba(105, 36, 25, 0.5);
+}
+
+.admin-health-reasons {
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: #b9dff0;
+}
+
+.admin-auto-refresh-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.admin-auto-refresh-on {
+  color: #9af8d5;
+  border-color: rgba(98, 232, 183, 0.45);
+  background: rgba(19, 72, 56, 0.45);
+}
+
+.admin-auto-refresh-off {
+  color: #c4d9e6;
+  border-color: rgba(145, 184, 206, 0.38);
+  background: rgba(26, 49, 64, 0.5);
+}
+
 .admin-assistant-status-links .admin-assistant-status-value {
   display: flex;
   gap: 8px;

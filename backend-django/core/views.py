@@ -38,6 +38,7 @@ from .services.assistant_runtime_service import (
 )
 from .services.assistant_service import generate_assistant_response
 from .services.location_service import resolve_approx_location
+from .services.runtime_metrics_service import get_runtime_metrics
 from .services.search_service import run_search
 
 
@@ -257,6 +258,20 @@ def admin_assistant_status(request):
     }
 
     return Response(payload)
+
+
+@api_view(["GET"])
+def admin_runtime_metrics(request):
+    auth_error = _admin_auth_error(request)
+    if auth_error is not None:
+        return auth_error
+
+    return Response(
+        {
+            "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "runtime": get_runtime_metrics(),
+        }
+    )
 
 
 @api_view(["GET"])

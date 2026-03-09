@@ -114,6 +114,34 @@
 
         <section class="result-card admin-assistant-status-wrap">
           <div class="admin-header-row admin-assistant-status-header">
+            <h3 class="admin-block-title">Django Runtime Metrics</h3>
+            <div class="admin-actions">
+              <span
+                id="adminRuntimeAutoRefreshState"
+                class="admin-auto-refresh-indicator admin-auto-refresh-off"
+                aria-live="polite"
+              >
+                Auto-refresh OFF
+              </span>
+              <button
+                id="adminRuntimeMetricsRefreshBtn"
+                type="button"
+                class="results-back-link"
+              >
+                Refresh Runtime
+              </button>
+            </div>
+          </div>
+
+          <div id="adminRuntimeMetricsGrid" class="admin-assistant-status-grid">
+            <p class="admin-chart-empty">Loading runtime metrics...</p>
+          </div>
+
+          <p id="adminRuntimeMetricsUpdatedAt" class="admin-assistant-meta"></p>
+        </section>
+
+        <section class="result-card admin-assistant-status-wrap">
+          <div class="admin-header-row admin-assistant-status-header">
             <h3 class="admin-block-title">Assistant AI Status</h3>
             <button
               id="adminAssistantStatusRefreshBtn"

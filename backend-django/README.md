@@ -26,6 +26,7 @@ This backend runs in parallel with the existing Node.js service.
 - `POST /api/assistant/chat`
 - `GET /api/admin/overview?range=all|24h|7d|30d`
 - `GET /api/admin/assistant-status`
+- `GET /api/admin/runtime-metrics`
 - `GET /api/admin/backups?reason=all|manual|scheduled|...`
 - `GET /api/admin/backups/download?fileName=...`
 - `POST /api/admin/backups/create`
@@ -47,11 +48,25 @@ If no providers are configured or providers fail, it falls back to local respons
 - Persistent assistant memory in `data/assistant-memory.json`
 - Runtime metrics and provider/error snapshot from `GET /api/admin/assistant-status`
 
+## Request observability
+
+- Every response includes `X-Request-ID` and `X-Response-Time-Ms` headers.
+- Incoming `X-Request-ID` is propagated when provided; otherwise it is generated server-side.
+- API calls (`/api/*`) are logged with method, path, status, duration, and request id.
+
 Admin endpoints protection:
 
 - `POST /api/auth/login` returns a Bearer token
 - `GET /api/admin/overview` and `GET /api/admin/assistant-status` require `Authorization: Bearer <token>`
 - Admin request throttling is enabled (`ADMIN_WINDOW_SECONDS`, `ADMIN_RATE_LIMIT_COUNT`)
+
+Production fail-fast security checks:
+
+- When `DJANGO_DEBUG=false`, the app will refuse to start if:
+  - `DJANGO_SECRET_KEY` is missing/default/too short
+  - `ADMIN_PASSWORD` is missing/default/too short
+  - `JWT_SECRET` is missing/default/too short
+  - `SESSION_COOKIE_SECURE` or `CSRF_COOKIE_SECURE` is explicitly set to `false`
 
 ## Run locally
 
@@ -67,6 +82,31 @@ Admin endpoints protection:
    - `python manage.py migrate`
 6. Start server:
    - `python manage.py runserver 8000`
+
+## Run tests
+
+- API regression tests (health + auth + search + location + events + admin + assistant + backup + export endpoints): `python manage.py test core.tests.test_api -v 2`
+- Full Django backend tests (API + security config): `python manage.py test core.tests -v 2`
+
+## Security preflight
+
+- Validate production-grade secrets/cookie settings without starting the server:
+  - `python manage.py preflight_security`
+- Modes:
+  - `--mode prod` (default): enforce production checks even if `DJANGO_DEBUG=true`
+  - `--mode current`: enforce checks only when `DJANGO_DEBUG=false`
+
+## CI automation
+
+- GitHub Actions workflow: `.github/workflows/django-ci.yml`
+- On push/PR it runs:
+  - `python manage.py preflight_security --mode prod`
+  - `python manage.py test core.tests -v 2`
+
+## Cutover runbook
+
+- Node -> Django migration runbook: `backend-django/CUTOVER_PLAN.md`
+- Cutover day decision template: `backend-django/CUTOVER_GO_NO_GO_TEMPLATE.md`
 
 ## Production-oriented local stack (PostgreSQL + Redis)
 

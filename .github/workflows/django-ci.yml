@@ -1,0 +1,43 @@
+name: Django CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  django-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend-django
+
+    env:
+      DJANGO_DEBUG: "true"
+      DJANGO_SECRET_KEY: "ci-django-secret-key-1234567890-abcdef"
+      ADMIN_USER: "admin"
+      ADMIN_PASSWORD: "ci-admin-password-123"
+      JWT_SECRET: "ci-jwt-secret-1234567890-abcdef"
+      SESSION_COOKIE_SECURE: "true"
+      CSRF_COOKIE_SECURE: "true"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Security preflight (production rules)
+        run: python manage.py preflight_security --mode prod
+
+      - name: Run full Django test suite
+        run: python manage.py test core.tests -v 2
