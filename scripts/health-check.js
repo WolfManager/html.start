@@ -1,4 +1,5 @@
 const path = require("path");
+const fs = require("fs");
 const dotenv = require("dotenv");
 
 const isJsonOutput = process.argv.includes("--json");
@@ -9,6 +10,8 @@ const maxLatencyArg = process.argv.find((arg) =>
 const maxLatencyMs = maxLatencyArg
   ? Number(String(maxLatencyArg).split("=")[1])
   : null;
+const saveReport = process.argv.includes("--save-report");
+const outArg = process.argv.find((arg) => String(arg).startsWith("--out="));
 
 function log(message) {
   if (!isJsonOutput) {
@@ -24,6 +27,39 @@ function logError(message) {
 
 const rootDir = path.resolve(__dirname, "..");
 const djangoDir = path.join(rootDir, "backend-django");
+
+function buildReportPath() {
+  if (outArg) {
+    const raw = String(outArg).slice("--out=".length).trim();
+    if (raw) {
+      return path.isAbsolute(raw) ? raw : path.resolve(rootDir, raw);
+    }
+  }
+
+  if (!saveReport) {
+    return "";
+  }
+
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  return path.join(
+    rootDir,
+    "data",
+    "backups",
+    "health-check",
+    `health-check-${stamp}.json`,
+  );
+}
+
+function writeReport(report) {
+  const outputPath = buildReportPath();
+  if (!outputPath) {
+    return "";
+  }
+
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+  fs.writeFileSync(outputPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+  return outputPath;
+}
 
 dotenv.config({ path: path.join(rootDir, ".env"), override: false });
 dotenv.config({ path: path.join(djangoDir, ".env"), override: false });
@@ -253,8 +289,15 @@ async function main() {
     passed: failures === 0 && gateFindings.length === 0,
   };
 
+  const savedReportPath = writeReport(report);
+  if (savedReportPath) {
+    report.savedReportPath = savedReportPath;
+  }
+
   if (isJsonOutput) {
     console.log(JSON.stringify(report, null, 2));
+  } else if (savedReportPath) {
+    log(`Saved report: ${savedReportPath}`);
   }
 
   if (failures > 0 || gateFindings.length > 0) {

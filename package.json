@@ -15,7 +15,8 @@
     "dev:full:alt-ports": "set MAGNETO_NODE_PORT=3100 && set MAGNETO_DJANGO_PORT=8100 && node scripts/dev-full.js --noreload",
     "health:check": "node scripts/health-check.js",
     "health:check:json": "node scripts/health-check.js --json",
-    "health:check:gate": "node scripts/health-check.js --json --require-admin --max-latency-ms=2500"
+    "health:check:gate": "node scripts/health-check.js --json --require-admin --max-latency-ms=2500",
+    "health:check:gate:save": "node scripts/health-check.js --json --require-admin --max-latency-ms=2500 --save-report"
   },
   "dependencies": {
     "dotenv": "^16.4.7",

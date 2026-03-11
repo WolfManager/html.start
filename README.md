@@ -80,11 +80,14 @@ After services are running, execute:
 - `npm.cmd run health:check`
 - `npm.cmd run health:check:json` (machine-readable output for CI/canary)
 - `npm.cmd run health:check:gate` (strict go/no-go gate)
+- `npm.cmd run health:check:gate:save` (strict gate + save JSON report to `data/backups/health-check/`)
 
 Gate flags:
 
 - `--require-admin` fails if admin credentials are missing
 - `--max-latency-ms=<N>` fails if any check exceeds `N` milliseconds
+- `--save-report` writes JSON output to timestamped file
+- `--out=<path>` writes JSON output to a specific file path
 
 What it checks by default:
 
