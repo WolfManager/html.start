@@ -28,6 +28,16 @@ Mark each as `PASS` or `FAIL`.
 
 ## Production smoke checks (before shifting traffic)
 
+Run from repository root (`d:\Visual Studio Code`):
+
+- `npm.cmd run health:check:gate`
+
+Expected JSON gate result:
+
+- `"passed": true`
+- `"failures": 0`
+- `"gateFailures": 0`
+
 - [ ] `GET /api/health` -> 200
 - [ ] `GET /api/admin/runtime-metrics` -> 200 with admin token
 - [ ] `GET /api/search?q=test` -> expected result shape
@@ -46,6 +56,13 @@ Observed metrics window (15-30 min):
 - p95 latency:
 - login/auth failures:
 - assistant failures:
+
+Minimum GO thresholds:
+
+- [ ] 5xx ratio <= 0.5%
+- [ ] p95 latency <= baseline + 20%
+- [ ] auth/login failures not elevated vs baseline
+- [ ] no sustained assistant fallback/error spikes
 
 Decision:
 

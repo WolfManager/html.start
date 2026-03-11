@@ -50,6 +50,11 @@ Related document:
 
 ## Health gates (must pass)
 
+Run command gate from repository root (`d:\Visual Studio Code`):
+
+- `npm.cmd run health:check:gate`
+- Require JSON result: `passed=true`, `failures=0`, `gateFailures=0`
+
 - `GET /api/health` responds `200` and stable latency.
 - `GET /api/admin/runtime-metrics` accessible with admin token.
 - Admin dashboard loads all blocks:
