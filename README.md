@@ -81,6 +81,7 @@ After services are running, execute:
 - `npm.cmd run health:check:json` (machine-readable output for CI/canary)
 - `npm.cmd run health:check:gate` (strict go/no-go gate)
 - `npm.cmd run health:check:gate:save` (strict gate + save JSON report to `data/backups/health-check/`)
+- `npm.cmd run health:check:gate:daily` (strict gate + overwrite `data/backups/health-check/latest-gate.json`)
 
 Gate flags:
 
@@ -88,6 +89,7 @@ Gate flags:
 - `--max-latency-ms=<N>` fails if any check exceeds `N` milliseconds
 - `--save-report` writes JSON output to timestamped file
 - `--out=<path>` writes JSON output to a specific file path
+- `--label=<text>` adds a label to report metadata (example: `daily`, `canary-10`)
 
 What it checks by default:
 

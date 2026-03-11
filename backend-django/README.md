@@ -208,11 +208,16 @@ From repository root run:
 - `npm.cmd run health:check`
 - `npm.cmd run health:check:json` (machine-readable output for CI/canary)
 - `npm.cmd run health:check:gate` (strict go/no-go gate)
+- `npm.cmd run health:check:gate:save` (strict gate + timestamped JSON report)
+- `npm.cmd run health:check:gate:daily` (strict gate + overwrite latest report file)
 
 Gate flags:
 
 - `--require-admin` fails if admin credentials are missing
 - `--max-latency-ms=<N>` fails if any check exceeds `N` milliseconds
+- `--save-report` writes JSON output to timestamped file
+- `--out=<path>` writes JSON output to a specific file path
+- `--label=<text>` adds a label to report metadata
 
 Defaults:
 

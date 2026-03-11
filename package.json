@@ -16,7 +16,8 @@
     "health:check": "node scripts/health-check.js",
     "health:check:json": "node scripts/health-check.js --json",
     "health:check:gate": "node scripts/health-check.js --json --require-admin --max-latency-ms=2500",
-    "health:check:gate:save": "node scripts/health-check.js --json --require-admin --max-latency-ms=2500 --save-report"
+    "health:check:gate:save": "node scripts/health-check.js --json --require-admin --max-latency-ms=2500 --save-report",
+    "health:check:gate:daily": "node scripts/health-check.js --json --require-admin --max-latency-ms=2500 --out=data/backups/health-check/latest-gate.json --label=daily"
   },
   "dependencies": {
     "dotenv": "^16.4.7",

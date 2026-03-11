@@ -12,6 +12,10 @@ const maxLatencyMs = maxLatencyArg
   : null;
 const saveReport = process.argv.includes("--save-report");
 const outArg = process.argv.find((arg) => String(arg).startsWith("--out="));
+const labelArg = process.argv.find((arg) => String(arg).startsWith("--label="));
+const reportLabel = labelArg
+  ? String(labelArg).slice("--label=".length).trim()
+  : "";
 
 function log(message) {
   if (!isJsonOutput) {
@@ -275,6 +279,7 @@ async function main() {
 
   const report = {
     generatedAt: new Date().toISOString(),
+    label: reportLabel || null,
     webBase,
     apiBase,
     adminChecksEnabled: Boolean(adminUser && adminPassword),
