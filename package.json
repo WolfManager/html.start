@@ -5,7 +5,17 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "dev:full": "node scripts/dev-full.js",
+    "dev:full:stable": "node scripts/dev-full.js --noreload",
+    "dev:full:dry": "node scripts/dev-full.js --dry-run",
+    "dev:node": "node scripts/dev-full.js --node-only",
+    "dev:django": "node scripts/dev-full.js --django-only",
+    "dev:django:stable": "node scripts/dev-full.js --django-only --noreload",
+    "dev:full:alt-ports": "set MAGNETO_NODE_PORT=3100 && set MAGNETO_DJANGO_PORT=8100 && node scripts/dev-full.js --noreload",
+    "health:check": "node scripts/health-check.js",
+    "health:check:json": "node scripts/health-check.js --json",
+    "health:check:gate": "node scripts/health-check.js --json --require-admin --max-latency-ms=2500"
   },
   "dependencies": {
     "dotenv": "^16.4.7",

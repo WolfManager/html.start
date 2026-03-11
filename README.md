@@ -73,6 +73,42 @@ MAGNETO now runs as a custom search engine with:
 6. Open:
    - `http://localhost:3000`
 
+## Quick Health Check (Node + Django parity)
+
+After services are running, execute:
+
+- `npm.cmd run health:check`
+- `npm.cmd run health:check:json` (machine-readable output for CI/canary)
+- `npm.cmd run health:check:gate` (strict go/no-go gate)
+
+Gate flags:
+
+- `--require-admin` fails if admin credentials are missing
+- `--max-latency-ms=<N>` fails if any check exceeds `N` milliseconds
+
+What it checks by default:
+
+- `GET /index.html` on Node web server (`http://localhost:3000`)
+- `GET /api/health`
+- `GET /api/search?q=test`
+- `POST /api/events/page-view`
+- `POST /api/assistant/chat`
+
+Optional admin checks (enabled only when credentials are set):
+
+- `POST /api/auth/login`
+- `GET /api/admin/overview?range=24h`
+- `GET /api/admin/runtime-metrics`
+
+Environment overrides:
+
+- `MAGNETO_WEB_BASE` (default: `http://localhost:3000`)
+- `MAGNETO_API_BASE` (default: `http://127.0.0.1:8000`)
+- `MAGNETO_NODE_PORT` (default: `3000`, used when `MAGNETO_WEB_BASE` is not set)
+- `MAGNETO_DJANGO_PORT` (default: `8000`, used when `MAGNETO_API_BASE` is not set)
+- `MAGNETO_ADMIN_USER`, `MAGNETO_ADMIN_PASSWORD` (optional, takes precedence)
+- `ADMIN_USER`, `ADMIN_PASSWORD` (optional fallback)
+
 ## Python and Django Track (Gradual Migration)
 
 For long-term AI evolution, this repository now includes a parallel Django backend in `backend-django/`.

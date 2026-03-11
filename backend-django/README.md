@@ -151,3 +151,85 @@ Health check:
 5. Tracing, metrics, alerting, and cost dashboards
 
 Keep Node as primary until endpoint parity is validated.
+
+## Frontend API base switch (no HTML edits)
+
+The frontend now reads API base URL from `config.js` at project root.
+
+Priority order:
+
+- `?apiBase=http://host:port` query parameter
+- `localStorage.MAGNETO_API_BASE_URL`
+- default value in `config.js` (currently `http://127.0.0.1:8000`)
+
+Examples:
+
+- Temporary override for one session/tab test:
+  - `http://localhost:3000/index.html?apiBase=http://127.0.0.1:8000`
+- Persistent override from browser console:
+  - `localStorage.setItem("MAGNETO_API_BASE_URL", "http://127.0.0.1:8000")`
+
+This keeps cutover simple because switching API upstream can be done by config/proxy,
+without editing `index.html`, `results.html`, or `admin.html`.
+
+## One-command local startup (Node + Django)
+
+From repository root (`d:\Visual Studio Code`):
+
+- Start both services in one terminal:
+  - `npm.cmd run dev:full`
+- Start both services with Django auto-reload disabled:
+  - `npm.cmd run dev:full:stable`
+- Dry-run command preview:
+  - `npm.cmd run dev:full:dry`
+- Start only Node frontend/backend:
+  - `npm.cmd run dev:node`
+- Start only Django API:
+  - `npm.cmd run dev:django`
+- Start only Django API without auto-reload:
+  - `npm.cmd run dev:django:stable`
+
+Notes:
+
+- Default Python command is `python`.
+- Override if needed: `set MAGNETO_PYTHON=py -3` (or your venv Python path) before running `dev:full`.
+- Default ports: Node `3000`, Django `8000`.
+- Override ports if occupied:
+  - `set MAGNETO_NODE_PORT=3100`
+  - `set MAGNETO_DJANGO_PORT=8100`
+  - then run `npm.cmd run dev:full:stable`
+- Quick alternate-port preset:
+  - `npm.cmd run dev:full:alt-ports`
+
+## Automated parity health-check
+
+From repository root run:
+
+- `npm.cmd run health:check`
+- `npm.cmd run health:check:json` (machine-readable output for CI/canary)
+- `npm.cmd run health:check:gate` (strict go/no-go gate)
+
+Gate flags:
+
+- `--require-admin` fails if admin credentials are missing
+- `--max-latency-ms=<N>` fails if any check exceeds `N` milliseconds
+
+Defaults:
+
+- Web base: `http://localhost:<MAGNETO_NODE_PORT>` (default port `3000`)
+- API base: `http://127.0.0.1:<MAGNETO_DJANGO_PORT>` (default port `8000`)
+
+Direct URL overrides (optional):
+
+- `MAGNETO_WEB_BASE`
+- `MAGNETO_API_BASE`
+
+Optional admin endpoint checks are enabled when both env vars are set:
+
+- `MAGNETO_ADMIN_USER`
+- `MAGNETO_ADMIN_PASSWORD`
+
+Fallback variables (also supported):
+
+- `ADMIN_USER`
+- `ADMIN_PASSWORD`

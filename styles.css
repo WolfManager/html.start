@@ -261,9 +261,13 @@ h1 {
   letter-spacing: -0.03em;
   line-height: 1.1;
   padding-bottom: 10px;
-  background: linear-gradient(180deg, #0a3655 0%, #2a6894 100%);
+  background: var(
+    --magneto-fill,
+    linear-gradient(180deg, #0a3655 0%, #2a6894 100%)
+  );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  background-clip: text;
   text-shadow: 0 8px 22px rgba(99, 174, 224, 0.36);
 }
 
@@ -440,6 +444,45 @@ h1 {
   overflow-y: auto;
   padding-right: 4px;
   align-content: start;
+}
+
+.assistant-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-content: flex-start;
+  min-height: 36px;
+}
+
+.assistant-chip {
+  border: 1px solid rgba(95, 168, 214, 0.44);
+  background: linear-gradient(
+    180deg,
+    rgba(246, 252, 255, 0.98),
+    rgba(226, 244, 255, 0.95)
+  );
+  color: #1f5475;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease;
+}
+
+.assistant-chip:hover {
+  transform: translateY(-1px);
+  border-color: rgba(48, 146, 205, 0.5);
+  box-shadow: 0 10px 18px rgba(40, 102, 139, 0.16);
+}
+
+.assistant-chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .assistant-bubble {

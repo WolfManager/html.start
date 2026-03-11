@@ -218,6 +218,10 @@
         </aside>
 
         <section class="center-panel" aria-label="MAGNETO search">
+          <section class="hero" aria-label="MAGNETO brand">
+            <h1>Magneto</h1>
+          </section>
+
           <section class="search-panel" aria-label="Search form">
             <form id="searchForm" class="search-form">
               <label for="searchQuery" class="sr-only"
@@ -247,6 +251,12 @@
             aria-live="polite"
           ></div>
 
+          <div
+            id="assistantSuggestions"
+            class="assistant-suggestions"
+            aria-label="Assistant suggestions"
+          ></div>
+
           <form id="assistantForm" class="assistant-form">
             <label for="assistantInput" class="sr-only"
               >Write a message to the assistant</label
@@ -264,9 +274,7 @@
       </div>
     </main>
 
-    <script>
-      window.MAGNETO_API_BASE_URL = "http://127.0.0.1:8000";
-    </script>
-    <script src="script.js?v=20260308h"></script>
+    <script src="config.js?v=20260310a"></script>
+    <script src="script.js?v=20260311b"></script>
   </body>
 </html>

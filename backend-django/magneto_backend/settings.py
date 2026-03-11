@@ -190,6 +190,15 @@ CORS_ALLOWED_ORIGINS = [
     origin.strip() for origin in cors_origins_raw.split(",") if origin.strip()
 ]
 
+magneto_node_port = str(os.getenv("MAGNETO_NODE_PORT", "")).strip()
+if magneto_node_port:
+    for origin in (
+        f"http://localhost:{magneto_node_port}",
+        f"http://127.0.0.1:{magneto_node_port}",
+    ):
+        if origin not in CORS_ALLOWED_ORIGINS:
+            CORS_ALLOWED_ORIGINS.append(origin)
+
 redis_url = str(os.getenv("REDIS_URL", "")).strip()
 if redis_url:
     CACHES = {

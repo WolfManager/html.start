@@ -10,10 +10,12 @@ const weatherLocation = document.getElementById("weatherLocation");
 const weatherForecast = document.getElementById("weatherForecast");
 const weatherPanel = document.querySelector(".weather-panel");
 const rightPanel = document.querySelector(".right-panel");
+const magnetoTitle = document.querySelector(".hero h1");
 
 const assistantThread = document.getElementById("assistantThread");
 const assistantForm = document.getElementById("assistantForm");
 const assistantInput = document.getElementById("assistantInput");
+const assistantSuggestions = document.getElementById("assistantSuggestions");
 
 const resultsQuery = document.getElementById("resultsQuery");
 const resultsMeta = document.getElementById("resultsMeta");
@@ -78,6 +80,125 @@ let runtimeMetricsIntervalId = null;
 let runtimeMetricsCountdownIntervalId = null;
 let runtimeNextRefreshAtMs = 0;
 let isRuntimeRefreshInFlight = false;
+const FLAG_ROTATION_DEFAULT_MS = 60000;
+const FLAG_ROTATION_MIN_MS = 5000;
+const FLAG_ROTATION_MAX_MS = 600000;
+let flagRotationTimerId = null;
+let currentFlagRotationIndex = 0;
+
+function getFlagRotationIntervalMs() {
+  const params = new URLSearchParams(window.location.search || "");
+  const fromQuery = Number(params.get("flagIntervalSec"));
+  let fromStorage = Number.NaN;
+
+  try {
+    fromStorage = Number(localStorage.getItem("MAGNETO_FLAG_INTERVAL_SEC"));
+  } catch (_error) {
+    fromStorage = Number.NaN;
+  }
+
+  const seconds = Number.isFinite(fromQuery)
+    ? fromQuery
+    : Number.isFinite(fromStorage)
+      ? fromStorage
+      : FLAG_ROTATION_DEFAULT_MS / 1000;
+  const ms = Math.round(seconds * 1000);
+
+  if (!Number.isFinite(ms)) {
+    return FLAG_ROTATION_DEFAULT_MS;
+  }
+
+  return Math.min(FLAG_ROTATION_MAX_MS, Math.max(FLAG_ROTATION_MIN_MS, ms));
+}
+
+function clearMagnetoFlagTimers() {
+  if (flagRotationTimerId != null) {
+    window.clearInterval(flagRotationTimerId);
+    flagRotationTimerId = null;
+  }
+}
+
+function normalizeFlagEntries(items) {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  return items
+    .map((item) => {
+      const name = String(item?.name?.common || "").trim();
+      const flagUrl = String(item?.flags?.svg || item?.flags?.png || "").trim();
+      const code = String(item?.cca2 || "").trim();
+
+      if (!name || !flagUrl || !code) {
+        return null;
+      }
+
+      return { name, flagUrl, code };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function applyMagnetoFlagFill(flagEntry) {
+  if (!magnetoTitle || !flagEntry || !flagEntry.flagUrl) {
+    return;
+  }
+
+  magnetoTitle.style.setProperty(
+    "--magneto-fill",
+    `url("${flagEntry.flagUrl}") center / cover no-repeat`,
+  );
+  magnetoTitle.setAttribute(
+    "aria-label",
+    `Magneto title filled with ${flagEntry.name} flag`,
+  );
+  magnetoTitle.title = `${flagEntry.name} flag`;
+}
+
+function renderFlagByIndex(flags, index) {
+  if (!magnetoTitle || !Array.isArray(flags) || flags.length === 0) {
+    return;
+  }
+
+  const safeIndex = ((index % flags.length) + flags.length) % flags.length;
+  applyMagnetoFlagFill(flags[safeIndex]);
+}
+
+async function initMagnetoFlagRotation() {
+  if (!magnetoTitle) {
+    return;
+  }
+
+  const rotationIntervalMs = getFlagRotationIntervalMs();
+
+  try {
+    const response = await fetch(
+      "https://restcountries.com/v3.1/all?fields=name,flags,cca2",
+    );
+
+    if (!response.ok) {
+      throw new Error("Could not load country flags.");
+    }
+
+    const payload = await response.json();
+    const flags = normalizeFlagEntries(payload);
+
+    if (flags.length === 0) {
+      return;
+    }
+
+    clearMagnetoFlagTimers();
+    currentFlagRotationIndex = 0;
+    renderFlagByIndex(flags, currentFlagRotationIndex);
+
+    flagRotationTimerId = window.setInterval(() => {
+      currentFlagRotationIndex += 1;
+      renderFlagByIndex(flags, currentFlagRotationIndex);
+    }, rotationIntervalMs);
+  } catch (_error) {
+    // Keep default gradient fill if flags cannot be loaded.
+  }
+}
 
 function setRuntimeAutoRefreshState(isOn, secondsRemaining = null) {
   if (!adminRuntimeAutoRefreshState) {
@@ -352,6 +473,7 @@ function initAssistantChat() {
     requestAnimationFrame(syncSidePanelHeights);
   });
 
+  updateAssistant(assistantInput.value);
   requestAnimationFrame(syncSidePanelHeights);
 }
 
@@ -2116,6 +2238,7 @@ function getPageNameFromPath() {
 }
 
 initHomeForm();
+initMagnetoFlagRotation();
 initWeatherWidget();
 initResultsPage();
 initAdminPage();
