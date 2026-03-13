@@ -150,7 +150,8 @@ async function main() {
     runCheck(
       "api:health",
       () => fetch(`${apiBase}/api/health`),
-      (res, body) => res.ok && body && body.status === "ok",
+      (res, body) =>
+        res.ok && body && (body.status === "ok" || body.ok === true),
     ),
     runCheck(
       "api:search",

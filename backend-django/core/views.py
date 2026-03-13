@@ -91,7 +91,7 @@ def search(request):
     log_search(
         query=query,
         result_count=len(results),
-        ip=str(request.META.get("REMOTE_ADDR") or "unknown"),
+        ip=get_client_ip(request.META),
     )
 
     return Response(
@@ -109,7 +109,7 @@ def page_view(request):
     page = str((request.data or {}).get("page") or "unknown")
     log_page_view(
         page=page,
-        ip=str(request.META.get("REMOTE_ADDR") or "unknown"),
+        ip=get_client_ip(request.META),
         user_agent=str(request.META.get("HTTP_USER_AGENT") or "unknown"),
     )
     return Response({"ok": True})
@@ -135,7 +135,7 @@ def auth_login(request):
 @api_view(["POST"])
 def assistant_chat(request):
     message = str((request.data or {}).get("message") or "").strip()
-    ip = str(request.META.get("REMOTE_ADDR") or "unknown")
+    ip = get_client_ip(request.META)
 
     register_request()
 

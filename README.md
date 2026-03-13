@@ -10,6 +10,7 @@ MAGNETO now runs as a custom search engine with:
 ## Features
 
 - Homepage with local weather widget and suggestion assistant
+- Homepage keyboard shortcuts (`/` and `Ctrl+K`) for instant search focus
 - Optional MAGNETO Assistant AI mode via backend API (with secure server-side key)
 - MAGNETO Core search endpoint (server-side ranking over your own index)
 - Results page that reads from your backend, not direct engine redirects
@@ -30,6 +31,7 @@ MAGNETO now runs as a custom search engine with:
   - login rate-limit
   - temporary lockout after repeated failed logins
   - admin API request throttling
+  - response tracing headers (`X-Request-ID`, `X-Response-Time-Ms`) and baseline browser security headers
 - Automatic backup for `data/analytics.json`:
   - periodic scheduled backups
   - write-triggered backups with retention

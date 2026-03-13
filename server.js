@@ -2,6 +2,7 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const jwt = require("jsonwebtoken");
+const { randomUUID } = require("crypto");
 
 require("dotenv").config();
 
@@ -237,6 +238,28 @@ const assistantMetrics = {
 let lastBackupAt = 0;
 
 app.use(express.json({ limit: "250kb" }));
+app.use((req, res, next) => {
+  const startedAt = Date.now();
+  const incomingRequestId = String(req.headers["x-request-id"] || "").trim();
+  const requestId = incomingRequestId || randomUUID();
+
+  req.requestId = requestId;
+  res.setHeader("X-Request-ID", requestId);
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+
+  const originalEnd = res.end.bind(res);
+  res.end = (...args) => {
+    if (!res.headersSent) {
+      res.setHeader("X-Response-Time-Ms", String(Date.now() - startedAt));
+    }
+
+    return originalEnd(...args);
+  };
+
+  next();
+});
 app.use(express.static(__dirname));
 
 function ensureAnalyticsFile() {
@@ -2410,6 +2433,43 @@ app.get("/api/admin/assistant-status", adminAuth, (_req, res) => {
           usageUrl:
             "https://console.cloud.google.com/apis/api/generativelanguage.googleapis.com/quotas",
         },
+      },
+    },
+  });
+});
+
+app.get("/api/admin/runtime-metrics", adminAuth, (_req, res) => {
+  const memory = process.memoryUsage();
+  const toMb = (bytes) =>
+    Math.round((Number(bytes || 0) / (1024 * 1024)) * 100) / 100;
+
+  res.json({
+    generatedAt: new Date().toISOString(),
+    runtime: {
+      process: {
+        nodeVersion: process.version,
+        platform: process.platform,
+        pid: process.pid,
+        uptimeSeconds: Math.round(process.uptime()),
+      },
+      memory: {
+        rssMb: toMb(memory.rss),
+        heapTotalMb: toMb(memory.heapTotal),
+        heapUsedMb: toMb(memory.heapUsed),
+        externalMb: toMb(memory.external),
+        arrayBuffersMb: toMb(memory.arrayBuffers),
+      },
+      assistant: {
+        cacheEntries: assistantCacheMap.size,
+        contextEntries: assistantContextMap.size,
+        providerHealthEntries: assistantProviderHealthMap.size,
+        modelStateEntries: assistantProviderModelStateMap.size,
+        metrics: assistantMetrics,
+      },
+      rateLimitMaps: {
+        loginAttempts: loginAttemptMap.size,
+        admin: adminRateMap.size,
+        assistant: assistantRateMap.size,
       },
     },
   });

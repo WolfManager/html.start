@@ -232,11 +232,19 @@
                 name="q"
                 type="search"
                 placeholder="Type your search"
+                enterkeyhint="search"
+                maxlength="160"
                 required
               />
 
               <button type="submit" class="search-btn">Search</button>
             </form>
+            <p
+              id="statusMessage"
+              class="status"
+              role="status"
+              aria-live="polite"
+            ></p>
           </section>
         </section>
 
@@ -275,6 +283,6 @@
     </main>
 
     <script src="config.js?v=20260310a"></script>
-    <script src="script.js?v=20260311b"></script>
+    <script src="script.js?v=20260313a"></script>
   </body>
 </html>

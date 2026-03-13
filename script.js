@@ -267,6 +267,51 @@ function updateStatus(message, isError = false) {
   statusMessage.classList.toggle("error", isError);
 }
 
+function initHomeKeyboardShortcuts() {
+  if (!searchQuery) {
+    return;
+  }
+
+  window.addEventListener("keydown", (event) => {
+    const target = event.target;
+    const isTypingTarget =
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      (target instanceof HTMLElement && target.isContentEditable);
+
+    if (
+      event.key === "/" &&
+      !isTypingTarget &&
+      !event.metaKey &&
+      !event.ctrlKey
+    ) {
+      event.preventDefault();
+      searchQuery.focus();
+      searchQuery.select();
+      updateStatus("Search focused. Type your query and press Enter.");
+      return;
+    }
+
+    if (
+      event.key.toLowerCase() === "k" &&
+      (event.ctrlKey || event.metaKey) &&
+      !event.shiftKey
+    ) {
+      event.preventDefault();
+      searchQuery.focus();
+      searchQuery.select();
+      updateStatus("Quick search ready.");
+      return;
+    }
+
+    if (event.key === "Escape" && document.activeElement === searchQuery) {
+      searchQuery.value = "";
+      updateAssistant("");
+      updateStatus("Search cleared.");
+    }
+  });
+}
+
 function addAssistantMessage(role, text) {
   if (!assistantThread) {
     return;
@@ -482,6 +527,8 @@ function initHomeForm() {
     return;
   }
 
+  updateStatus("Tip: press / or Ctrl+K to focus search.");
+
   searchForm.addEventListener("submit", (event) => {
     event.preventDefault();
 
@@ -515,6 +562,7 @@ function initHomeForm() {
   });
 
   initAssistantChat();
+  initHomeKeyboardShortcuts();
 }
 
 function getWeatherView(weatherCode) {
