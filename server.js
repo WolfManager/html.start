@@ -79,6 +79,7 @@ const analyticsPath = path.join(dataDir, "analytics.json");
 const searchIndexPath = path.join(dataDir, "search-index.json");
 const backupDir = path.join(dataDir, "backups");
 const assistantMemoryPath = path.join(dataDir, "assistant-memory.json");
+const routingStatePath = path.join(dataDir, "routing-state.json");
 
 function envNumber(
   name,
@@ -2704,6 +2705,160 @@ app.get("/api/health", (_, res) => {
       trendDailyPoints: TREND_DAILY_POINTS,
       trendWeeklyPoints: TREND_WEEKLY_POINTS,
     },
+  });
+});
+
+// ─── Traffic routing state ────────────────────────────────────────────────────
+const VALID_ROUTING_BACKENDS = ["node", "django"];
+const VALID_CANARY_PERCENTAGES = [0, 10, 50, 100];
+
+function _loadRoutingState() {
+  const defaults = {
+    activeBackend: "node",
+    canaryPercent: 100,
+    djangoUrl: String(process.env.DJANGO_API_URL || "http://127.0.0.1:8000"),
+    note: "Initial state – Node backend at 100%.",
+    updatedAt: new Date().toISOString(),
+  };
+  try {
+    const raw = fs.readFileSync(routingStatePath, "utf8");
+    const saved = JSON.parse(raw);
+    if (
+      VALID_ROUTING_BACKENDS.includes(saved.activeBackend) &&
+      VALID_CANARY_PERCENTAGES.includes(saved.canaryPercent)
+    ) {
+      // Always refresh djangoUrl from env so env overrides persist
+      saved.djangoUrl = String(
+        process.env.DJANGO_API_URL || "http://127.0.0.1:8000",
+      );
+      return { ...defaults, ...saved };
+    }
+  } catch (_) {
+    // File missing or corrupt — use defaults
+  }
+  return defaults;
+}
+
+function _saveRoutingState() {
+  fs.writeFile(
+    routingStatePath,
+    JSON.stringify(routingState, null, 2),
+    () => {},
+  );
+}
+
+let routingState = _loadRoutingState();
+
+app.get("/api/admin/routing", adminAuth, (_req, res) => {
+  res.json({
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    routing: { ...routingState },
+  });
+});
+
+app.post("/api/admin/routing", adminAuth, (req, res) => {
+  const body = req.body || {};
+  const newBackend = String(body.activeBackend || "").toLowerCase();
+  const newCanaryRaw = body.canaryPercent;
+  const newNote = String(body.note || "").slice(0, 300);
+
+  if (newBackend && !VALID_ROUTING_BACKENDS.includes(newBackend)) {
+    res
+      .status(400)
+      .json({ error: "Invalid activeBackend. Allowed: node, django." });
+    return;
+  }
+
+  if (
+    newCanaryRaw !== undefined &&
+    !VALID_CANARY_PERCENTAGES.includes(Number(newCanaryRaw))
+  ) {
+    res
+      .status(400)
+      .json({ error: "Invalid canaryPercent. Allowed: 0, 10, 50, 100." });
+    return;
+  }
+
+  if (newBackend) {
+    routingState.activeBackend = newBackend;
+  }
+
+  if (newCanaryRaw !== undefined) {
+    routingState.canaryPercent = Number(newCanaryRaw);
+  }
+
+  if (newNote) {
+    routingState.note = newNote;
+  }
+
+  routingState.updatedAt = new Date().toISOString();
+  _saveRoutingState();
+
+  res.json({
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    routing: { ...routingState },
+  });
+});
+
+app.post("/api/admin/routing/verify", adminAuth, async (_req, res) => {
+  const checks = [];
+
+  const nodeHealthUrl = `http://127.0.0.1:${PORT}/api/health`;
+  const nodeStart = Date.now();
+  try {
+    const nodeResp = await fetch(nodeHealthUrl);
+    const nodeData = await nodeResp.json().catch(() => ({}));
+    const nodeOk =
+      nodeResp.ok && (nodeData.ok === true || nodeData.status === "ok");
+    checks.push({
+      backend: "node",
+      url: nodeHealthUrl,
+      ok: nodeOk,
+      statusCode: nodeResp.status,
+      latencyMs: Date.now() - nodeStart,
+    });
+  } catch (err) {
+    checks.push({
+      backend: "node",
+      url: nodeHealthUrl,
+      ok: false,
+      error: String(err?.message || "Unreachable"),
+      latencyMs: Date.now() - nodeStart,
+    });
+  }
+
+  const djangoHealthUrl = `${routingState.djangoUrl}/api/health`;
+  const djangoStart = Date.now();
+  try {
+    const djangoResp = await fetch(djangoHealthUrl);
+    const djangoData = await djangoResp.json().catch(() => ({}));
+    const djangoOk =
+      djangoResp.ok && (djangoData.ok === true || djangoData.status === "ok");
+    checks.push({
+      backend: "django",
+      url: djangoHealthUrl,
+      ok: djangoOk,
+      statusCode: djangoResp.status,
+      latencyMs: Date.now() - djangoStart,
+    });
+  } catch (err) {
+    checks.push({
+      backend: "django",
+      url: djangoHealthUrl,
+      ok: false,
+      error: String(err?.message || "Unreachable"),
+      latencyMs: Date.now() - djangoStart,
+    });
+  }
+
+  const allOk = checks.every((c) => c.ok);
+  res.json({
+    ok: allOk,
+    generatedAt: new Date().toISOString(),
+    checks,
+    routing: { ...routingState },
   });
 });
 

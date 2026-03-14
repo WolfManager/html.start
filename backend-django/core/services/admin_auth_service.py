@@ -65,7 +65,9 @@ def process_login_attempt(*, ip: str, username: str, password: str) -> tuple[int
             _login_state[key] = state
             return 429, {"error": f"Too many login attempts. Retry in {retry_after} seconds."}, headers
 
-        if username != ADMIN_USER or password != ADMIN_PASSWORD:
+        if username != ADMIN_USER or not hmac.compare_digest(
+            password.encode("utf-8"), ADMIN_PASSWORD.encode("utf-8")
+        ):
             attempts = list(state.get("attempts") or [])
             attempts.append(now)
             state["attempts"] = attempts

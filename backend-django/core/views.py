@@ -1,5 +1,9 @@
+import json
 import os
+import threading
+import urllib.request
 from datetime import datetime, timezone
+from pathlib import Path
 
 from django.http import FileResponse, HttpResponse
 from rest_framework import status
@@ -396,3 +400,182 @@ def admin_export_csv(request):
     response = HttpResponse(csv_text, content_type="text/csv; charset=utf-8")
     response["Content-Disposition"] = 'attachment; filename="magneto-analytics.csv"'
     return response
+
+
+# ─── Traffic routing state ────────────────────────────────────────────────────
+_VALID_ROUTING_BACKENDS = {"node", "django"}
+_VALID_CANARY_PERCENTAGES = {0, 10, 50, 100}
+
+_ROUTING_STATE_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "routing-state.json"
+
+_routing_lock = threading.Lock()
+
+def _load_routing_state() -> dict:
+    defaults: dict = {
+        "activeBackend": "node",
+        "canaryPercent": 100,
+        "djangoUrl": str(os.getenv("DJANGO_API_URL", "http://127.0.0.1:8000")),
+        "note": "Initial state – Node backend at 100%.",
+        "updatedAt": datetime.now(timezone.utc).isoformat(),
+    }
+    try:
+        raw = _ROUTING_STATE_PATH.read_text(encoding="utf-8")
+        saved = json.loads(raw)
+        if (
+            saved.get("activeBackend") in _VALID_ROUTING_BACKENDS
+            and saved.get("canaryPercent") in _VALID_CANARY_PERCENTAGES
+        ):
+            saved["djangoUrl"] = str(os.getenv("DJANGO_API_URL", "http://127.0.0.1:8000"))
+            return {**defaults, **saved}
+    except Exception:
+        pass
+    return defaults
+
+def _persist_routing_state() -> None:
+    try:
+        _ROUTING_STATE_PATH.write_text(
+            json.dumps(_routing_state, indent=2), encoding="utf-8"
+        )
+    except Exception:
+        pass
+
+_routing_state: dict = _load_routing_state()
+
+
+def _get_routing_state() -> dict:
+    with _routing_lock:
+        return dict(_routing_state)
+
+
+def _update_routing_state(**kwargs) -> dict:
+    with _routing_lock:
+        for key, value in kwargs.items():
+            _routing_state[key] = value
+        _routing_state["updatedAt"] = datetime.now(timezone.utc).isoformat()
+        snapshot = dict(_routing_state)
+    _persist_routing_state()
+    return snapshot
+
+
+@api_view(["GET", "POST"])
+def admin_routing(request):
+    auth_error = _admin_auth_error(request)
+    if auth_error is not None:
+        return auth_error
+
+    if request.method == "GET":
+        return Response(
+            {
+                "ok": True,
+                "generatedAt": datetime.now(timezone.utc).isoformat(),
+                "routing": _get_routing_state(),
+            }
+        )
+
+    # POST – update routing state
+    body = request.data or {}
+    new_backend = str(body.get("activeBackend") or "").lower()
+    new_canary_raw = body.get("canaryPercent")
+    new_note = str(body.get("note") or "")[:300]
+
+    if new_backend and new_backend not in _VALID_ROUTING_BACKENDS:
+        return Response(
+            {"error": "Invalid activeBackend. Allowed: node, django."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if new_canary_raw is not None:
+        try:
+            new_canary = int(new_canary_raw)
+        except (TypeError, ValueError):
+            new_canary = -1
+        if new_canary not in _VALID_CANARY_PERCENTAGES:
+            return Response(
+                {"error": "Invalid canaryPercent. Allowed: 0, 10, 50, 100."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    else:
+        new_canary = None
+
+    updates: dict = {}
+    if new_backend:
+        updates["activeBackend"] = new_backend
+    if new_canary is not None:
+        updates["canaryPercent"] = new_canary
+    if new_note:
+        updates["note"] = new_note
+
+    updated = _update_routing_state(**updates)
+
+    return Response(
+        {
+            "ok": True,
+            "generatedAt": datetime.now(timezone.utc).isoformat(),
+            "routing": updated,
+        }
+    )
+
+
+@api_view(["POST"])
+def admin_routing_verify(request):
+    auth_error = _admin_auth_error(request)
+    if auth_error is not None:
+        return auth_error
+
+    routing = _get_routing_state()
+    django_url = str(routing.get("djangoUrl") or "http://127.0.0.1:8000")
+
+    def _probe(backend: str, url: str) -> dict:
+        import time
+
+        start = time.monotonic()
+        try:
+            req = urllib.request.Request(url, headers={"Accept": "application/json"})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                raw = resp.read(2048)
+                latency_ms = int((time.monotonic() - start) * 1000)
+                try:
+                    import json as _json
+                    data = _json.loads(raw)
+                except Exception:
+                    data = {}
+                ok = resp.status < 400 and (
+                    data.get("ok") is True or data.get("status") == "ok"
+                )
+                return {
+                    "backend": backend,
+                    "url": url,
+                    "ok": ok,
+                    "statusCode": resp.status,
+                    "latencyMs": latency_ms,
+                }
+        except Exception as exc:
+            latency_ms = int((time.monotonic() - start) * 1000)
+            return {
+                "backend": backend,
+                "url": url,
+                "ok": False,
+                "error": str(exc),
+                "latencyMs": latency_ms,
+            }
+
+    django_port = str(os.getenv("MAGNETO_DJANGO_PORT") or os.getenv("PORT", "8000"))
+    node_port = str(os.getenv("MAGNETO_NODE_PORT") or "3000")
+    node_url = f"http://127.0.0.1:{node_port}/api/health"
+    django_health_url = f"{django_url.rstrip('/')}/api/health"
+
+    checks = [
+        _probe("node", node_url),
+        _probe("django", django_health_url),
+    ]
+
+    all_ok = all(c["ok"] for c in checks)
+
+    return Response(
+        {
+            "ok": all_ok,
+            "generatedAt": datetime.now(timezone.utc).isoformat(),
+            "checks": checks,
+            "routing": routing,
+        }
+    )

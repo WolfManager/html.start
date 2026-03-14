@@ -242,6 +242,23 @@ async function main() {
           (res, body) => res.ok && body && body.runtime,
         ),
       );
+
+      results.push(
+        await runCheck(
+          "api:admin:routing",
+          () =>
+            fetch(`${apiBase}/api/admin/routing`, {
+              headers: { Authorization: `Bearer ${adminToken}` },
+            }),
+          (res, body) =>
+            res.ok &&
+            body &&
+            body.ok === true &&
+            body.routing &&
+            typeof body.routing.activeBackend === "string" &&
+            typeof body.routing.canaryPercent === "number",
+        ),
+      );
     }
   } else {
     log(

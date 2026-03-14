@@ -1,0 +1,7 @@
+{
+  "activeBackend": "node",
+  "canaryPercent": 100,
+  "djangoUrl": "http://127.0.0.1:8000",
+  "note": "Test canary",
+  "updatedAt": "2026-03-14T11:19:37.895284+00:00"
+}

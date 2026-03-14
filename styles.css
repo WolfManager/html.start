@@ -384,7 +384,7 @@ h1 {
 
 .weather-day {
   display: grid;
-  grid-template-columns: 80px 26px 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   align-items: center;
   column-gap: 12px;
   border: 1px solid rgba(94, 166, 211, 0.34);
@@ -399,12 +399,14 @@ h1 {
   color: #3d6684;
   font-size: 0.78rem;
   font-weight: 700;
+  justify-self: start;
 }
 
 .weather-day-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  justify-self: center;
   font-size: 1.08rem;
   line-height: 1;
 }
@@ -1101,6 +1103,71 @@ select:focus,
   margin: 0;
   color: var(--ink-soft);
   font-size: 0.86rem;
+}
+
+.admin-routing-wrap {
+  margin-bottom: 12px;
+}
+
+.admin-routing-header {
+  margin-bottom: 10px;
+}
+
+.admin-routing-actions {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-routing-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.admin-routing-label {
+  color: #9fd3eb;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.admin-routing-btn {
+  font-size: 0.82rem;
+}
+
+.admin-routing-verify-result {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(132, 213, 255, 0.22);
+  background: rgba(6, 20, 32, 0.6);
+}
+
+.admin-routing-verify-ok {
+  margin: 0 0 8px;
+  color: #9af8d5;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.admin-routing-verify-fail {
+  margin: 0 0 8px;
+  color: #ffd5c5;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.admin-routing-check-ok {
+  color: #9af8d5;
+}
+
+.admin-routing-check-fail {
+  color: #ffd0c7;
 }
 
 .admin-trends-wrap {

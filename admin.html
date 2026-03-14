@@ -205,6 +205,85 @@
           <ul id="adminBackupList" class="admin-list admin-list-scroll"></ul>
         </section>
 
+        <section class="result-card admin-routing-wrap" id="adminRoutingPanel">
+          <div class="admin-header-row admin-routing-header">
+            <h3 class="admin-block-title">Traffic Routing Control</h3>
+            <div class="admin-actions">
+              <button
+                id="adminRoutingRefreshBtn"
+                type="button"
+                class="results-back-link"
+              >
+                Refresh Status
+              </button>
+              <button
+                id="adminRoutingVerifyBtn"
+                type="button"
+                class="results-back-link"
+              >
+                Dry-Test Both Backends
+              </button>
+            </div>
+          </div>
+
+          <div id="adminRoutingStatusGrid" class="admin-assistant-status-grid">
+            <p class="admin-chart-empty">Loading routing state...</p>
+          </div>
+
+          <div class="admin-routing-actions">
+            <div class="admin-routing-row">
+              <span class="admin-routing-label">Active backend:</span>
+              <button
+                id="adminRoutingSetNode"
+                type="button"
+                class="results-back-link admin-routing-btn"
+                data-backend="node"
+                data-canary="100"
+                data-note="Rollback – Node backend at 100%."
+              >
+                Node (Rollback)
+              </button>
+              <button
+                id="adminRoutingSetDjango10"
+                type="button"
+                class="results-back-link admin-routing-btn"
+                data-backend="django"
+                data-canary="10"
+                data-note="Canary – Django backend at 10%."
+              >
+                Django 10%
+              </button>
+              <button
+                id="adminRoutingSetDjango50"
+                type="button"
+                class="results-back-link admin-routing-btn"
+                data-backend="django"
+                data-canary="50"
+                data-note="Canary – Django backend at 50%."
+              >
+                Django 50%
+              </button>
+              <button
+                id="adminRoutingSetDjango100"
+                type="button"
+                class="results-back-link admin-routing-btn"
+                data-backend="django"
+                data-canary="100"
+                data-note="Full cutover – Django backend at 100%."
+              >
+                Django 100%
+              </button>
+            </div>
+          </div>
+
+          <div
+            id="adminRoutingVerifyResult"
+            class="admin-routing-verify-result"
+            hidden
+          ></div>
+          <p id="adminRoutingUpdatedAt" class="admin-assistant-meta"></p>
+        </section>
+
         <section class="result-card admin-trends-wrap">
           <h3 class="admin-block-title">Search and Traffic Trends</h3>
           <p class="admin-trends-hint">
@@ -275,6 +354,6 @@
     </main>
 
     <script src="config.js?v=20260310a"></script>
-    <script src="script.js?v=20260311b"></script>
+    <script src="script.js?v=20260314h"></script>
   </body>
 </html>

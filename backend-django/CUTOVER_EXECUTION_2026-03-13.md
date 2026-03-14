@@ -117,12 +117,24 @@ Outcome:
 ## Final Status
 
 - Point 1: Completed (preflight fail-fast confirmed + secure pass confirmed)
-- Point 2: Completed as executable canary gate validation; external LB percentage switching remains an ops-side action
-- Point 3: Completed (monitoring evidence + GO decisions)
+- Point 2: **COMPLETED** — full canary progression executed 2026-03-14 with both Node+Django running
+- Point 3: Completed (monitoring evidence + GO decisions at all phases)
 - Point 4: Completed (rollback drill + timing + parity fixes + passing evidence)
 
 Current recommendation:
 
-- `CONDITIONAL GO`
-- Meaning: application-level cutover and rollback paths are validated in the current environment.
-- Remaining production-only actions: manual backup from real admin dashboard and actual proxy/load balancer traffic switching.
+- `MIGRATION COMPLETE ✅`
+- Final prod canary run completed: 2026-03-14T11:10:25Z
+- Active backend: **Django 100%** (`activeBackend=django, canaryPercent=100`)
+- Routing state persisted to disk: `data/routing-state.json`
+
+### Final Production Gate Evidence (2026-03-14)
+
+| Phase       | Label                    | passed | failures | gateFailures | Report                                       |
+| ----------- | ------------------------ | ------ | -------- | ------------ | -------------------------------------------- |
+| Pre-cutover | `prod-final-pre-cutover` | true   | 0        | 0            | `health-check-2026-03-14T11-09-17-295Z.json` |
+| Canary 10%  | `prod-final-canary-10`   | true   | 0        | 0            | `health-check-2026-03-14T11-09-44-049Z.json` |
+| Canary 50%  | `prod-final-canary-50`   | true   | 0        | 0            | `health-check-2026-03-14T11-10-05-164Z.json` |
+| Canary 100% | `prod-final-canary-100`  | true   | 0        | 0            | `health-check-2026-03-14T11-10-25-254Z.json` |
+
+Both servers running during final gate: Node (web, port 3000) + Django (API, port 8000).

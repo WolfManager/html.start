@@ -363,3 +363,94 @@ class CoreApiTests(TestCase):
         self.assertIn("p95", latency)
         self.assertIn("level", health)
         self.assertIn(health.get("level"), {"ok", "warning", "critical"})
+
+    # ── Routing Control ────────────────────────────────────────────────────────
+
+    def test_admin_routing_requires_admin_auth(self) -> None:
+        response = self.client.get("/api/admin/routing")
+        self.assertEqual(response.status_code, 401)
+
+    def test_admin_routing_get_returns_expected_shape(self) -> None:
+        token = self._admin_token()
+        response = self.client.get(
+            "/api/admin/routing",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        payload = self._json(response)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(payload.get("ok"))
+        self.assertIn("generatedAt", payload)
+        routing = payload.get("routing") or {}
+        self.assertIn("activeBackend", routing)
+        self.assertIn("canaryPercent", routing)
+        self.assertIn("djangoUrl", routing)
+        self.assertIn("note", routing)
+        self.assertIn("updatedAt", routing)
+
+    def test_admin_routing_post_switches_backend(self) -> None:
+        token = self._admin_token()
+        response = self.client.post(
+            "/api/admin/routing",
+            {"activeBackend": "django", "canaryPercent": 10, "note": "Test canary"},
+            format="json",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        payload = self._json(response)
+
+        self.assertEqual(response.status_code, 200)
+        routing = payload.get("routing") or {}
+        self.assertEqual(routing.get("activeBackend"), "django")
+        self.assertEqual(routing.get("canaryPercent"), 10)
+        self.assertEqual(routing.get("note"), "Test canary")
+
+        # Rollback to node
+        self.client.post(
+            "/api/admin/routing",
+            {"activeBackend": "node", "canaryPercent": 100},
+            format="json",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+
+    def test_admin_routing_post_rejects_invalid_backend(self) -> None:
+        token = self._admin_token()
+        response = self.client.post(
+            "/api/admin/routing",
+            {"activeBackend": "unknown-service"},
+            format="json",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_admin_routing_post_rejects_invalid_canary(self) -> None:
+        token = self._admin_token()
+        response = self.client.post(
+            "/api/admin/routing",
+            {"canaryPercent": 77},
+            format="json",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_admin_routing_verify_requires_admin_auth(self) -> None:
+        response = self.client.post("/api/admin/routing/verify")
+        self.assertEqual(response.status_code, 401)
+
+    def test_admin_routing_verify_returns_expected_shape(self) -> None:
+        token = self._admin_token()
+        response = self.client.post(
+            "/api/admin/routing/verify",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        payload = self._json(response)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("ok", payload)
+        self.assertIn("generatedAt", payload)
+        self.assertIn("checks", payload)
+        self.assertIsInstance(payload.get("checks"), list)
+        self.assertIn("routing", payload)
+        for check in payload["checks"]:
+            self.assertIn("backend", check)
+            self.assertIn("ok", check)
+            self.assertIn("latencyMs", check)

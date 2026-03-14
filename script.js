@@ -68,6 +68,18 @@ const adminRuntimeMetricsRefreshBtn = document.getElementById(
 const adminRuntimeAutoRefreshState = document.getElementById(
   "adminRuntimeAutoRefreshState",
 );
+const adminRoutingStatusGrid = document.getElementById(
+  "adminRoutingStatusGrid",
+);
+const adminRoutingUpdatedAt = document.getElementById("adminRoutingUpdatedAt");
+const adminRoutingRefreshBtn = document.getElementById(
+  "adminRoutingRefreshBtn",
+);
+const adminRoutingVerifyBtn = document.getElementById("adminRoutingVerifyBtn");
+const adminRoutingVerifyResult = document.getElementById(
+  "adminRoutingVerifyResult",
+);
+const adminRoutingBtns = document.querySelectorAll(".admin-routing-btn");
 
 const ADMIN_TOKEN_KEY = "magneto.admin.token";
 const API_BASE_URL = String(window.MAGNETO_API_BASE_URL || "")
@@ -83,32 +95,12 @@ let isRuntimeRefreshInFlight = false;
 const FLAG_ROTATION_DEFAULT_MS = 60000;
 const FLAG_ROTATION_MIN_MS = 5000;
 const FLAG_ROTATION_MAX_MS = 600000;
+const FLAG_ROTATION_INDEX_KEY = "MAGNETO_FLAG_INDEX";
 let flagRotationTimerId = null;
 let currentFlagRotationIndex = 0;
 
 function getFlagRotationIntervalMs() {
-  const params = new URLSearchParams(window.location.search || "");
-  const fromQuery = Number(params.get("flagIntervalSec"));
-  let fromStorage = Number.NaN;
-
-  try {
-    fromStorage = Number(localStorage.getItem("MAGNETO_FLAG_INTERVAL_SEC"));
-  } catch (_error) {
-    fromStorage = Number.NaN;
-  }
-
-  const seconds = Number.isFinite(fromQuery)
-    ? fromQuery
-    : Number.isFinite(fromStorage)
-      ? fromStorage
-      : FLAG_ROTATION_DEFAULT_MS / 1000;
-  const ms = Math.round(seconds * 1000);
-
-  if (!Number.isFinite(ms)) {
-    return FLAG_ROTATION_DEFAULT_MS;
-  }
-
-  return Math.min(FLAG_ROTATION_MAX_MS, Math.max(FLAG_ROTATION_MIN_MS, ms));
+  return FLAG_ROTATION_DEFAULT_MS;
 }
 
 function clearMagnetoFlagTimers() {
@@ -123,7 +115,7 @@ function normalizeFlagEntries(items) {
     return [];
   }
 
-  return items
+  const normalized = items
     .map((item) => {
       const name = String(item?.name?.common || "").trim();
       const flagUrl = String(item?.flags?.svg || item?.flags?.png || "").trim();
@@ -135,8 +127,15 @@ function normalizeFlagEntries(items) {
 
       return { name, flagUrl, code };
     })
-    .filter(Boolean)
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .filter(Boolean);
+
+  // Shuffle once so rotation is not visually stuck in alphabetic clusters (A, B, C...).
+  for (let i = normalized.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [normalized[i], normalized[j]] = [normalized[j], normalized[i]];
+  }
+
+  return normalized;
 }
 
 function applyMagnetoFlagFill(flagEntry) {
@@ -162,6 +161,12 @@ function renderFlagByIndex(flags, index) {
 
   const safeIndex = ((index % flags.length) + flags.length) % flags.length;
   applyMagnetoFlagFill(flags[safeIndex]);
+
+  try {
+    localStorage.setItem(FLAG_ROTATION_INDEX_KEY, String(safeIndex));
+  } catch (_error) {
+    // Non-blocking if storage is unavailable.
+  }
 }
 
 async function initMagnetoFlagRotation() {
@@ -188,7 +193,13 @@ async function initMagnetoFlagRotation() {
     }
 
     clearMagnetoFlagTimers();
-    currentFlagRotationIndex = 0;
+    let savedIndex = 0;
+    try {
+      savedIndex = Number(localStorage.getItem(FLAG_ROTATION_INDEX_KEY));
+    } catch (_error) {
+      savedIndex = 0;
+    }
+    currentFlagRotationIndex = Number.isFinite(savedIndex) ? savedIndex : 0;
     renderFlagByIndex(flags, currentFlagRotationIndex);
 
     flagRotationTimerId = window.setInterval(() => {
@@ -306,7 +317,6 @@ function initHomeKeyboardShortcuts() {
 
     if (event.key === "Escape" && document.activeElement === searchQuery) {
       searchQuery.value = "";
-      updateAssistant("");
       updateStatus("Search cleared.");
     }
   });
@@ -518,7 +528,6 @@ function initAssistantChat() {
     requestAnimationFrame(syncSidePanelHeights);
   });
 
-  updateAssistant(assistantInput.value);
   requestAnimationFrame(syncSidePanelHeights);
 }
 
@@ -526,8 +535,6 @@ function initHomeForm() {
   if (!searchForm || !searchQuery) {
     return;
   }
-
-  updateStatus("Tip: press / or Ctrl+K to focus search.");
 
   searchForm.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -543,10 +550,6 @@ function initHomeForm() {
     window.location.href = `results.html?q=${encodeURIComponent(query)}`;
   });
 
-  searchQuery.addEventListener("input", () => {
-    updateAssistant(searchQuery.value);
-  });
-
   quickTags.forEach((tagButton) => {
     tagButton.addEventListener("click", () => {
       const query = tagButton.dataset.query;
@@ -557,7 +560,6 @@ function initHomeForm() {
       searchQuery.value = query;
       searchQuery.focus();
       updateStatus(`Suggestion applied: ${query}`);
-      updateAssistant(query);
     });
   });
 
@@ -682,12 +684,12 @@ async function fetchLocationName(latitude, longitude) {
 }
 
 function formatForecastDay(dateIso, index) {
+  const date = new Date(`${dateIso}T12:00:00`);
   if (index === 0) {
     return "Today";
   }
 
-  const date = new Date(`${dateIso}T12:00:00`);
-  return date.toLocaleDateString("en-US", { weekday: "short" });
+  return date.toLocaleDateString("en-US", { weekday: "long" });
 }
 
 function renderWeatherForecast(forecast) {
@@ -719,7 +721,7 @@ function renderWeatherForecast(forecast) {
 
     const temp = document.createElement("p");
     temp.className = "weather-day-temp";
-    temp.textContent = `${Math.round(day.tempMax)}\u00B0 / ${Math.round(day.tempMin)}\u00B0`;
+    temp.textContent = `${Math.round(day.tempMax)}\u00B0C`;
 
     item.append(label, icon, temp);
     weatherForecast.appendChild(item);
@@ -1311,6 +1313,142 @@ async function createBackupNow() {
   }
 
   return payload.backups || [];
+}
+
+async function fetchAdminRouting() {
+  const token = getAdminToken();
+  const response = await apiFetch("/api/admin/routing", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || "Could not load routing state.");
+  }
+  return payload;
+}
+
+async function postAdminRouting(update) {
+  const token = getAdminToken();
+  const response = await apiFetch("/api/admin/routing", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(update),
+  });
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || "Could not update routing.");
+  }
+  return payload;
+}
+
+async function fetchAdminRoutingVerify() {
+  const token = getAdminToken();
+  const response = await apiFetch("/api/admin/routing/verify", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || "Routing verify failed.");
+  }
+  return payload;
+}
+
+function renderRoutingState(routing) {
+  if (!adminRoutingStatusGrid) {
+    return;
+  }
+  adminRoutingStatusGrid.innerHTML = "";
+
+  const backendLabel =
+    routing.activeBackend === "django" ? "Django" : "Node.js";
+  const canaryLabel =
+    routing.canaryPercent != null ? `${routing.canaryPercent}%` : "—";
+
+  const items = [
+    ["Active Backend", backendLabel],
+    ["Canary %", canaryLabel],
+    ["Django URL", routing.djangoUrl || "—"],
+    ["Note", routing.note || "—"],
+    [
+      "Last Changed",
+      routing.updatedAt ? new Date(routing.updatedAt).toLocaleString() : "—",
+    ],
+  ];
+
+  items.forEach(([label, value]) => {
+    adminRoutingStatusGrid.appendChild(
+      createAssistantStatusItem(label, String(value)),
+    );
+  });
+
+  if (adminRoutingUpdatedAt) {
+    adminRoutingUpdatedAt.textContent = routing.updatedAt
+      ? `State as of: ${new Date(routing.updatedAt).toLocaleString()}`
+      : "";
+  }
+}
+
+function renderRoutingVerify(result) {
+  if (!adminRoutingVerifyResult) {
+    return;
+  }
+  adminRoutingVerifyResult.hidden = false;
+  adminRoutingVerifyResult.innerHTML = "";
+
+  const header = document.createElement("p");
+  header.className = result.ok
+    ? "admin-routing-verify-ok"
+    : "admin-routing-verify-fail";
+  header.textContent = result.ok
+    ? "Dry-test PASSED – both backends reachable."
+    : "Dry-test PARTIAL – one or more backends unreachable.";
+  adminRoutingVerifyResult.appendChild(header);
+
+  const list = document.createElement("ul");
+  list.className = "admin-list";
+  (result.checks || []).forEach((check) => {
+    const li = document.createElement("li");
+    const status = check.ok ? "OK" : "FAIL";
+    const latency = check.latencyMs != null ? ` ${check.latencyMs}ms` : "";
+    const errPart = check.error ? ` — ${check.error}` : "";
+    li.textContent = `[${status}] ${check.backend.toUpperCase()} ${check.url}${latency}${errPart}`;
+    li.className = check.ok
+      ? "admin-routing-check-ok"
+      : "admin-routing-check-fail";
+    list.appendChild(li);
+  });
+  adminRoutingVerifyResult.appendChild(list);
+}
+
+async function refreshRoutingStatus(okMessage = "") {
+  if (!adminRoutingStatusGrid) {
+    return;
+  }
+  try {
+    const payload = await fetchAdminRouting();
+    renderRoutingState(payload.routing || {});
+    if (okMessage) {
+      setAdminStatus(okMessage);
+    }
+  } catch (error) {
+    if (adminRoutingStatusGrid) {
+      const errEl = document.createElement("p");
+      errEl.className = "admin-chart-empty";
+      errEl.textContent = error.message || "Could not load routing state.";
+      adminRoutingStatusGrid.innerHTML = "";
+      adminRoutingStatusGrid.appendChild(errEl);
+    }
+    if (okMessage) {
+      setAdminStatus(error.message || "Could not load routing state.", true);
+    }
+  }
 }
 
 async function restoreBackup(fileName) {
@@ -2051,6 +2189,7 @@ async function tryAutoLogin() {
     await refreshBackupsWithStatus("");
     await refreshRuntimeMetricsWithStatus("");
     await refreshAssistantStatusWithStatus("");
+    await refreshRoutingStatus("");
     ensureRuntimeAutoRefresh();
     return true;
   } catch {
@@ -2125,6 +2264,7 @@ function initAdminPage() {
       await refreshBackupsWithStatus("");
       await refreshRuntimeMetricsWithStatus("");
       await refreshAssistantStatusWithStatus("");
+      await refreshRoutingStatus("");
       ensureRuntimeAutoRefresh();
       setAdminStatus("Signed in.");
     } catch (error) {
@@ -2273,6 +2413,64 @@ function initAdminPage() {
       }
     });
   }
+
+  if (adminRoutingRefreshBtn) {
+    adminRoutingRefreshBtn.addEventListener("click", async () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+      await refreshRoutingStatus("Routing status refreshed.");
+    });
+  }
+
+  if (adminRoutingVerifyBtn) {
+    adminRoutingVerifyBtn.addEventListener("click", async () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+      try {
+        setAdminStatus("Running dry-test...");
+        const result = await fetchAdminRoutingVerify();
+        renderRoutingVerify(result);
+        renderRoutingState(result.routing || {});
+        setAdminStatus(
+          result.ok
+            ? "Dry-test PASSED."
+            : "Dry-test PARTIAL – see results below.",
+          !result.ok,
+        );
+      } catch (error) {
+        setAdminStatus(error.message || "Dry-test failed.", true);
+      }
+    });
+  }
+
+  adminRoutingBtns.forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+      const backend = btn.dataset.backend || "node";
+      const canaryPercent = Number(btn.dataset.canary ?? 100);
+      const note = btn.dataset.note || "";
+      try {
+        const result = await postAdminRouting({
+          activeBackend: backend,
+          canaryPercent,
+          note,
+        });
+        renderRoutingState(result.routing || {});
+        if (adminRoutingVerifyResult) {
+          adminRoutingVerifyResult.hidden = true;
+        }
+        setAdminStatus(
+          `Routing switched: ${backend.toUpperCase()} @ ${canaryPercent}%.`,
+        );
+      } catch (error) {
+        setAdminStatus(error.message || "Could not update routing.", true);
+      }
+    });
+  });
 }
 
 function getPageNameFromPath() {
