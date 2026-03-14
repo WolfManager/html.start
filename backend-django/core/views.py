@@ -139,6 +139,7 @@ def auth_login(request):
 @api_view(["POST"])
 def assistant_chat(request):
     message = str((request.data or {}).get("message") or "").strip()
+    history = (request.data or {}).get("history") or []
     ip = get_client_ip(request.META)
 
     register_request()
@@ -153,16 +154,18 @@ def assistant_chat(request):
             status=status.HTTP_429_TOO_MANY_REQUESTS,
         )
 
+    use_cache = not bool(history)
     cache_key = normalize_query_key(message)
-    cached = get_cache_entry(cache_key)
-    if cached:
-        register_cache_hit()
-        provider = str(cached.get("provider") or "unknown")
-        register_provider(provider)
-        return Response(cached)
+    if use_cache:
+        cached = get_cache_entry(cache_key)
+        if cached:
+            register_cache_hit()
+            provider = str(cached.get("provider") or "unknown")
+            register_provider(provider)
+            return Response(cached)
 
     try:
-        payload = generate_assistant_response(message)
+        payload = generate_assistant_response(message, history)
         provider = str(payload.get("provider") or "unknown")
         model = str(payload.get("model") or "unknown")
         helper = str(payload.get("helper") or "general")
@@ -170,7 +173,8 @@ def assistant_chat(request):
         register_provider(provider)
         if provider == "local-fallback" and payload.get("reason"):
             register_provider_error(str(payload.get("reason") or ""))
-        set_cache_entry(cache_key, payload)
+        if use_cache:
+            set_cache_entry(cache_key, payload)
         store_memory(
             ip=ip,
             message=message,

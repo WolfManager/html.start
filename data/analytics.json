@@ -111,6 +111,13 @@
       "resultCount": 12,
       "ip": "::ffff:127.0.0.1",
       "at": "2026-03-14T11:10:25.211Z"
+    },
+    {
+      "id": "s-1773494663079-7338",
+      "query": "poze din anii 200",
+      "resultCount": 2,
+      "ip": "127.0.0.1",
+      "at": "2026-03-14T13:24:23Z"
     }
   ],
   "pageViews": [
@@ -575,6 +582,34 @@
       "ip": "127.0.0.1",
       "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
       "at": "2026-03-14T13:22:25Z"
+    },
+    {
+      "id": "p-1773494640499-2775",
+      "page": "index.html",
+      "ip": "127.0.0.1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+      "at": "2026-03-14T13:24:00Z"
+    },
+    {
+      "id": "p-1773494663063-3783",
+      "page": "results.html",
+      "ip": "127.0.0.1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+      "at": "2026-03-14T13:24:23Z"
+    },
+    {
+      "id": "p-1773494677148-7576",
+      "page": "index.html",
+      "ip": "127.0.0.1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+      "at": "2026-03-14T13:24:37Z"
+    },
+    {
+      "id": "p-1773495036276-9460",
+      "page": "index.html",
+      "ip": "127.0.0.1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+      "at": "2026-03-14T13:30:36Z"
     }
   ]
 }

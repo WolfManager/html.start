@@ -101,7 +101,34 @@ def _smart_provider_hint(message: str) -> str:
         "exception",
         "stack trace",
         "refactor",
+        "server",
+        "blockchain",
+        "hardware",
+        "infrastructure",
+        "xeon",
+        "epyc",
+        "gpu",
+        "cuda",
+        "cluster",
+        "throughput",
+        "latency",
     ]
+
+    small_talk_signals = [
+        "ce faci",
+        "salut",
+        "buna",
+        "bună",
+        "hello",
+        "hi",
+        "how are you",
+        "what are you doing",
+        "who are you",
+    ]
+
+    # Keep short conversational prompts on a model that tends to answer naturally.
+    if words <= 10 and any(signal in normalized for signal in small_talk_signals):
+        return "openai"
 
     if (
         words >= complex_words
@@ -283,18 +310,90 @@ def _discover_gemini_models(force_refresh: bool = False) -> list[str]:
     return discovered
 
 
-def _build_prompt(message: str) -> str:
+def _system_instruction() -> str:
     return (
-        "You are MAGNETO Assistant. Reply in clear English, concise but useful, "
-        "practical, no markdown tables."
-        "\nUser message: " + message.strip()
+        "You are MAGNETO Assistant. Reply in the same language as the user's latest message. "
+        "Be natural, direct, accurate, and professionally helpful. Use recent conversation context "
+        "when it is provided. Do not ignore follow-up questions. For technical or infrastructure "
+        "requests, give serious server-grade recommendations when appropriate, not consumer-grade "
+        "parts by default. If requirements are missing, state reasonable assumptions and still give "
+        "a solid baseline answer. Keep answers concise but useful, and do not use markdown tables."
     )
 
 
-def _openai_chat(message: str, *, max_tokens: int = 900) -> tuple[str, str]:
+def _normalize_history(history: Any) -> list[dict[str, str]]:
+    if not isinstance(history, list):
+        return []
+
+    normalized: list[dict[str, str]] = []
+    for item in history[-8:]:
+        if not isinstance(item, dict):
+            continue
+
+        role = str(item.get("role") or "").strip().lower()
+        if role not in {"user", "assistant"}:
+            continue
+
+        content = " ".join(str(item.get("content") or "").strip().split())
+        if not content or content == "Thinking...":
+            continue
+
+        normalized.append(
+            {
+                "role": role,
+                "content": content[:2000],
+            }
+        )
+
+    return normalized
+
+
+def _openai_messages(message: str, history: list[dict[str, str]]) -> list[dict[str, str]]:
+    messages = [{"role": "system", "content": _system_instruction()}]
+    messages.extend(history)
+
+    current_message = message.strip()
+    if not history or history[-1].get("role") != "user" or history[-1].get("content") != current_message:
+        messages.append({"role": "user", "content": current_message})
+
+    return messages
+
+
+def _anthropic_messages(message: str, history: list[dict[str, str]]) -> list[dict[str, str]]:
+    messages: list[dict[str, str]] = []
+    for item in history:
+        messages.append({"role": item["role"], "content": item["content"]})
+
+    current_message = message.strip()
+    if not history or history[-1].get("role") != "user" or history[-1].get("content") != current_message:
+        messages.append({"role": "user", "content": current_message})
+
+    return messages
+
+
+def _gemini_contents(message: str, history: list[dict[str, str]]) -> list[dict[str, Any]]:
+    contents: list[dict[str, Any]] = []
+    for item in history:
+        contents.append(
+            {
+                "role": "model" if item["role"] == "assistant" else "user",
+                "parts": [{"text": item["content"]}],
+            }
+        )
+
+    current_message = message.strip()
+    if not history or history[-1].get("role") != "user" or history[-1].get("content") != current_message:
+        contents.append({"role": "user", "parts": [{"text": current_message}]})
+
+    return contents
+
+
+def _openai_chat(message: str, history: list[dict[str, str]] | None = None, *, max_tokens: int = 900) -> tuple[str, str]:
     api_key = str(os.getenv("OPENAI_API_KEY", "")).strip()
     if not api_key:
         raise RuntimeError("OpenAI key not configured")
+
+    normalized_history = _normalize_history(history)
 
     configured_models = _parse_model_candidates(
         os.getenv("OPENAI_MODEL_CANDIDATES", ""),
@@ -319,10 +418,7 @@ def _openai_chat(message: str, *, max_tokens: int = 900) -> tuple[str, str]:
             try:
                 payload = {
                     "model": model,
-                    "messages": [
-                        {"role": "system", "content": "You are MAGNETO Assistant."},
-                        {"role": "user", "content": _build_prompt(message)},
-                    ],
+                    "messages": _openai_messages(message, normalized_history),
                     "temperature": 0.5,
                     "max_tokens": int(max_tokens),
                 }
@@ -360,10 +456,12 @@ def _openai_chat(message: str, *, max_tokens: int = 900) -> tuple[str, str]:
     raise RuntimeError(last_error or "OpenAI failed for all candidate models")
 
 
-def _anthropic_chat(message: str, *, max_tokens: int = 900) -> tuple[str, str]:
+def _anthropic_chat(message: str, history: list[dict[str, str]] | None = None, *, max_tokens: int = 900) -> tuple[str, str]:
     api_key = str(os.getenv("ANTHROPIC_API_KEY", "")).strip()
     if not api_key:
         raise RuntimeError("Anthropic key not configured")
+
+    normalized_history = _normalize_history(history)
 
     configured_models = _parse_model_candidates(
         os.getenv("ANTHROPIC_MODEL_CANDIDATES", ""),
@@ -390,9 +488,10 @@ def _anthropic_chat(message: str, *, max_tokens: int = 900) -> tuple[str, str]:
             try:
                 payload = {
                     "model": model,
+                    "system": _system_instruction(),
                     "max_tokens": int(max_tokens),
                     "temperature": 0.5,
-                    "messages": [{"role": "user", "content": _build_prompt(message)}],
+                    "messages": _anthropic_messages(message, normalized_history),
                 }
                 response = _json_request(
                     "https://api.anthropic.com/v1/messages",
@@ -434,10 +533,12 @@ def _anthropic_chat(message: str, *, max_tokens: int = 900) -> tuple[str, str]:
     raise RuntimeError(last_error or "Anthropic failed for all candidate models")
 
 
-def _gemini_chat(message: str, *, max_tokens: int = 900) -> tuple[str, str]:
+def _gemini_chat(message: str, history: list[dict[str, str]] | None = None, *, max_tokens: int = 900) -> tuple[str, str]:
     api_key = str(os.getenv("GEMINI_API_KEY", "")).strip()
     if not api_key:
         raise RuntimeError("Gemini key not configured")
+
+    normalized_history = _normalize_history(history)
 
     configured_models = _parse_model_candidates(
         os.getenv("GEMINI_MODEL_CANDIDATES", ""),
@@ -459,7 +560,8 @@ def _gemini_chat(message: str, *, max_tokens: int = 900) -> tuple[str, str]:
     model_candidates = _merge_unique([*configured_models, *discovered_models])
 
     payload = {
-        "contents": [{"parts": [{"text": _build_prompt(message)}]}],
+        "systemInstruction": {"parts": [{"text": _system_instruction()}]},
+        "contents": _gemini_contents(message, normalized_history),
         "generationConfig": {"temperature": 0.5, "maxOutputTokens": int(max_tokens)},
     }
 
@@ -581,24 +683,25 @@ def probe_providers_health() -> dict[str, dict[str, Any]]:
     return checks
 
 
-def generate_assistant_response(message: str) -> dict[str, Any]:
+def generate_assistant_response(message: str, history: Any = None) -> dict[str, Any]:
     msg = str(message or "").strip()
     if not msg:
         raise ValueError("Message is required.")
     if len(msg) > ASSISTANT_MAX_CHARS:
         raise ValueError(f"Message too long. Max {ASSISTANT_MAX_CHARS} characters.")
 
+    normalized_history = _normalize_history(history)
     ordered_unique, routing_mode, routing_hint = _provider_order_for_message(msg)
 
     last_error = ""
     for provider in ordered_unique:
         try:
             if provider == "openai":
-                reply, model = _openai_chat(msg)
+                reply, model = _openai_chat(msg, normalized_history)
             elif provider == "anthropic":
-                reply, model = _anthropic_chat(msg)
+                reply, model = _anthropic_chat(msg, normalized_history)
             elif provider == "gemini":
-                reply, model = _gemini_chat(msg)
+                reply, model = _gemini_chat(msg, normalized_history)
             else:
                 continue
 
