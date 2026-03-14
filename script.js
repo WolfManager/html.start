@@ -1855,6 +1855,7 @@ function renderAdminAssistantStatus(payload) {
   const metrics = assistant.metrics || {};
   const billing = assistant.billing || {};
   const providers = assistant.providers || {};
+  const providerHealth = assistant.providerHealth || {};
 
   const runtimeMode = assistant.configured
     ? "AI provider configured"
@@ -1863,6 +1864,23 @@ function renderAdminAssistantStatus(payload) {
   const errorSummary = metrics.lastProviderError
     ? `${metrics.lastProviderError} (${formatAssistantDate(metrics.lastProviderErrorAt)})`
     : "None";
+
+  const openaiHealth = providerHealth.openai || {};
+  const anthropicHealth = providerHealth.anthropic || {};
+  const geminiHealth = providerHealth.gemini || {};
+
+  const formatProviderHealth = (entry) => {
+    if (!entry || entry.configured === false) {
+      return "Not configured";
+    }
+
+    if (entry.ok) {
+      return `OK (${String(entry.model || "-")})`;
+    }
+
+    const reason = String(entry.error || "Unavailable");
+    return `FAIL (${reason.slice(0, 120)})`;
+  };
 
   const items = [
     ["Runtime", runtimeMode],
@@ -1874,8 +1892,11 @@ function renderAdminAssistantStatus(payload) {
     ["Requests Total", String(metrics.requestsTotal ?? 0)],
     ["Cache Hits", String(metrics.cacheHits ?? 0)],
     ["OpenAI Responses", String(metrics.openaiResponses ?? 0)],
+    ["OpenAI Live", formatProviderHealth(openaiHealth)],
     ["Anthropic Responses", String(metrics.anthropicResponses ?? 0)],
+    ["Anthropic Live", formatProviderHealth(anthropicHealth)],
     ["Gemini Responses", String(metrics.geminiResponses ?? 0)],
+    ["Gemini Live", formatProviderHealth(geminiHealth)],
     ["Local Hybrid Responses", String(metrics.localHybridResponses ?? 0)],
     ["Fallback Responses", String(metrics.fallbackResponses ?? 0)],
     ["Last Provider Error", errorSummary],

@@ -40,7 +40,7 @@ from .services.assistant_runtime_service import (
     set_cache_entry,
     store_memory,
 )
-from .services.assistant_service import generate_assistant_response
+from .services.assistant_service import generate_assistant_response, probe_providers_health
 from .services.location_service import resolve_approx_location
 from .services.runtime_metrics_service import get_runtime_metrics
 from .services.search_service import run_search
@@ -207,6 +207,7 @@ def admin_assistant_status(request):
         or providers.get("geminiConfigured")
     )
     primary = str(providers.get("primary") or "openai")
+    provider_health = probe_providers_health()
 
     payload = {
         "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -217,6 +218,7 @@ def admin_assistant_status(request):
                 "primary": providers.get("primary") or "openai",
                 "fallback": providers.get("fallback") or "anthropic",
             },
+            "providerHealth": provider_health,
             "limits": {
                 "windowSeconds": int(limits.get("assistantWindowSeconds") or 0),
                 "rateLimitCount": int(limits.get("assistantRateLimitCount") or 0),
