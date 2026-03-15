@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Syne:wght@500;700;800&family=Manrope:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=20260314a" />
+    <link rel="stylesheet" href="styles.css?v=20260314g" />
   </head>
   <body>
     <div class="aurora aurora-1" aria-hidden="true"></div>
@@ -18,16 +18,112 @@
     <div class="grid-overlay" aria-hidden="true"></div>
 
     <main class="page-shell results-shell">
-      <header class="hero">
+      <header class="hero hero-results">
         <p class="badge">MAGNETO Results</p>
         <h1 id="resultsQuery">Results for your search</h1>
         <p id="resultsMeta" class="subtitle">
           The MAGNETO Core engine is preparing relevant sources.
         </p>
+        <div class="results-summary-grid" aria-label="Search overview">
+          <article class="results-summary-card">
+            <p class="results-summary-label">Results</p>
+            <p id="resultsCountValue" class="results-summary-value">0</p>
+          </article>
+          <article class="results-summary-card">
+            <p class="results-summary-label">Sort Mode</p>
+            <p id="resultsSortValue" class="results-summary-value">Relevance</p>
+          </article>
+          <article class="results-summary-card">
+            <p class="results-summary-label">Search Scope</p>
+            <p id="resultsScopeValue" class="results-summary-value">MAGNETO Core</p>
+          </article>
+        </div>
       </header>
 
+      <section class="results-filters-wrap" aria-label="Search filters">
+        <div class="results-filters-head">
+          <p class="results-section-kicker">Precision Controls</p>
+          <p class="results-section-copy">
+            Refine the engine output by language, source, category, ranking mode, and page density.
+          </p>
+        </div>
+        <form id="resultsFilters" class="results-filters-form">
+          <label class="sr-only" for="resultsFilterLanguage">Language</label>
+          <select id="resultsFilterLanguage" name="language">
+            <option value="">All languages</option>
+            <option value="ro">Romanian</option>
+            <option value="en">English</option>
+          </select>
+
+          <label class="sr-only" for="resultsFilterCategory">Category</label>
+          <select id="resultsFilterCategory" name="category">
+            <option value="">All categories</option>
+            <option value="Knowledge">Knowledge</option>
+            <option value="News">News</option>
+            <option value="Development">Development</option>
+            <option value="Technology">Technology</option>
+            <option value="Images">Images</option>
+            <option value="Education">Education</option>
+            <option value="Career">Career</option>
+          </select>
+
+          <label class="sr-only" for="resultsFilterSource">Source</label>
+          <input
+            id="resultsFilterSource"
+            name="source"
+            type="text"
+            placeholder="Source slug/name"
+            maxlength="80"
+            list="resultsSourceOptions"
+            autocomplete="off"
+          />
+          <datalist id="resultsSourceOptions"></datalist>
+
+          <label class="sr-only" for="resultsFilterSort">Sort</label>
+          <select id="resultsFilterSort" name="sort">
+            <option value="relevance" selected>Sort: Relevance</option>
+            <option value="newest">Sort: Newest</option>
+            <option value="quality">Sort: Quality</option>
+          </select>
+
+          <label class="sr-only" for="resultsFilterLimit">Limit</label>
+          <select id="resultsFilterLimit" name="limit">
+            <option value="10">Top 10</option>
+            <option value="20" selected>Top 20</option>
+            <option value="30">Top 30</option>
+            <option value="50">Top 50</option>
+          </select>
+
+          <button type="submit" class="results-filter-btn">Apply filters</button>
+          <button
+            id="resultsFilterReset"
+            type="button"
+            class="results-filter-btn results-filter-btn-secondary"
+          >
+            Reset
+          </button>
+        </form>
+        <div id="resultsFacets" class="results-facets" aria-live="polite"></div>
+      </section>
+
       <section class="results-panel" aria-label="Search results">
+        <div class="results-panel-head">
+          <p class="results-section-kicker">Ranked Output</p>
+          <p class="results-section-copy">
+            Every card is rendered from the current MAGNETO index with applied filters and live ranking context.
+          </p>
+        </div>
         <ul id="resultsList" class="results-list"></ul>
+        <div id="resultsPagination" class="results-pagination" aria-label="Results pagination">
+          <button id="resultsPrevPage" type="button" class="results-page-btn">
+            Previous
+          </button>
+          <div id="resultsPageNumbers" class="results-page-numbers" aria-live="polite"></div>
+          <p id="resultsPageMeta" class="results-page-meta">Page 1</p>
+          <button id="resultsNextPage" type="button" class="results-page-btn">
+            Next
+          </button>
+        </div>
       </section>
 
       <p class="results-back-wrap">
@@ -36,6 +132,6 @@
     </main>
 
     <script src="config.js?v=20260310a"></script>
-    <script src="script.js?v=20260314i"></script>
+    <script src="script.js?v=20260314o"></script>
   </body>
 </html>

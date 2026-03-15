@@ -80,6 +80,11 @@ const searchIndexPath = path.join(dataDir, "search-index.json");
 const backupDir = path.join(dataDir, "backups");
 const assistantMemoryPath = path.join(dataDir, "assistant-memory.json");
 const routingStatePath = path.join(dataDir, "routing-state.json");
+const indexSyncStatePath = path.join(dataDir, "index-sync-state.json");
+const SEARCH_PROXY_TIMEOUT_MS = envNumber("SEARCH_PROXY_TIMEOUT_MS", 5000, {
+  min: 500,
+  max: 30000,
+});
 
 function envNumber(
   name,
@@ -119,6 +124,34 @@ const BACKUP_MIN_INTERVAL_MS =
   1000;
 const BACKUP_SCHEDULE_MS =
   envNumber("BACKUP_SCHEDULE_MINUTES", 60, { min: 1, max: 1440 }) * 60 * 1000;
+const DJANGO_INDEX_SYNC_INTERVAL_MS =
+  envNumber("DJANGO_INDEX_SYNC_INTERVAL_MINUTES", 15, { min: 1, max: 1440 }) *
+  60 *
+  1000;
+const DJANGO_INDEX_SYNC_MAX_PAGES = envNumber(
+  "DJANGO_INDEX_SYNC_MAX_PAGES",
+  50,
+  {
+    min: 1,
+    max: 300,
+  },
+);
+const DJANGO_INDEX_SYNC_PAGE_SIZE = envNumber(
+  "DJANGO_INDEX_SYNC_PAGE_SIZE",
+  200,
+  {
+    min: 1,
+    max: 500,
+  },
+);
+const DJANGO_INDEX_SYNC_ENABLED =
+  String(process.env.DJANGO_INDEX_SYNC_ENABLED || "true")
+    .trim()
+    .toLowerCase() !== "false";
+const DJANGO_INDEX_SYNC_STARTUP =
+  String(process.env.DJANGO_INDEX_SYNC_STARTUP || "true")
+    .trim()
+    .toLowerCase() !== "false";
 const MAX_BACKUP_FILES = envNumber("MAX_BACKUP_FILES", 120, {
   min: 5,
   max: 10000,
@@ -237,6 +270,13 @@ const assistantMetrics = {
   helperCounts: {},
 };
 let lastBackupAt = 0;
+let djangoSyncInFlight = false;
+let djangoSyncRuntime = {
+  lastRunAt: "",
+  lastSuccessAt: "",
+  lastError: "",
+  lastSummary: null,
+};
 
 app.use(express.json({ limit: "250kb" }));
 app.use((req, res, next) => {
@@ -284,6 +324,27 @@ function ensureAnalyticsFile() {
     fs.writeFileSync(
       assistantMemoryPath,
       JSON.stringify({ chats: [] }, null, 2),
+      "utf8",
+    );
+  }
+
+  if (!fs.existsSync(searchIndexPath)) {
+    fs.writeFileSync(searchIndexPath, JSON.stringify([], null, 2), "utf8");
+  }
+
+  if (!fs.existsSync(indexSyncStatePath)) {
+    fs.writeFileSync(
+      indexSyncStatePath,
+      JSON.stringify(
+        {
+          updatedSince: "",
+          lastRunAt: "",
+          lastSuccessAt: "",
+          lastError: "",
+        },
+        null,
+        2,
+      ),
       "utf8",
     );
   }
@@ -498,6 +559,177 @@ function readJson(filePath, fallback) {
 
 function writeJson(filePath, value) {
   fs.writeFileSync(filePath, JSON.stringify(value, null, 2), "utf8");
+}
+
+function toSafeFileStamp() {
+  return new Date().toISOString().replace(/[:.]/g, "-");
+}
+
+function normalizeIndexUrl(url) {
+  const raw = String(url || "").trim();
+  if (!raw) {
+    return "";
+  }
+
+  try {
+    const parsed = new URL(raw);
+    parsed.hash = "";
+    parsed.hostname = parsed.hostname.toLowerCase();
+    if (
+      (parsed.protocol === "https:" && parsed.port === "443") ||
+      (parsed.protocol === "http:" && parsed.port === "80")
+    ) {
+      parsed.port = "";
+    }
+
+    let pathname = parsed.pathname || "/";
+    pathname = pathname.replace(/\/+$/g, "");
+    parsed.pathname = pathname || "/";
+    return parsed.toString();
+  } catch {
+    return raw;
+  }
+}
+
+function backupSearchIndex(reason = "manual") {
+  if (!fs.existsSync(searchIndexPath)) {
+    return null;
+  }
+
+  const safeReason =
+    String(reason || "manual")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9-]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "manual";
+  const targetName = `search-index-${toSafeFileStamp()}-${safeReason}.json`;
+  const targetPath = path.join(backupDir, targetName);
+  fs.copyFileSync(searchIndexPath, targetPath);
+  return targetName;
+}
+
+function resetLocalSearchArtifactsCache() {
+  localSearchArtifactsCache = {
+    mtimeMs: -1,
+    size: -1,
+    docs: [],
+    tokenDfMap: new Map(),
+    vocabulary: [],
+    docCount: 0,
+  };
+}
+
+function rebuildLocalSearchIndex({ mergeDocs = [], createBackup = true } = {}) {
+  const existing = readJson(searchIndexPath, []);
+  const incoming = Array.isArray(mergeDocs) ? mergeDocs : [];
+  const rawDocs = [...(Array.isArray(existing) ? existing : []), ...incoming];
+
+  const beforeCount = rawDocs.length;
+  const byUrl = new Map();
+  let removedInvalid = 0;
+
+  for (const rawDoc of rawDocs) {
+    if (!rawDoc || typeof rawDoc !== "object") {
+      removedInvalid += 1;
+      continue;
+    }
+
+    const normalizedUrl = normalizeIndexUrl(rawDoc.url);
+    const title = String(rawDoc.title || "").trim();
+    const summary = String(rawDoc.summary || "").trim();
+
+    if (!normalizedUrl || (!title && !summary)) {
+      removedInvalid += 1;
+      continue;
+    }
+
+    const normalizedDoc = normalizeIndexedDoc({
+      ...rawDoc,
+      url: normalizedUrl,
+      id:
+        String(rawDoc.id || "").trim() ||
+        `doc-${stableHashString(normalizedUrl)}`,
+      title: title || normalizedUrl,
+      summary,
+    });
+
+    byUrl.set(normalizedUrl.toLowerCase(), normalizedDoc);
+  }
+
+  const rebuilt = [...byUrl.values()].sort((left, right) => {
+    const leftQuality = Number(left.qualityScore || 0);
+    const rightQuality = Number(right.qualityScore || 0);
+    if (rightQuality !== leftQuality) {
+      return rightQuality - leftQuality;
+    }
+    return String(left.title || "").localeCompare(String(right.title || ""));
+  });
+
+  let backupFile = null;
+  if (createBackup) {
+    backupFile = backupSearchIndex("index-refresh");
+  }
+
+  writeJson(searchIndexPath, rebuilt);
+  resetLocalSearchArtifactsCache();
+  const artifacts = getLocalSearchArtifacts();
+
+  return {
+    beforeCount,
+    afterCount: rebuilt.length,
+    removedInvalid,
+    deduplicated: Math.max(0, beforeCount - rebuilt.length - removedInvalid),
+    backupFile,
+    artifacts: {
+      docCount: artifacts.docCount,
+      vocabularySize: artifacts.vocabulary.length,
+      tokenDfSize: artifacts.tokenDfMap.size,
+    },
+  };
+}
+
+function getSearchIndexStats() {
+  const docs = getLocalSearchArtifacts().docs || [];
+  const languageMap = new Map();
+  const categoryMap = new Map();
+  const sourceMap = new Map();
+
+  for (const doc of docs) {
+    const language = String(doc.language || "").trim() || "unknown";
+    const category = String(doc.category || "").trim() || "unknown";
+    const source =
+      String(doc.sourceName || doc.sourceSlug || "").trim() || "unknown";
+    languageMap.set(language, (languageMap.get(language) || 0) + 1);
+    categoryMap.set(category, (categoryMap.get(category) || 0) + 1);
+    sourceMap.set(source, (sourceMap.get(source) || 0) + 1);
+  }
+
+  const toTopEntries = (map, limit = 10) =>
+    [...map.entries()]
+      .sort((left, right) => {
+        if (right[1] !== left[1]) {
+          return right[1] - left[1];
+        }
+        return left[0].localeCompare(right[0]);
+      })
+      .slice(0, limit)
+      .map(([value, count]) => ({ value, count }));
+
+  const fileStats = fs.existsSync(searchIndexPath)
+    ? fs.statSync(searchIndexPath)
+    : null;
+
+  return {
+    totalDocs: docs.length,
+    file: {
+      path: searchIndexPath,
+      sizeBytes: Number(fileStats?.size || 0),
+      mtime: fileStats?.mtime ? fileStats.mtime.toISOString() : "",
+    },
+    topLanguages: toTopEntries(languageMap, 8),
+    topCategories: toTopEntries(categoryMap, 8),
+    topSources: toTopEntries(sourceMap, 12),
+  };
 }
 
 function parseRangeToSince(range) {
@@ -726,6 +958,74 @@ function sanitizeBackupFileName(input) {
   }
 
   return fileName;
+}
+
+function listSearchIndexBackups() {
+  if (!fs.existsSync(backupDir)) {
+    return [];
+  }
+
+  return fs
+    .readdirSync(backupDir)
+    .filter(
+      (name) =>
+        name.startsWith("search-index-") &&
+        name.toLowerCase().endsWith(".json"),
+    )
+    .map((name) => {
+      const fullPath = path.join(backupDir, name);
+      const stat = fs.statSync(fullPath);
+      const reasonMatch = name.match(
+        /^search-index-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z-(.+)\.json$/i,
+      );
+
+      return {
+        fileName: name,
+        sizeBytes: stat.size,
+        createdAt: new Date(stat.mtimeMs).toISOString(),
+        reason: reasonMatch ? reasonMatch[1] : "unknown",
+      };
+    })
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+}
+
+function sanitizeSearchIndexBackupFileName(input) {
+  const fileName = path.basename(String(input || "").trim());
+  if (
+    !fileName ||
+    !fileName.startsWith("search-index-") ||
+    !fileName.toLowerCase().endsWith(".json")
+  ) {
+    return "";
+  }
+
+  return fileName;
+}
+
+function restoreSearchIndexFromBackup(fileName, { createBackup = true } = {}) {
+  const sanitized = sanitizeSearchIndexBackupFileName(fileName);
+  if (!sanitized) {
+    throw new Error("Invalid search-index backup file name.");
+  }
+
+  const sourcePath = path.join(backupDir, sanitized);
+  if (!fs.existsSync(sourcePath)) {
+    throw new Error("Search-index backup file not found.");
+  }
+
+  let backupFile = null;
+  if (createBackup) {
+    backupFile = backupSearchIndex("pre-restore");
+  }
+
+  fs.copyFileSync(sourcePath, searchIndexPath);
+  resetLocalSearchArtifactsCache();
+  getLocalSearchArtifacts();
+
+  return {
+    restoredFrom: sanitized,
+    preRestoreBackup: backupFile,
+  };
 }
 
 function getAssistantRateState(ip) {
@@ -1897,66 +2197,2218 @@ async function resolveApproxLocationByIp(ip) {
 }
 
 function tokenize(query) {
+  const stopwords = new Set([
+    "a",
+    "an",
+    "and",
+    "are",
+    "as",
+    "at",
+    "au",
+    "cu",
+    "da",
+    "de",
+    "din",
+    "do",
+    "for",
+    "from",
+    "in",
+    "la",
+    "of",
+    "on",
+    "or",
+    "pe",
+    "si",
+    "sunt",
+    "the",
+    "to",
+    "un",
+    "una",
+  ]);
+
   return String(query || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
-    .split(/[^a-z0-9]+/i)
+    .split(/[^\p{L}\p{N}]+/u)
     .map((token) => token.trim())
-    .filter(Boolean);
+    .filter(
+      (token) => Boolean(token) && token.length >= 2 && !stopwords.has(token),
+    );
 }
 
-function computeScore(doc, tokens) {
+const QUERY_SYNONYMS = {
+  ai: ["artificial", "intelligence", "machine", "learning", "llm"],
+  ml: ["machine", "learning"],
+  js: ["javascript"],
+  ux: ["design", "experience"],
+  ui: ["interface", "design"],
+  go: ["golang"],
+  db: ["database"],
+};
+
+const CATEGORY_FRESHNESS_BASE_DAYS = {
+  news: 1,
+  media: 3,
+  technology: 5,
+  ai: 7,
+  cloud: 12,
+  development: 18,
+  "data science": 18,
+  finance: 12,
+  science: 20,
+  education: 24,
+  career: 20,
+  research: 28,
+  knowledge: 45,
+};
+
+let localSearchArtifactsCache = {
+  mtimeMs: -1,
+  size: -1,
+  docs: [],
+  tokenDfMap: new Map(),
+  vocabulary: [],
+  docCount: 0,
+};
+
+function getSearchIndexFileFingerprint() {
+  try {
+    const stats = fs.statSync(searchIndexPath);
+    return {
+      mtimeMs: Number(stats.mtimeMs || 0),
+      size: Number(stats.size || 0),
+    };
+  } catch {
+    return {
+      mtimeMs: 0,
+      size: 0,
+    };
+  }
+}
+
+function buildLocalSearchArtifacts() {
+  const index = readJson(searchIndexPath, []);
+  const docs = index.map((doc) => normalizeIndexedDoc(doc));
+  const tokenDfMap = new Map();
+  const vocabulary = new Set();
+
+  for (const doc of docs) {
+    const uniqueDocTokens = new Set();
+    const tokenBuckets = [
+      tokenize(doc.title || ""),
+      tokenize(doc.summary || ""),
+      tokenize(doc.category || ""),
+      tokenize(doc.url || ""),
+      ...(Array.isArray(doc.tags)
+        ? doc.tags.map((tag) => tokenize(String(tag || "")))
+        : []),
+    ];
+
+    for (const bucket of tokenBuckets) {
+      for (const token of bucket) {
+        uniqueDocTokens.add(token);
+        if (token.length >= 3) {
+          vocabulary.add(token);
+        }
+      }
+    }
+
+    for (const token of uniqueDocTokens) {
+      tokenDfMap.set(token, (tokenDfMap.get(token) || 0) + 1);
+    }
+  }
+
+  return {
+    docs,
+    tokenDfMap,
+    vocabulary: [...vocabulary],
+    docCount: docs.length,
+  };
+}
+
+function getLocalSearchArtifacts() {
+  const fingerprint = getSearchIndexFileFingerprint();
+  const cache = localSearchArtifactsCache;
+  const unchanged =
+    cache.mtimeMs === fingerprint.mtimeMs && cache.size === fingerprint.size;
+  if (unchanged && Array.isArray(cache.docs) && cache.docs.length > 0) {
+    return cache;
+  }
+
+  const built = buildLocalSearchArtifacts();
+  localSearchArtifactsCache = {
+    ...built,
+    mtimeMs: fingerprint.mtimeMs,
+    size: fingerprint.size,
+  };
+  return localSearchArtifactsCache;
+}
+
+function computeFreshnessScore(fetchedAt) {
+  const parsedFetchedAt = Date.parse(String(fetchedAt || ""));
+  if (!Number.isFinite(parsedFetchedAt)) {
+    return 0;
+  }
+
+  return Math.max(
+    0,
+    Math.min(
+      100,
+      100 - Math.floor((Date.now() - parsedFetchedAt) / (24 * 60 * 60 * 1000)),
+    ),
+  );
+}
+
+function getTokenIdfWeight(token, tokenDfMap, docCount) {
+  const docs = Math.max(1, Number(docCount || 1));
+  const df = Number(tokenDfMap?.get(token) || 0);
+  const weight = 1 + Math.log(1 + docs / (1 + df));
+  return Number.isFinite(weight) ? weight : 1;
+}
+
+function extractQuotedPhrases(query) {
+  const input = String(query || "");
+  const phrases = [];
+  const seen = new Set();
+  const regex = /"([^"]{2,})"/g;
+  let match = regex.exec(input);
+  while (match) {
+    const phrase = normalizeSearchText(match[1]);
+    if (phrase && phrase.length >= 2 && !seen.has(phrase)) {
+      seen.add(phrase);
+      phrases.push(phrase);
+    }
+    match = regex.exec(input);
+  }
+  return phrases;
+}
+
+function stableHashString(value) {
+  const text = String(value || "");
+  let hash = 2166136261;
+  for (let idx = 0; idx < text.length; idx += 1) {
+    hash ^= text.charCodeAt(idx);
+    hash +=
+      (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+  }
+  return Math.abs(hash >>> 0);
+}
+
+function estimateFetchedAt(doc) {
+  const explicit = String(doc.fetchedAt || doc.fetched_at || "").trim();
+  if (explicit && Number.isFinite(Date.parse(explicit))) {
+    return explicit;
+  }
+
+  const categoryKey = normalizeSearchText(doc.category || "");
+  const baseDays = CATEGORY_FRESHNESS_BASE_DAYS[categoryKey] || 21;
+  const spreadDays =
+    stableHashString(doc.id || doc.url || doc.title || "") % 14;
+  const totalDays = Math.max(0, baseDays + spreadDays);
+  const date = new Date(Date.now() - totalDays * 24 * 60 * 60 * 1000);
+  return date.toISOString();
+}
+
+function expandQueryTokens(tokens) {
+  const seen = new Set();
+  const expanded = [];
+
+  for (const token of tokens) {
+    const candidates = [token, ...(QUERY_SYNONYMS[token] || [])];
+    if (token.endsWith("ies") && token.length > 4) {
+      candidates.push(`${token.slice(0, -3)}y`);
+    }
+    if (token.endsWith("ing") && token.length > 5) {
+      candidates.push(token.slice(0, -3));
+    }
+    if (token.endsWith("ed") && token.length > 4) {
+      candidates.push(token.slice(0, -2));
+    }
+    if (token.endsWith("es") && token.length > 4) {
+      candidates.push(token.slice(0, -2));
+    }
+    if (token.endsWith("s") && token.length > 3) {
+      candidates.push(token.slice(0, -1));
+    }
+
+    for (const candidate of candidates) {
+      const clean = String(candidate || "")
+        .trim()
+        .toLowerCase();
+      if (!clean || clean.length < 2 || seen.has(clean)) {
+        continue;
+      }
+      seen.add(clean);
+      expanded.push(clean);
+    }
+  }
+
+  return expanded;
+}
+
+function isOneEditAway(left, right) {
+  if (left === right) {
+    return false;
+  }
+  if (Math.min(left.length, right.length) < 4) {
+    return false;
+  }
+  if (Math.abs(left.length - right.length) > 1) {
+    return false;
+  }
+
+  let leftIndex = 0;
+  let rightIndex = 0;
+  let edits = 0;
+
+  while (leftIndex < left.length && rightIndex < right.length) {
+    if (left[leftIndex] === right[rightIndex]) {
+      leftIndex += 1;
+      rightIndex += 1;
+      continue;
+    }
+
+    edits += 1;
+    if (edits > 1) {
+      return false;
+    }
+
+    if (left.length > right.length) {
+      leftIndex += 1;
+    } else if (right.length > left.length) {
+      rightIndex += 1;
+    } else {
+      leftIndex += 1;
+      rightIndex += 1;
+    }
+  }
+
+  if (leftIndex < left.length || rightIndex < right.length) {
+    edits += 1;
+  }
+
+  return edits <= 1;
+}
+
+function scoreTokenAgainstField(token, fieldTokens, weights) {
+  if (fieldTokens.some((candidate) => candidate === token)) {
+    return weights.exact;
+  }
+  if (
+    fieldTokens.some(
+      (candidate) =>
+        candidate !== token &&
+        (candidate.startsWith(token) || token.startsWith(candidate)),
+    )
+  ) {
+    return weights.prefix;
+  }
+  if (fieldTokens.some((candidate) => isOneEditAway(token, candidate))) {
+    return weights.fuzzy;
+  }
+  if (
+    fieldTokens.some(
+      (candidate) =>
+        candidate.length > token.length && candidate.includes(token),
+    )
+  ) {
+    return weights.substring;
+  }
+  return 0;
+}
+
+function computeScore(
+  doc,
+  tokens,
+  { rawQuery = "", phrases = [], tokenDfMap = null, docCount = 1 } = {},
+) {
   if (tokens.length === 0) {
     return 0;
   }
 
-  const title = String(doc.title || "").toLowerCase();
-  const summary = String(doc.summary || "").toLowerCase();
-  const category = String(doc.category || "").toLowerCase();
+  const expandedTokens = expandQueryTokens(tokens);
+
+  const titleTokens = tokenize(String(doc.title || ""));
+  const summaryTokens = tokenize(String(doc.summary || ""));
+  const categoryTokens = tokenize(String(doc.category || ""));
+  const urlTokens = tokenize(
+    String(doc.url || "")
+      .replace(/https?:\/\//, "")
+      .replace(/[.\-/_]/g, " "),
+  );
   const tags = Array.isArray(doc.tags)
-    ? doc.tags.map((tag) => String(tag || "").toLowerCase())
+    ? doc.tags.flatMap((tag) => tokenize(String(tag || "")))
     : [];
+
+  const titleArr = titleTokens;
+  const summaryArr = summaryTokens;
+  const categoryArr = categoryTokens;
+  const urlArr = urlTokens;
+  const tagsArr = tags;
+  const normalizedTitle = String(doc.title || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  const normalizedSummary = String(doc.summary || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  const normalizedQuery =
+    normalizeSearchText(rawQuery) || tokens.join(" ").trim();
 
   let score = 0;
 
-  for (const token of tokens) {
-    if (title.includes(token)) {
-      score += 6;
-    }
+  for (const token of expandedTokens) {
+    const tokenWeight = getTokenIdfWeight(token, tokenDfMap, docCount);
+    let tokenScore = 0;
 
-    if (summary.includes(token)) {
-      score += 3;
-    }
+    tokenScore += scoreTokenAgainstField(token, titleArr, {
+      exact: 6,
+      prefix: 3,
+      substring: 1,
+      fuzzy: 2,
+    });
+    tokenScore += scoreTokenAgainstField(token, tagsArr, {
+      exact: 4,
+      prefix: 2,
+      substring: 1,
+      fuzzy: 1,
+    });
+    tokenScore += scoreTokenAgainstField(token, summaryArr, {
+      exact: 3,
+      prefix: 1,
+      substring: 0,
+      fuzzy: 1,
+    });
+    tokenScore += scoreTokenAgainstField(token, categoryArr, {
+      exact: 2,
+      prefix: 1,
+      substring: 0,
+      fuzzy: 0,
+    });
+    tokenScore += scoreTokenAgainstField(token, urlArr, {
+      exact: 2,
+      prefix: 1,
+      substring: 0,
+      fuzzy: 0,
+    });
 
-    if (category.includes(token)) {
-      score += 2;
-    }
+    score += tokenScore * tokenWeight;
+  }
 
-    for (const tag of tags) {
-      if (tag.includes(token)) {
-        score += 4;
-      }
+  if (normalizedQuery && normalizedQuery.length >= 4) {
+    if (normalizedTitle.includes(normalizedQuery)) {
+      score += 8;
+    } else if (normalizedSummary.includes(normalizedQuery)) {
+      score += 4;
+    }
+  }
+
+  // Bonus: all query tokens match in title
+  if (
+    tokens.length > 1 &&
+    tokens.every((token) => titleArr.some((t) => t.startsWith(token)))
+  ) {
+    score += 5;
+  }
+
+  if (normalizedQuery && normalizedTitle.startsWith(normalizedQuery)) {
+    score += 5;
+  }
+
+  for (const phrase of phrases) {
+    if (normalizedTitle.includes(phrase)) {
+      score += 10;
+    } else if (normalizedSummary.includes(phrase)) {
+      score += 5;
     }
   }
 
   return score;
 }
 
-function runSearch(query) {
-  const index = readJson(searchIndexPath, []);
-  const tokens = tokenize(query);
+function normalizeSearchText(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
 
-  const ranked = index
-    .map((doc) => ({ ...doc, score: computeScore(doc, tokens) }))
-    .filter((doc) => doc.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 20)
-    .map(({ score, ...rest }) => rest);
+function normalizeFilterValue(value) {
+  return normalizeSearchText(value);
+}
 
-  if (ranked.length > 0) {
-    return ranked;
+function detectDocumentLanguage(doc) {
+  const explicit = String(doc.language || "")
+    .trim()
+    .toLowerCase();
+  if (explicit) {
+    return explicit;
   }
 
-  return index.slice(0, 12);
+  const haystack = [
+    doc.title,
+    doc.summary,
+    doc.category,
+    ...(Array.isArray(doc.tags) ? doc.tags : []),
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  if (/[ăâîșşțţ]/.test(haystack)) {
+    return "ro";
+  }
+
+  const romanianHints = [
+    "stiri",
+    "ghid",
+    "imagini",
+    "poze",
+    "romania",
+    "vreme",
+    "cautare",
+  ];
+  if (romanianHints.some((token) => haystack.includes(token))) {
+    return "ro";
+  }
+
+  return "en";
+}
+
+function estimateDocumentQuality(doc) {
+  const explicit = Number(doc.qualityScore || doc.quality_score || 0);
+  if (explicit > 0) {
+    return explicit;
+  }
+
+  const title = String(doc.title || "").trim();
+  const summary = String(doc.summary || "").trim();
+  const tagsCount = Array.isArray(doc.tags) ? doc.tags.length : 0;
+  let score = 0;
+
+  if (title.length >= 8) {
+    score += 30;
+  }
+  if (summary.length >= 40) {
+    score += 25;
+  }
+  score += Math.min(20, tagsCount * 4);
+  score += Math.min(25, Math.round(summary.length / 16));
+
+  return Math.min(score, 100);
+}
+
+function safeSearchLimit(limit, fallback = 20) {
+  const parsed = Number.parseInt(String(limit || fallback), 10);
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+  return Math.max(1, Math.min(50, parsed));
+}
+
+function safeSearchPage(page, fallback = 1) {
+  const parsed = Number.parseInt(String(page || fallback), 10);
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+  return Math.max(1, Math.min(500, parsed));
+}
+
+function getDocSourceInfo(doc) {
+  const explicitName = String(doc.sourceName || doc.source || "").trim();
+  const explicitSlug = String(doc.sourceSlug || "").trim();
+  let hostname = "";
+
+  try {
+    hostname = new URL(String(doc.url || "")).hostname.replace(/^www\./, "");
+  } catch {
+    hostname = "";
+  }
+
+  const sourceName = explicitName || hostname;
+  const sourceSlug =
+    explicitSlug ||
+    sourceName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+  return {
+    sourceName,
+    sourceSlug,
+  };
+}
+
+function normalizeIndexedDoc(doc) {
+  const sourceInfo = getDocSourceInfo(doc);
+  const fetchedAt = estimateFetchedAt(doc);
+  const parsedFetchedAt = Date.parse(fetchedAt);
+  const freshnessScore = Number.isFinite(parsedFetchedAt)
+    ? Math.max(
+        0,
+        Math.min(
+          100,
+          100 -
+            Math.floor((Date.now() - parsedFetchedAt) / (24 * 60 * 60 * 1000)),
+        ),
+      )
+    : 0;
+
+  return {
+    ...doc,
+    sourceName: sourceInfo.sourceName,
+    sourceSlug: sourceInfo.sourceSlug,
+    language: detectDocumentLanguage(doc),
+    qualityScore: estimateDocumentQuality(doc),
+    fetchedAt,
+    freshnessScore,
+  };
+}
+
+function rerankBySourceDiversity(
+  items,
+  { penaltyStep = 0.18, minFactor = 0.45 } = {},
+) {
+  if (!Array.isArray(items) || items.length <= 1) {
+    return Array.isArray(items) ? items : [];
+  }
+
+  const sourceHits = new Map();
+  const reranked = [];
+
+  for (const item of items) {
+    const sourceKey =
+      normalizeFilterValue(item.sourceSlug || item.sourceName || "") ||
+      "unknown";
+    const hits = sourceHits.get(sourceKey) || 0;
+    sourceHits.set(sourceKey, hits + 1);
+
+    const factor = Math.max(minFactor, 1 - hits * penaltyStep);
+    reranked.push({
+      ...item,
+      _finalScore: Number(item._score || 0) * factor,
+    });
+  }
+
+  reranked.sort((left, right) => {
+    if (right._finalScore !== left._finalScore) {
+      return right._finalScore - left._finalScore;
+    }
+    return Number(right._score || 0) - Number(left._score || 0);
+  });
+
+  return reranked;
+}
+
+function detectQueryIntents(query, tokens) {
+  const normalizedQuery = normalizeSearchText(query);
+  const tokenSet = new Set(tokens);
+  const intents = new Set();
+
+  const hasAny = (values) => values.some((value) => tokenSet.has(value));
+
+  if (
+    hasAny(["news", "latest", "today", "breaking", "stiri"]) ||
+    /\b(ce\s+mai\s+e\s+nou|ultime(le)?\s+stiri)\b/i.test(normalizedQuery)
+  ) {
+    intents.add("news");
+  }
+
+  if (hasAny(["job", "jobs", "career", "remote", "hiring", "work"])) {
+    intents.add("jobs");
+  }
+
+  if (hasAny(["image", "images", "photo", "photos", "poze", "imagini"])) {
+    intents.add("images");
+  }
+
+  if (hasAny(["docs", "documentation", "reference", "api", "manual"])) {
+    intents.add("docs");
+  }
+
+  if (hasAny(["code", "coding", "programming", "tutorial", "debug"])) {
+    intents.add("code");
+  }
+
+  if (hasAny(["paper", "papers", "research", "study", "academic"])) {
+    intents.add("research");
+  }
+
+  return intents;
+}
+
+function computeIntentBoost(doc, intents) {
+  if (!intents || intents.size === 0) {
+    return 0;
+  }
+
+  const category = normalizeFilterValue(doc.category || "");
+  const source = normalizeFilterValue(doc.sourceName || doc.sourceSlug || "");
+  const tags = Array.isArray(doc.tags)
+    ? doc.tags.map((tag) => normalizeFilterValue(tag))
+    : [];
+  const title = normalizeFilterValue(doc.title || "");
+
+  let boost = 0;
+
+  if (intents.has("news")) {
+    if (category === "news") {
+      boost += 8;
+    }
+    if (category === "technology" || category === "media") {
+      boost += 3;
+    }
+    if (
+      ["reuters.com", "bbc.com", "theguardian.com", "techcrunch.com"].includes(
+        source,
+      )
+    ) {
+      boost += 4;
+    }
+  }
+
+  if (intents.has("jobs")) {
+    if (category === "career") {
+      boost += 8;
+    }
+    if (
+      tags.some((tag) =>
+        ["jobs", "career", "remote", "recruitment"].includes(tag),
+      )
+    ) {
+      boost += 4;
+    }
+  }
+
+  if (intents.has("images")) {
+    if (category === "media" || category === "knowledge") {
+      boost += 3;
+    }
+    if (
+      tags.some((tag) =>
+        ["images", "photo", "photos", "photography"].includes(tag),
+      )
+    ) {
+      boost += 6;
+    }
+  }
+
+  if (intents.has("docs")) {
+    if (
+      tags.some((tag) =>
+        ["documentation", "reference", "api", "manual"].includes(tag),
+      )
+    ) {
+      boost += 7;
+    }
+    if (title.includes("documentation") || title.includes("docs")) {
+      boost += 5;
+    }
+  }
+
+  if (intents.has("code")) {
+    if (category === "development") {
+      boost += 7;
+    }
+    if (
+      tags.some((tag) =>
+        ["programming", "coding", "tutorial", "debugging"].includes(tag),
+      )
+    ) {
+      boost += 4;
+    }
+  }
+
+  if (intents.has("research")) {
+    if (category === "research" || category === "science") {
+      boost += 8;
+    }
+    if (
+      tags.some((tag) =>
+        ["papers", "research", "academic", "scholarly"].includes(tag),
+      )
+    ) {
+      boost += 4;
+    }
+  }
+
+  return boost;
+}
+
+function boundedLevenshtein(left, right, maxDistance = 2) {
+  if (left === right) {
+    return 0;
+  }
+  if (Math.abs(left.length - right.length) > maxDistance) {
+    return maxDistance + 1;
+  }
+
+  let previous = Array.from({ length: right.length + 1 }, (_, idx) => idx);
+  for (let i = 1; i <= left.length; i += 1) {
+    const current = [i];
+    let rowMin = current[0];
+    for (let j = 1; j <= right.length; j += 1) {
+      const cost = left[i - 1] === right[j - 1] ? 0 : 1;
+      const value = Math.min(
+        previous[j] + 1,
+        current[j - 1] + 1,
+        previous[j - 1] + cost,
+      );
+      current.push(value);
+      if (value < rowMin) {
+        rowMin = value;
+      }
+    }
+    if (rowMin > maxDistance) {
+      return maxDistance + 1;
+    }
+    previous = current;
+  }
+  return previous[right.length];
+}
+
+function buildSearchVocabulary(index) {
+  const vocabulary = new Set();
+  for (const doc of index) {
+    tokenize(doc.title || "").forEach((token) => vocabulary.add(token));
+    tokenize(doc.summary || "").forEach((token) => vocabulary.add(token));
+    tokenize(doc.category || "").forEach((token) => vocabulary.add(token));
+    tokenize(doc.url || "").forEach((token) => vocabulary.add(token));
+    if (Array.isArray(doc.tags)) {
+      doc.tags
+        .flatMap((tag) => tokenize(String(tag || "")))
+        .forEach((token) => vocabulary.add(token));
+    }
+  }
+  return [...vocabulary].filter((token) => token.length >= 3);
+}
+
+function suggestQueryCorrection(query, source) {
+  const rawQuery = String(query || "").trim();
+  const tokens = tokenize(rawQuery);
+  if (tokens.length === 0) {
+    return null;
+  }
+
+  const vocabulary = Array.isArray(source)
+    ? buildSearchVocabulary(source)
+    : Array.isArray(source?.vocabulary)
+      ? source.vocabulary
+      : [];
+  if (vocabulary.length === 0) {
+    return null;
+  }
+
+  let changed = false;
+  const correctedTokens = tokens.map((token) => {
+    if (token.length < 4) {
+      return token;
+    }
+
+    let bestCandidate = token;
+    let bestDistance = 3;
+
+    for (const candidate of vocabulary) {
+      if (candidate === token) {
+        return token;
+      }
+      if (Math.abs(candidate.length - token.length) > 2) {
+        continue;
+      }
+      const distance = boundedLevenshtein(token, candidate, 2);
+      if (distance < bestDistance) {
+        bestCandidate = candidate;
+        bestDistance = distance;
+      }
+      if (bestDistance === 1) {
+        break;
+      }
+    }
+
+    if (bestCandidate !== token && bestDistance <= 2) {
+      changed = true;
+      return bestCandidate;
+    }
+
+    return token;
+  });
+
+  if (!changed) {
+    return null;
+  }
+
+  const correctedQuery = correctedTokens.join(" ").trim();
+  if (!correctedQuery || correctedQuery === tokens.join(" ")) {
+    return null;
+  }
+
+  return {
+    originalQuery: rawQuery,
+    correctedQuery,
+  };
+}
+
+function buildSearchFacets(items) {
+  const facets = {
+    languages: new Map(),
+    categories: new Map(),
+    sources: new Map(),
+  };
+
+  for (const item of items) {
+    const language = String(item.language || "").trim();
+    const category = String(item.category || "").trim();
+    const source = String(item.sourceName || item.sourceSlug || "").trim();
+
+    if (language) {
+      facets.languages.set(language, (facets.languages.get(language) || 0) + 1);
+    }
+    if (category) {
+      facets.categories.set(
+        category,
+        (facets.categories.get(category) || 0) + 1,
+      );
+    }
+    if (source) {
+      facets.sources.set(source, (facets.sources.get(source) || 0) + 1);
+    }
+  }
+
+  const toEntries = (map) =>
+    [...map.entries()]
+      .sort((left, right) => {
+        if (right[1] !== left[1]) {
+          return right[1] - left[1];
+        }
+        return left[0].localeCompare(right[0]);
+      })
+      .map(([value, count]) => ({ value, count }));
+
+  return {
+    languages: toEntries(facets.languages),
+    categories: toEntries(facets.categories),
+    sources: toEntries(facets.sources),
+  };
+}
+
+function escapeRegexTerm(value) {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function getSnippetTermsFromQuery(query) {
+  const parsed = parseSearchOperators(query);
+  const cleaned = String(parsed.cleanedQuery || "");
+  const tokens = tokenize(cleaned);
+  const phrases = extractQuotedPhrases(cleaned)
+    .map((item) =>
+      String(item || "")
+        .trim()
+        .toLowerCase(),
+    )
+    .filter(Boolean);
+
+  return [...new Set([...phrases, ...tokens])]
+    .filter((term) => term.length >= 2)
+    .sort((left, right) => right.length - left.length)
+    .slice(0, 12);
+}
+
+function buildResultSnippet(doc, terms, maxLength = 220) {
+  const raw = String(doc.summary || doc.content || doc.title || "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!raw) {
+    return "";
+  }
+
+  const limit = Math.max(80, Math.min(500, Number(maxLength || 220)));
+  if (!Array.isArray(terms) || terms.length === 0) {
+    if (raw.length <= limit) {
+      return raw;
+    }
+    return `${raw.slice(0, limit).trim()}...`;
+  }
+
+  const lower = raw.toLowerCase();
+  let bestIndex = -1;
+  let matchedLength = 0;
+
+  for (const term of terms) {
+    const needle = String(term || "").toLowerCase();
+    if (!needle) {
+      continue;
+    }
+    const index = lower.indexOf(needle);
+    if (index !== -1 && (bestIndex === -1 || index < bestIndex)) {
+      bestIndex = index;
+      matchedLength = needle.length;
+    }
+  }
+
+  if (bestIndex === -1) {
+    if (raw.length <= limit) {
+      return raw;
+    }
+    return `${raw.slice(0, limit).trim()}...`;
+  }
+
+  const center = bestIndex + Math.floor(matchedLength / 2);
+  let start = Math.max(0, center - Math.floor(limit / 2));
+  let end = Math.min(raw.length, start + limit);
+  if (end - start < limit) {
+    start = Math.max(0, end - limit);
+  }
+
+  let snippet = raw.slice(start, end).trim();
+  if (start > 0) {
+    snippet = `...${snippet}`;
+  }
+  if (end < raw.length) {
+    snippet = `${snippet}...`;
+  }
+  return snippet;
+}
+
+function buildSnippetHtml(snippet, terms) {
+  const raw = String(snippet || "");
+  if (!raw) {
+    return "";
+  }
+
+  const escapedSnippet = escapeHtml(raw);
+  if (!Array.isArray(terms) || terms.length === 0) {
+    return escapedSnippet;
+  }
+
+  const pattern = terms
+    .map((term) => escapeRegexTerm(term))
+    .filter(Boolean)
+    .sort((left, right) => right.length - left.length)
+    .join("|");
+  if (!pattern) {
+    return escapedSnippet;
+  }
+
+  return escapedSnippet.replace(
+    new RegExp(`(${pattern})`, "gi"),
+    "<mark>$1</mark>",
+  );
+}
+
+function runSearchAll(
+  query,
+  { language = "", category = "", source = "", sort = "relevance" } = {},
+) {
+  const artifacts = getLocalSearchArtifacts();
+  const index = artifacts.docs;
+  const parsedQuery = parseSearchOperators(query);
+  const searchQuery = parsedQuery.cleanedQuery;
+  const operators = parsedQuery.operators;
+  const tokens = tokenize(searchQuery);
+  const phrases = extractQuotedPhrases(searchQuery);
+  const intents = detectQueryIntents(searchQuery, tokens);
+  const hasKeywordQuery = tokens.length > 0 || phrases.length > 0;
+  const snippetTerms = getSnippetTermsFromQuery(query);
+  const normalizedLanguage = normalizeFilterValue(language);
+  const normalizedCategory = normalizeFilterValue(category);
+  const normalizedSource = normalizeFilterValue(source);
+  const normalizedSort = normalizeFilterValue(sort) || "relevance";
+
+  let ranked = index
+    .map((doc) => {
+      const normalized = normalizeIndexedDoc(doc);
+      const baseScore = hasKeywordQuery
+        ? computeScore(normalized, tokens, {
+            rawQuery: searchQuery,
+            phrases,
+            tokenDfMap: artifacts.tokenDfMap,
+            docCount: artifacts.docCount,
+          })
+        : 1;
+      return {
+        ...normalized,
+        freshnessScore: computeFreshnessScore(normalized.fetchedAt),
+        _score: baseScore + computeIntentBoost(normalized, intents),
+      };
+    })
+    .filter((doc) => {
+      const docLanguage = normalizeFilterValue(doc.language || "");
+      const docCategory = normalizeFilterValue(doc.category || "");
+      const docSourceName = normalizeFilterValue(doc.sourceName || "");
+      const docSourceSlug = normalizeFilterValue(doc.sourceSlug || "");
+
+      if (
+        normalizedLanguage &&
+        docLanguage &&
+        docLanguage !== normalizedLanguage
+      ) {
+        return false;
+      }
+      if (normalizedCategory && docCategory !== normalizedCategory) {
+        return false;
+      }
+      if (
+        normalizedSource &&
+        docSourceName !== normalizedSource &&
+        docSourceSlug !== normalizedSource
+      ) {
+        return false;
+      }
+      if (!doesDocMatchSiteOperator(doc, operators)) {
+        return false;
+      }
+      if (!doesDocMatchExcludedSiteOperator(doc, operators)) {
+        return false;
+      }
+      if (!doesDocMatchFiletypeOperator(doc, operators)) {
+        return false;
+      }
+      if (!doesDocMatchInUrlOperator(doc, operators)) {
+        return false;
+      }
+      if (!doesDocMatchInTitleOperator(doc, operators)) {
+        return false;
+      }
+      return true;
+    })
+    .filter((doc) => (hasKeywordQuery ? doc._score > 0 : true));
+
+  ranked.sort((left, right) => {
+    if (normalizedSort === "newest") {
+      const leftDate = Date.parse(left.fetchedAt || "") || 0;
+      const rightDate = Date.parse(right.fetchedAt || "") || 0;
+      if (rightDate !== leftDate) {
+        return rightDate - leftDate;
+      }
+      return right._score - left._score;
+    }
+
+    if (normalizedSort === "quality") {
+      const leftQuality = Number(left.qualityScore || 0);
+      const rightQuality = Number(right.qualityScore || 0);
+      if (rightQuality !== leftQuality) {
+        return rightQuality - leftQuality;
+      }
+      return right._score - left._score;
+    }
+
+    return right._score - left._score;
+  });
+
+  if (normalizedSort === "relevance") {
+    ranked = rerankBySourceDiversity(ranked);
+  }
+
+  return ranked.map(({ _score, _finalScore, ...rest }) => {
+    const snippet = buildResultSnippet(rest, snippetTerms, 220);
+    return {
+      ...rest,
+      snippet,
+      snippetHtml: buildSnippetHtml(snippet, snippetTerms),
+    };
+  });
+}
+
+function runSearchPage(
+  query,
+  {
+    language = "",
+    category = "",
+    source = "",
+    sort = "relevance",
+    limit = 20,
+    page = 1,
+  } = {},
+) {
+  const safeLimit = safeSearchLimit(limit);
+  const safePage = safeSearchPage(page);
+  let queryUsed = String(query || "").trim();
+  let queryCorrection = null;
+
+  let allResults = runSearchAll(queryUsed, {
+    language,
+    category,
+    source,
+    sort,
+  });
+
+  if (allResults.length === 0) {
+    const artifacts = getLocalSearchArtifacts();
+    const parsedForCorrection = parseSearchOperators(queryUsed);
+    const correction = suggestQueryCorrection(
+      parsedForCorrection.cleanedQuery,
+      artifacts,
+    );
+    if (correction?.correctedQuery) {
+      const correctedQueryWithOperators = rebuildQueryWithOperators(
+        correction.correctedQuery,
+        parsedForCorrection.operators,
+      );
+      const correctedResults = runSearchAll(correctedQueryWithOperators, {
+        language,
+        category,
+        source,
+        sort,
+      });
+      if (correctedResults.length > 0) {
+        queryUsed = correctedQueryWithOperators;
+        queryCorrection = {
+          originalQuery: correction.originalQuery,
+          correctedQuery: correction.correctedQuery,
+          autoApplied: true,
+        };
+        allResults = correctedResults;
+      }
+    }
+  }
+
+  const total = allResults.length;
+  const offset = (safePage - 1) * safeLimit;
+  const pagedResults = allResults.slice(offset, offset + safeLimit);
+  const totalPages = total > 0 ? Math.ceil(total / safeLimit) : 0;
+
+  const contextualLanguages = runSearchAll(queryUsed, {
+    category,
+    source,
+    sort,
+  });
+  const contextualCategories = runSearchAll(queryUsed, {
+    language,
+    source,
+    sort,
+  });
+  const contextualSources = runSearchAll(queryUsed, {
+    language,
+    category,
+    sort,
+  });
+
+  return {
+    results: pagedResults,
+    total,
+    limit: safeLimit,
+    offset,
+    queryUsed,
+    queryCorrection,
+    page: total > 0 ? safePage : 1,
+    totalPages,
+    hasNextPage: offset + safeLimit < total,
+    hasPrevPage: offset > 0,
+    facets: {
+      languages: buildSearchFacets(contextualLanguages).languages,
+      categories: buildSearchFacets(contextualCategories).categories,
+      sources: buildSearchFacets(contextualSources).sources,
+    },
+  };
+}
+
+function runSearch(query, options = {}) {
+  const payload = runSearchPage(query, options);
+  return payload.results;
+}
+
+function getAppliedSearchOperators(query) {
+  const parsed = parseSearchOperators(query);
+  return {
+    site: parsed.operators.sites,
+    excludedSite: parsed.operators.excludedSites,
+    filetype: parsed.operators.filetypes,
+    inurl: parsed.operators.inurl,
+    intitle: parsed.operators.intitle,
+    cleanedQuery: parsed.cleanedQuery,
+  };
+}
+
+function getSearchSources({ query = "", limit = 20 } = {}) {
+  const index = readJson(searchIndexPath, []);
+  const normalizedQuery = normalizeFilterValue(query);
+  const safeLimit = Math.max(
+    1,
+    Math.min(100, Number.parseInt(String(limit || 20), 10) || 20),
+  );
+  const seen = new Map();
+
+  for (const rawDoc of index) {
+    const doc = normalizeIndexedDoc(rawDoc);
+    const sourceName = String(doc.sourceName || "").trim();
+    const sourceSlug = String(doc.sourceSlug || "").trim();
+    if (!sourceName && !sourceSlug) {
+      continue;
+    }
+
+    const haystack =
+      `${normalizeFilterValue(sourceName)} ${normalizeFilterValue(sourceSlug)}`.trim();
+    if (normalizedQuery && !haystack.includes(normalizedQuery)) {
+      continue;
+    }
+
+    const mapKey = sourceSlug || sourceName.toLowerCase();
+    if (!seen.has(mapKey)) {
+      seen.set(mapKey, {
+        slug: sourceSlug || sourceName.toLowerCase(),
+        name: sourceName || sourceSlug,
+        indexedCount: 0,
+        languageHint: String(doc.language || "").trim(),
+        categoryHint: String(doc.category || "").trim(),
+      });
+    }
+    seen.get(mapKey).indexedCount += 1;
+  }
+
+  return [...seen.values()]
+    .sort((left, right) => {
+      if (right.indexedCount !== left.indexedCount) {
+        return right.indexedCount - left.indexedCount;
+      }
+      return String(left.name).localeCompare(String(right.name));
+    })
+    .slice(0, safeLimit);
+}
+
+function getPopularQuerySuggestions(partial, limit = 10) {
+  const normalizedPartial = normalizeFilterValue(partial);
+  if (!normalizedPartial) {
+    return [];
+  }
+
+  const analytics = readJson(analyticsPath, { searches: [], pageViews: [] });
+  const stats = new Map();
+  const searches = Array.isArray(analytics.searches) ? analytics.searches : [];
+
+  for (const item of searches) {
+    const query = String(item?.query || "").trim();
+    const normalized = normalizeFilterValue(query);
+    if (!normalized || normalized.length < 2) {
+      continue;
+    }
+    if (!normalized.includes(normalizedPartial)) {
+      continue;
+    }
+
+    const current = stats.get(query) || {
+      hits: 0,
+      positiveHits: 0,
+      sumResults: 0,
+    };
+    const resultCount = Number(item?.resultCount || 0);
+    current.hits += 1;
+    if (resultCount > 0) {
+      current.positiveHits += 1;
+    }
+    current.sumResults += resultCount;
+    stats.set(query, current);
+  }
+
+  return [...stats.entries()]
+    .filter(([, item]) => item.positiveHits > 0)
+    .sort((left, right) => {
+      const leftScore = left[1].positiveHits * 2 + left[1].hits;
+      const rightScore = right[1].positiveHits * 2 + right[1].hits;
+      if (rightScore !== leftScore) {
+        return rightScore - leftScore;
+      }
+      return left[0].localeCompare(right[0]);
+    })
+    .slice(0, limit)
+    .map(([value, item]) => ({
+      value,
+      score: item.positiveHits * 2 + item.hits,
+      source: "analytics",
+    }));
+}
+
+function getIndexQuerySuggestions(partial, limit = 10) {
+  const normalizedPartial = normalizeFilterValue(partial);
+  if (!normalizedPartial) {
+    return [];
+  }
+
+  const artifacts = getLocalSearchArtifacts();
+  const suggestions = new Map();
+
+  for (const token of artifacts.vocabulary || []) {
+    if (!token.startsWith(normalizedPartial) || token.length < 3) {
+      continue;
+    }
+    suggestions.set(token, {
+      value: token,
+      score: 2,
+      source: "index-token",
+    });
+    if (suggestions.size >= limit) {
+      break;
+    }
+  }
+
+  for (const doc of artifacts.docs || []) {
+    const title = String(doc.title || "").trim();
+    const normalizedTitle = normalizeFilterValue(title);
+    if (!title || !normalizedTitle.includes(normalizedPartial)) {
+      continue;
+    }
+
+    const existing = suggestions.get(title);
+    if (existing) {
+      existing.score += 3;
+    } else {
+      suggestions.set(title, {
+        value: title,
+        score: 3,
+        source: "index-title",
+      });
+    }
+
+    if (suggestions.size >= limit * 2) {
+      break;
+    }
+  }
+
+  return [...suggestions.values()]
+    .sort((left, right) => {
+      if (right.score !== left.score) {
+        return right.score - left.score;
+      }
+      return left.value.localeCompare(right.value);
+    })
+    .slice(0, limit);
+}
+
+function getSearchSuggestions(partial, limit = 10) {
+  const safeLimit = Math.max(
+    1,
+    Math.min(20, Number.parseInt(String(limit || 10), 10) || 10),
+  );
+
+  const merged = new Map();
+  const sources = [
+    ...getPopularQuerySuggestions(partial, safeLimit),
+    ...getIndexQuerySuggestions(partial, safeLimit),
+  ];
+
+  for (const item of sources) {
+    const key = normalizeFilterValue(item.value);
+    if (!key) {
+      continue;
+    }
+    const existing = merged.get(key);
+    if (existing) {
+      existing.score += Number(item.score || 0);
+      continue;
+    }
+    merged.set(key, {
+      value: String(item.value || "").trim(),
+      score: Number(item.score || 0),
+      source: String(item.source || "index"),
+    });
+  }
+
+  return [...merged.values()]
+    .sort((left, right) => {
+      if (right.score !== left.score) {
+        return right.score - left.score;
+      }
+      return left.value.localeCompare(right.value);
+    })
+    .slice(0, safeLimit)
+    .map((item) => item.value);
+}
+
+function parseSearchOperators(query) {
+  const input = String(query || "");
+  const operators = {
+    sites: [],
+    excludedSites: [],
+    filetypes: [],
+    inurl: [],
+    intitle: [],
+  };
+
+  const siteRegex = /(?:^|\s)site:([^\s"']+)/gi;
+  const excludedSiteRegex = /(?:^|\s)-site:([^\s"']+)/gi;
+  const filetypeRegex = /\bfiletype:([a-z0-9]{1,16})\b/gi;
+  const inurlRegex = /\binurl:([^\s"']+)/gi;
+  const intitleRegex = /\bintitle:(?:"([^"]+)"|([^\s"']+))/gi;
+
+  let siteMatch = siteRegex.exec(input);
+  while (siteMatch) {
+    const rawSite = String(siteMatch[1] || "")
+      .trim()
+      .toLowerCase();
+    const site = rawSite.replace(/^https?:\/\//, "").replace(/^www\./, "");
+    if (site && !operators.sites.includes(site)) {
+      operators.sites.push(site);
+    }
+    siteMatch = siteRegex.exec(input);
+  }
+
+  let excludedSiteMatch = excludedSiteRegex.exec(input);
+  while (excludedSiteMatch) {
+    const rawSite = String(excludedSiteMatch[1] || "")
+      .trim()
+      .toLowerCase();
+    const site = rawSite.replace(/^https?:\/\//, "").replace(/^www\./, "");
+    if (site && !operators.excludedSites.includes(site)) {
+      operators.excludedSites.push(site);
+    }
+    excludedSiteMatch = excludedSiteRegex.exec(input);
+  }
+
+  let filetypeMatch = filetypeRegex.exec(input);
+  while (filetypeMatch) {
+    const filetype = String(filetypeMatch[1] || "")
+      .trim()
+      .toLowerCase()
+      .replace(/^\./, "");
+    if (filetype && !operators.filetypes.includes(filetype)) {
+      operators.filetypes.push(filetype);
+    }
+    filetypeMatch = filetypeRegex.exec(input);
+  }
+
+  let inurlMatch = inurlRegex.exec(input);
+  while (inurlMatch) {
+    const part = normalizeFilterValue(inurlMatch[1] || "");
+    if (part && !operators.inurl.includes(part)) {
+      operators.inurl.push(part);
+    }
+    inurlMatch = inurlRegex.exec(input);
+  }
+
+  let intitleMatch = intitleRegex.exec(input);
+  while (intitleMatch) {
+    const part = normalizeFilterValue(intitleMatch[1] || intitleMatch[2] || "");
+    if (part && !operators.intitle.includes(part)) {
+      operators.intitle.push(part);
+    }
+    intitleMatch = intitleRegex.exec(input);
+  }
+
+  const cleanedQuery = input
+    .replace(siteRegex, " ")
+    .replace(excludedSiteRegex, " ")
+    .replace(filetypeRegex, " ")
+    .replace(inurlRegex, " ")
+    .replace(intitleRegex, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return {
+    rawQuery: input.trim(),
+    cleanedQuery,
+    operators,
+  };
+}
+
+function rebuildQueryWithOperators(cleanedQuery, operators = {}) {
+  const parts = [];
+  const clean = String(cleanedQuery || "").trim();
+  if (clean) {
+    parts.push(clean);
+  }
+
+  const sites = Array.isArray(operators.sites) ? operators.sites : [];
+  const excludedSites = Array.isArray(operators.excludedSites)
+    ? operators.excludedSites
+    : [];
+  const filetypes = Array.isArray(operators.filetypes)
+    ? operators.filetypes
+    : [];
+  const inurlParts = Array.isArray(operators.inurl) ? operators.inurl : [];
+  const intitleParts = Array.isArray(operators.intitle)
+    ? operators.intitle
+    : [];
+
+  for (const site of sites) {
+    const value = String(site || "").trim();
+    if (value) {
+      parts.push(`site:${value}`);
+    }
+  }
+
+  for (const filetype of filetypes) {
+    const value = String(filetype || "")
+      .trim()
+      .replace(/^\./, "");
+    if (value) {
+      parts.push(`filetype:${value}`);
+    }
+  }
+
+  for (const site of excludedSites) {
+    const value = String(site || "").trim();
+    if (value) {
+      parts.push(`-site:${value}`);
+    }
+  }
+
+  for (const part of inurlParts) {
+    const value = String(part || "").trim();
+    if (value) {
+      parts.push(`inurl:${value}`);
+    }
+  }
+
+  for (const part of intitleParts) {
+    const value = String(part || "").trim();
+    if (!value) {
+      continue;
+    }
+    if (value.includes(" ")) {
+      parts.push(`intitle:"${value.replace(/\"/g, "")}"`);
+    } else {
+      parts.push(`intitle:${value}`);
+    }
+  }
+
+  return parts.join(" ").trim();
+}
+
+function doesDocMatchSiteOperator(doc, operators = {}) {
+  const sites = Array.isArray(operators.sites) ? operators.sites : [];
+  if (sites.length === 0) {
+    return true;
+  }
+
+  let host = "";
+  try {
+    host = new URL(String(doc.url || "")).hostname.toLowerCase();
+  } catch {
+    host = "";
+  }
+
+  if (!host) {
+    return false;
+  }
+
+  return sites.some((site) => host === site || host.endsWith(`.${site}`));
+}
+
+function doesDocMatchFiletypeOperator(doc, operators = {}) {
+  const filetypes = Array.isArray(operators.filetypes)
+    ? operators.filetypes
+    : [];
+  if (filetypes.length === 0) {
+    return true;
+  }
+
+  let pathname = "";
+  try {
+    pathname = new URL(String(doc.url || "")).pathname.toLowerCase();
+  } catch {
+    pathname = "";
+  }
+
+  if (!pathname) {
+    return false;
+  }
+
+  const extensionMatch = pathname.match(/\.([a-z0-9]{1,16})(?:$|[?#])/i);
+  const extension = extensionMatch ? String(extensionMatch[1] || "") : "";
+  if (!extension) {
+    return false;
+  }
+
+  return filetypes.includes(extension.toLowerCase());
+}
+
+function doesDocMatchExcludedSiteOperator(doc, operators = {}) {
+  const excludedSites = Array.isArray(operators.excludedSites)
+    ? operators.excludedSites
+    : [];
+  if (excludedSites.length === 0) {
+    return true;
+  }
+
+  let host = "";
+  try {
+    host = new URL(String(doc.url || "")).hostname.toLowerCase();
+  } catch {
+    host = "";
+  }
+  if (!host) {
+    return true;
+  }
+
+  return !excludedSites.some(
+    (site) => host === site || host.endsWith(`.${site}`),
+  );
+}
+
+function doesDocMatchInUrlOperator(doc, operators = {}) {
+  const inurlParts = Array.isArray(operators.inurl) ? operators.inurl : [];
+  if (inurlParts.length === 0) {
+    return true;
+  }
+
+  const url = normalizeFilterValue(doc.url || "");
+  if (!url) {
+    return false;
+  }
+
+  return inurlParts.every((part) => url.includes(part));
+}
+
+function doesDocMatchInTitleOperator(doc, operators = {}) {
+  const intitleParts = Array.isArray(operators.intitle)
+    ? operators.intitle
+    : [];
+  if (intitleParts.length === 0) {
+    return true;
+  }
+
+  const title = normalizeFilterValue(doc.title || "");
+  if (!title) {
+    return false;
+  }
+
+  return intitleParts.every((part) => title.includes(part));
+}
+
+function getTrendingPeriodWindowDays(period) {
+  const normalized = normalizeFilterValue(period);
+  if (normalized === "daily" || normalized === "day") {
+    return { key: "daily", windowDays: 1 };
+  }
+  if (normalized === "weekly" || normalized === "week") {
+    return { key: "weekly", windowDays: 7 };
+  }
+  if (normalized === "monthly" || normalized === "month") {
+    return { key: "monthly", windowDays: 30 };
+  }
+  return { key: "all", windowDays: null };
+}
+
+function toDateBucket(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  return date.toISOString().slice(0, 10);
+}
+
+function getTrendingSearches({
+  period = "weekly",
+  limit = 10,
+  includeZero = false,
+  query = "",
+} = {}) {
+  const analytics = readJson(analyticsPath, { searches: [], pageViews: [] });
+  const searches = Array.isArray(analytics.searches) ? analytics.searches : [];
+  const safeLimit = Math.max(
+    1,
+    Math.min(50, Number.parseInt(String(limit || 10), 10) || 10),
+  );
+  const normalizedQuery = normalizeFilterValue(query);
+  const periodInfo = getTrendingPeriodWindowDays(period);
+  const now = Date.now();
+  const windowStart =
+    periodInfo.windowDays == null
+      ? null
+      : now - periodInfo.windowDays * 24 * 60 * 60 * 1000;
+
+  const queryStats = new Map();
+  const bucketsMap = new Map();
+
+  for (const item of searches) {
+    const rawQuery = String(item?.query || "").trim();
+    if (!rawQuery) {
+      continue;
+    }
+
+    const normalized = normalizeFilterValue(rawQuery);
+    if (!normalized || normalized.length < 2) {
+      continue;
+    }
+    if (normalizedQuery && !normalized.includes(normalizedQuery)) {
+      continue;
+    }
+
+    const atIso = String(item?.at || "").trim();
+    const atMs = Date.parse(atIso);
+    if (!Number.isFinite(atMs)) {
+      continue;
+    }
+    if (windowStart != null && atMs < windowStart) {
+      continue;
+    }
+
+    const resultCount = Number(item?.resultCount || 0);
+    if (!includeZero && resultCount <= 0) {
+      continue;
+    }
+
+    const bucket = toDateBucket(atIso);
+
+    const existing = queryStats.get(rawQuery) || {
+      query: rawQuery,
+      hits: 0,
+      positiveHits: 0,
+      sumResults: 0,
+      lastSeen: "",
+      firstSeen: "",
+      buckets: new Map(),
+    };
+
+    existing.hits += 1;
+    if (resultCount > 0) {
+      existing.positiveHits += 1;
+    }
+    existing.sumResults += resultCount;
+    if (!existing.firstSeen || atIso < existing.firstSeen) {
+      existing.firstSeen = atIso;
+    }
+    if (!existing.lastSeen || atIso > existing.lastSeen) {
+      existing.lastSeen = atIso;
+    }
+
+    if (bucket) {
+      const bucketEntry = existing.buckets.get(bucket) || {
+        bucket,
+        count: 0,
+        positiveHits: 0,
+      };
+      bucketEntry.count += 1;
+      if (resultCount > 0) {
+        bucketEntry.positiveHits += 1;
+      }
+      existing.buckets.set(bucket, bucketEntry);
+
+      const topBucket = bucketsMap.get(bucket) || {
+        bucket,
+        totalSearches: 0,
+        positiveSearches: 0,
+        queries: new Set(),
+      };
+      topBucket.totalSearches += 1;
+      if (resultCount > 0) {
+        topBucket.positiveSearches += 1;
+      }
+      topBucket.queries.add(rawQuery);
+      bucketsMap.set(bucket, topBucket);
+    }
+
+    queryStats.set(rawQuery, existing);
+  }
+
+  const items = [...queryStats.values()]
+    .map((entry) => {
+      const avgResults = entry.hits > 0 ? entry.sumResults / entry.hits : 0;
+      const ageDays = Math.max(
+        0,
+        (now - (Date.parse(entry.lastSeen) || now)) / (24 * 60 * 60 * 1000),
+      );
+      const recencyBoost = Math.max(0, 3 - ageDays * 0.25);
+      const trendScore =
+        entry.positiveHits * 3 +
+        entry.hits * 1.2 +
+        avgResults * 0.12 +
+        recencyBoost;
+
+      return {
+        query: entry.query,
+        hits: entry.hits,
+        positiveHits: entry.positiveHits,
+        avgResults: Number(avgResults.toFixed(2)),
+        firstSeen: entry.firstSeen,
+        lastSeen: entry.lastSeen,
+        trendScore: Number(trendScore.toFixed(2)),
+        buckets: [...entry.buckets.values()].sort((left, right) =>
+          left.bucket.localeCompare(right.bucket),
+        ),
+      };
+    })
+    .sort((left, right) => {
+      if (right.trendScore !== left.trendScore) {
+        return right.trendScore - left.trendScore;
+      }
+      if (right.positiveHits !== left.positiveHits) {
+        return right.positiveHits - left.positiveHits;
+      }
+      if (right.hits !== left.hits) {
+        return right.hits - left.hits;
+      }
+      return left.query.localeCompare(right.query);
+    })
+    .slice(0, safeLimit);
+
+  const buckets = [...bucketsMap.values()]
+    .map((entry) => ({
+      bucket: entry.bucket,
+      totalSearches: entry.totalSearches,
+      positiveSearches: entry.positiveSearches,
+      uniqueQueries: entry.queries.size,
+    }))
+    .sort((left, right) => left.bucket.localeCompare(right.bucket));
+
+  return {
+    period: periodInfo.key,
+    windowDays: periodInfo.windowDays,
+    total: items.length,
+    items,
+    buckets,
+  };
+}
+
+function getPassiveRoutingBackend() {
+  return routingState.activeBackend === "django" ? "node" : "django";
+}
+
+function pickSearchBackend() {
+  const activeBackend =
+    routingState.activeBackend === "django" ? "django" : "node";
+  const passiveBackend = getPassiveRoutingBackend();
+  const canaryPercent = Math.max(
+    0,
+    Math.min(100, Number(routingState.canaryPercent) || 0),
+  );
+
+  if (canaryPercent >= 100) {
+    return activeBackend;
+  }
+  if (canaryPercent <= 0) {
+    return passiveBackend;
+  }
+
+  return Math.random() * 100 < canaryPercent ? activeBackend : passiveBackend;
+}
+
+function buildDjangoApiUrl(pathname, query = {}) {
+  const base = String(routingState.djangoUrl || "http://127.0.0.1:8000")
+    .trim()
+    .replace(/\/+$/, "");
+  const url = new URL(`${base}${pathname}`);
+
+  for (const [key, value] of Object.entries(query)) {
+    if (value === undefined || value === null) {
+      continue;
+    }
+
+    const normalized = String(value).trim();
+    if (!normalized) {
+      continue;
+    }
+
+    url.searchParams.set(key, normalized);
+  }
+
+  return url;
+}
+
+async function fetchJsonWithTimeout(url, options = {}) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(
+    () => controller.abort(),
+    SEARCH_PROXY_TIMEOUT_MS,
+  );
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    const payload = await response.json().catch(() => null);
+    return { response, payload };
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function proxyDjangoSearch(pathname, query, req) {
+  const url = buildDjangoApiUrl(pathname, query);
+  const { response, payload } = await fetchJsonWithTimeout(url, {
+    headers: {
+      Accept: "application/json",
+      "X-Forwarded-For": getClientIp(req),
+      "X-Magneto-Proxy": "node-search",
+    },
+  });
+
+  if (!response.ok) {
+    const message =
+      payload?.error || `Django request failed with ${response.status}.`;
+    throw new Error(message);
+  }
+
+  return payload && typeof payload === "object" ? payload : {};
+}
+
+function parseOptionalIsoDate(value) {
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return null;
+  }
+
+  const parsed = Date.parse(raw);
+  if (!Number.isFinite(parsed)) {
+    return null;
+  }
+
+  return new Date(parsed);
+}
+
+function toBearerToken(value) {
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return "";
+  }
+  if (/^bearer\s+/i.test(raw)) {
+    return raw;
+  }
+  return `Bearer ${raw}`;
+}
+
+function mapDjangoExportDocToLocal(doc) {
+  const source = doc && typeof doc.source === "object" ? doc.source : {};
+  return {
+    id:
+      String(doc?.id || "").trim() ||
+      `django-${stableHashString(String(doc?.url || "").trim())}`,
+    url: String(doc?.url || "").trim(),
+    canonicalUrl: String(doc?.canonicalUrl || "").trim(),
+    title: String(doc?.title || "").trim(),
+    summary: String(doc?.summary || "").trim(),
+    content: String(doc?.content || "").trim(),
+    language: String(doc?.language || "").trim(),
+    category: String(doc?.category || "").trim(),
+    tags: Array.isArray(doc?.tags) ? doc.tags : [],
+    qualityScore: Number(doc?.qualityScore || 0),
+    fetchedAt: String(doc?.fetchedAt || doc?.updatedAt || "").trim(),
+    sourceName: String(source.name || "").trim(),
+    sourceSlug: String(source.slug || "").trim(),
+  };
+}
+
+async function fetchDjangoAdminExportPage({
+  req,
+  authHeader,
+  page,
+  pageSize,
+  status,
+  source,
+  updatedSince,
+}) {
+  const url = buildDjangoApiUrl("/api/admin/search/export", {
+    page,
+    limit: pageSize,
+    status,
+    source,
+    updatedSince,
+  });
+
+  const headers = {
+    Accept: "application/json",
+    "X-Forwarded-For": getClientIp(req),
+    "X-Magneto-Proxy": "node-admin-sync",
+  };
+
+  if (authHeader) {
+    headers.Authorization = authHeader;
+  }
+
+  const { response, payload } = await fetchJsonWithTimeout(url, { headers });
+  if (!response.ok) {
+    const message =
+      payload?.error ||
+      `Django admin export failed with status ${response.status}.`;
+    throw new Error(message);
+  }
+
+  return payload && typeof payload === "object" ? payload : {};
+}
+
+function readDjangoIndexSyncState() {
+  return readJson(indexSyncStatePath, {
+    updatedSince: "",
+    lastRunAt: "",
+    lastSuccessAt: "",
+    lastError: "",
+  });
+}
+
+function writeDjangoIndexSyncState(state) {
+  writeJson(indexSyncStatePath, {
+    updatedSince: String(state?.updatedSince || "").trim(),
+    lastRunAt: String(state?.lastRunAt || "").trim(),
+    lastSuccessAt: String(state?.lastSuccessAt || "").trim(),
+    lastError: String(state?.lastError || "").trim(),
+  });
+}
+
+function resolveLatestUpdatedAtIso(rawDocuments) {
+  let latestMs = Number.NaN;
+  for (const doc of rawDocuments) {
+    const parsed = Date.parse(String(doc?.updatedAt || "").trim());
+    if (!Number.isFinite(parsed)) {
+      continue;
+    }
+    if (!Number.isFinite(latestMs) || parsed > latestMs) {
+      latestMs = parsed;
+    }
+  }
+
+  if (!Number.isFinite(latestMs)) {
+    return "";
+  }
+  return new Date(latestMs).toISOString();
+}
+
+async function executeDjangoIndexSync({
+  req = null,
+  authHeader,
+  source = "",
+  statusFilter = "indexed",
+  pageSize = 200,
+  maxPages = 50,
+  createBackup = true,
+  updatedSince = null,
+  reason = "manual",
+}) {
+  if (djangoSyncInFlight) {
+    throw new Error("A Django index sync is already in progress.");
+  }
+
+  djangoSyncInFlight = true;
+  const startedAt = Date.now();
+  const startedAtIso = new Date(startedAt).toISOString();
+  const rawDocuments = [];
+  const pageSummaries = [];
+  let page = 1;
+  let djangoTotal = 0;
+
+  djangoSyncRuntime.lastRunAt = startedAtIso;
+  djangoSyncRuntime.lastError = "";
+
+  try {
+    while (page <= maxPages) {
+      const payload = await fetchDjangoAdminExportPage({
+        req,
+        authHeader,
+        page,
+        pageSize,
+        status: statusFilter,
+        source,
+        updatedSince: updatedSince ? updatedSince.toISOString() : "",
+      });
+
+      const docs = Array.isArray(payload.documents) ? payload.documents : [];
+      const pagination =
+        payload.pagination && typeof payload.pagination === "object"
+          ? payload.pagination
+          : {};
+      djangoTotal = Number(pagination.total || djangoTotal || 0);
+
+      rawDocuments.push(...docs);
+      pageSummaries.push({
+        page,
+        fetched: docs.length,
+        hasNextPage: Boolean(pagination.hasNextPage),
+      });
+
+      if (!pagination.hasNextPage) {
+        break;
+      }
+      page += 1;
+    }
+
+    const preparedDocs = rawDocuments
+      .map(mapDjangoExportDocToLocal)
+      .filter((doc) => doc.url && (doc.title || doc.summary || doc.content));
+
+    const uniqueUrlCount = new Set(
+      preparedDocs.map((doc) => normalizeIndexUrl(doc.url).toLowerCase()),
+    ).size;
+
+    const indexBefore = getSearchIndexStats();
+    let refresh = {
+      beforeCount: indexBefore.totalDocs,
+      afterCount: indexBefore.totalDocs,
+      removedInvalid: 0,
+      deduplicated: 0,
+      backupFile: null,
+      artifacts: {
+        docCount: indexBefore.totalDocs,
+        vocabularySize: 0,
+        tokenDfSize: 0,
+      },
+    };
+
+    if (preparedDocs.length > 0) {
+      refresh = rebuildLocalSearchIndex({
+        mergeDocs: preparedDocs,
+        createBackup,
+      });
+    }
+
+    const latestUpdatedSince = resolveLatestUpdatedAtIso(rawDocuments);
+    const syncState = readDjangoIndexSyncState();
+    const persisted = {
+      ...syncState,
+      updatedSince:
+        latestUpdatedSince ||
+        String(syncState.updatedSince || "").trim() ||
+        (updatedSince ? updatedSince.toISOString() : ""),
+      lastRunAt: startedAtIso,
+      lastSuccessAt: new Date().toISOString(),
+      lastError: "",
+    };
+    writeDjangoIndexSyncState(persisted);
+
+    const sync = {
+      durationMs: Date.now() - startedAt,
+      reason,
+      source: source || "all",
+      status: statusFilter,
+      updatedSince: updatedSince ? updatedSince.toISOString() : "",
+      nextUpdatedSince: persisted.updatedSince,
+      pagesFetched: pageSummaries.length,
+      maxPages,
+      pageSize,
+      djangoReportedTotal: djangoTotal,
+      fetchedDocuments: rawDocuments.length,
+      importedDocuments: preparedDocs.length,
+      uniqueUrlCount,
+      pageSummaries,
+    };
+
+    const result = {
+      sync,
+      refresh,
+      index: getSearchIndexStats(),
+      state: persisted,
+    };
+
+    djangoSyncRuntime.lastSuccessAt = persisted.lastSuccessAt;
+    djangoSyncRuntime.lastSummary = {
+      ...sync,
+      backupFile: refresh.backupFile || "",
+    };
+
+    return result;
+  } catch (error) {
+    const message = String(error?.message || "Django sync failed.");
+    const syncState = readDjangoIndexSyncState();
+    const failedState = {
+      ...syncState,
+      lastRunAt: startedAtIso,
+      lastError: message,
+    };
+    writeDjangoIndexSyncState(failedState);
+    djangoSyncRuntime.lastError = message;
+    throw error;
+  } finally {
+    djangoSyncInFlight = false;
+  }
 }
 
 function logSearch({ query, resultCount, ip }) {
@@ -2067,7 +4519,136 @@ app.post("/api/auth/login", (req, res) => {
   res.json({ token });
 });
 
-app.get("/api/search", (req, res) => {
+app.get("/api/search/sources", async (req, res) => {
+  const query = String(req.query.q || "").trim();
+  const limit = String(req.query.limit || "").trim();
+
+  if (pickSearchBackend() === "django") {
+    try {
+      const payload = await proxyDjangoSearch(
+        "/api/search/sources",
+        { q: query, limit },
+        req,
+      );
+      res.json({
+        ok: true,
+        ...payload,
+        servedBy: "django",
+      });
+      return;
+    } catch (error) {
+      console.warn(
+        `[search] Django sources proxy failed, falling back to Node: ${String(error?.message || error)}`,
+      );
+    }
+  }
+
+  const sources = getSearchSources({ query, limit });
+
+  res.json({
+    ok: true,
+    total: sources.length,
+    sources,
+    servedBy: "node",
+  });
+});
+
+app.get("/api/search/suggest", async (req, res) => {
+  const query = String(req.query.q || "").trim();
+  const limit = String(req.query.limit || "").trim();
+
+  if (!query || query.length < 2) {
+    res.json({
+      ok: true,
+      query,
+      total: 0,
+      suggestions: [],
+      servedBy: "node",
+    });
+    return;
+  }
+
+  if (pickSearchBackend() === "django") {
+    try {
+      const payload = await proxyDjangoSearch(
+        "/api/search/suggest",
+        { q: query, limit },
+        req,
+      );
+      res.json({
+        ok: true,
+        ...payload,
+        servedBy: "django",
+      });
+      return;
+    } catch (error) {
+      console.warn(
+        `[search] Django suggest proxy failed, falling back to Node: ${String(error?.message || error)}`,
+      );
+    }
+  }
+
+  const suggestions = getSearchSuggestions(query, limit || 10);
+  res.json({
+    ok: true,
+    query,
+    total: suggestions.length,
+    suggestions,
+    servedBy: "node",
+  });
+});
+
+app.get("/api/search/trending", async (req, res) => {
+  const period = String(req.query.period || "weekly").trim() || "weekly";
+  const limit = String(req.query.limit || "10").trim() || "10";
+  const includeZero =
+    String(req.query.includeZero || "false")
+      .trim()
+      .toLowerCase() === "true";
+  const query = String(req.query.q || "").trim();
+
+  if (pickSearchBackend() === "django") {
+    try {
+      const payload = await proxyDjangoSearch(
+        "/api/search/trending",
+        {
+          period,
+          limit,
+          includeZero: includeZero ? "true" : "false",
+          q: query,
+        },
+        req,
+      );
+
+      res.json({
+        ok: true,
+        ...payload,
+        servedBy: "django",
+      });
+      return;
+    } catch (error) {
+      console.warn(
+        `[search] Django trending proxy failed, falling back to Node: ${String(error?.message || error)}`,
+      );
+    }
+  }
+
+  const payload = getTrendingSearches({
+    period,
+    limit,
+    includeZero,
+    query,
+  });
+
+  res.json({
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    ...payload,
+    servedBy: "node",
+  });
+});
+
+app.get("/api/search", async (req, res) => {
   const query = String(req.query.q || "").trim();
 
   if (!query) {
@@ -2075,18 +4656,89 @@ app.get("/api/search", (req, res) => {
     return;
   }
 
-  const results = runSearch(query);
+  const language = String(req.query.language || "").trim();
+  const category = String(req.query.category || "").trim();
+  const source = String(req.query.source || "").trim();
+  const sort = String(req.query.sort || "relevance").trim() || "relevance";
+  const limit = String(req.query.limit || "").trim();
+  const page = String(req.query.page || "").trim();
+
+  if (pickSearchBackend() === "django") {
+    try {
+      const payload = await proxyDjangoSearch(
+        "/api/search",
+        {
+          q: query,
+          language,
+          category,
+          source,
+          sort,
+          limit,
+          page,
+        },
+        req,
+      );
+
+      res.json({
+        ...payload,
+        servedBy: "django",
+      });
+      return;
+    } catch (error) {
+      console.warn(
+        `[search] Django search proxy failed, falling back to Node: ${String(error?.message || error)}`,
+      );
+    }
+  }
+
+  const payload = runSearchPage(query, {
+    language,
+    category,
+    source,
+    sort,
+    limit,
+    page,
+  });
+
   logSearch({
     query,
-    resultCount: results.length,
+    resultCount: payload.total,
     ip: req.ip,
   });
 
   res.json({
     engine: "MAGNETO Core",
     query,
-    total: results.length,
-    results,
+    queryUsed: payload.queryUsed || query,
+    appliedOperators: getAppliedSearchOperators(payload.queryUsed || query),
+    queryCorrection: payload.queryCorrection || null,
+    suggestions:
+      payload.total > 0
+        ? []
+        : getSearchSuggestions(payload.queryUsed || query, 8),
+    total: payload.total,
+    appliedFilters: {
+      language,
+      category,
+      source,
+      sort,
+      limit: payload.limit,
+      page: payload.page,
+    },
+    pagination: {
+      page: payload.page,
+      pageSize: payload.limit,
+      offset: payload.offset,
+      total: payload.total,
+      totalPages: payload.totalPages,
+      hasNextPage: payload.hasNextPage,
+      hasPrevPage: payload.hasPrevPage,
+      nextPage: payload.hasNextPage ? payload.page + 1 : null,
+      prevPage: payload.hasPrevPage ? payload.page - 1 : null,
+    },
+    facets: payload.facets,
+    results: payload.results,
+    servedBy: "node",
   });
 });
 
@@ -2473,6 +5125,257 @@ app.get("/api/admin/runtime-metrics", adminAuth, (_req, res) => {
         assistant: assistantRateMap.size,
       },
     },
+  });
+});
+
+app.get("/api/admin/index/status", adminAuth, (_req, res) => {
+  res.json({
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    index: getSearchIndexStats(),
+  });
+});
+
+app.post("/api/admin/index/refresh", adminAuth, (req, res) => {
+  const mergeDocs = Array.isArray(req.body?.mergeDocs)
+    ? req.body.mergeDocs
+    : [];
+  const createBackup =
+    req.body?.createBackup == null ? true : Boolean(req.body?.createBackup);
+
+  if (mergeDocs.length > 2000) {
+    res.status(400).json({
+      error: "Too many mergeDocs items in one request. Max is 2000.",
+    });
+    return;
+  }
+
+  try {
+    const refresh = rebuildLocalSearchIndex({
+      mergeDocs,
+      createBackup,
+    });
+
+    res.json({
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      refresh,
+      index: getSearchIndexStats(),
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: String(error?.message || "Could not refresh local search index."),
+    });
+  }
+});
+
+app.get("/api/admin/index/backups", adminAuth, (req, res) => {
+  const requestedReason = String(req.query.reason || "all")
+    .trim()
+    .toLowerCase();
+  const backups = listSearchIndexBackups();
+  const filtered =
+    requestedReason && requestedReason !== "all"
+      ? backups.filter(
+          (item) => String(item.reason || "").toLowerCase() === requestedReason,
+        )
+      : backups;
+
+  res.json({
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    reason: requestedReason || "all",
+    total: filtered.length,
+    backups: filtered.slice(0, 200),
+  });
+});
+
+app.post("/api/admin/index/restore", adminAuth, (req, res) => {
+  const fileName = sanitizeSearchIndexBackupFileName(req.body?.fileName);
+  if (!fileName) {
+    res.status(400).json({ error: "Invalid search-index backup file name." });
+    return;
+  }
+
+  const createBackup =
+    req.body?.createBackup == null ? true : Boolean(req.body?.createBackup);
+
+  try {
+    const restore = restoreSearchIndexFromBackup(fileName, { createBackup });
+    res.json({
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      restore,
+      index: getSearchIndexStats(),
+    });
+  } catch (error) {
+    const message = String(error?.message || "Could not restore search index.");
+    if (/not found/i.test(message)) {
+      res.status(404).json({ error: message });
+      return;
+    }
+    res.status(400).json({ error: message });
+  }
+});
+
+app.post("/api/admin/index/sync-django", adminAuth, async (req, res) => {
+  const source = String(req.body?.source || "")
+    .trim()
+    .toLowerCase();
+  const statusFilter = String(req.body?.status || "indexed")
+    .trim()
+    .toLowerCase();
+  const pageSize = Math.max(
+    1,
+    Math.min(
+      500,
+      Number.parseInt(String(req.body?.pageSize || "200"), 10) || 200,
+    ),
+  );
+  const maxPages = Math.max(
+    1,
+    Math.min(
+      300,
+      Number.parseInt(String(req.body?.maxPages || "50"), 10) || 50,
+    ),
+  );
+  const createBackup =
+    req.body?.createBackup == null ? true : Boolean(req.body?.createBackup);
+  const useWatermark = Boolean(req.body?.useWatermark);
+  const resetWatermark = Boolean(req.body?.resetWatermark);
+  const updatedSinceRaw = String(req.body?.updatedSince || "").trim();
+  let updatedSince = updatedSinceRaw
+    ? parseOptionalIsoDate(updatedSinceRaw)
+    : null;
+  let usedPersistedWatermark = false;
+
+  const allowedStatuses = new Set(["indexed", "blocked", "error", "all"]);
+  if (!allowedStatuses.has(statusFilter)) {
+    res.status(400).json({
+      error: "Invalid status. Allowed: indexed, blocked, error, all.",
+    });
+    return;
+  }
+
+  if (updatedSinceRaw && !updatedSince) {
+    res.status(400).json({ error: "Invalid updatedSince ISO datetime." });
+    return;
+  }
+
+  if (resetWatermark) {
+    const syncState = readDjangoIndexSyncState();
+    writeDjangoIndexSyncState({
+      ...syncState,
+      updatedSince: "",
+    });
+  }
+
+  if (!updatedSince && useWatermark) {
+    const syncState = readDjangoIndexSyncState();
+    const persisted = parseOptionalIsoDate(syncState.updatedSince);
+    if (persisted) {
+      updatedSince = persisted;
+      usedPersistedWatermark = true;
+    }
+  }
+
+  const explicitDjangoToken = toBearerToken(
+    req.body?.djangoToken || process.env.DJANGO_ADMIN_TOKEN,
+  );
+  const forwardedAuthHeader = toBearerToken(req.headers.authorization || "");
+  const djangoAuthHeader = explicitDjangoToken || forwardedAuthHeader;
+
+  if (!djangoAuthHeader) {
+    res.status(400).json({
+      error:
+        "Missing Django auth token. Provide body.djangoToken or DJANGO_ADMIN_TOKEN.",
+    });
+    return;
+  }
+
+  try {
+    const result = await executeDjangoIndexSync({
+      req,
+      authHeader: djangoAuthHeader,
+      source,
+      statusFilter,
+      pageSize,
+      maxPages,
+      createBackup,
+      updatedSince,
+      reason: "manual",
+    });
+
+    res.json({
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      sync: {
+        ...result.sync,
+        useWatermark,
+        resetWatermark,
+        usedPersistedWatermark,
+      },
+      refresh: result.refresh,
+      index: result.index,
+      state: result.state,
+    });
+  } catch (error) {
+    res.status(502).json({
+      error: String(error?.message || "Django sync failed."),
+      sync: {
+        source: source || "all",
+        status: statusFilter,
+        updatedSince: updatedSince ? updatedSince.toISOString() : "",
+        maxPages,
+        pageSize,
+      },
+    });
+  }
+});
+
+app.post("/api/admin/index/sync-reset-watermark", adminAuth, (req, res) => {
+  const updatedSinceRaw = String(req.body?.updatedSince || "").trim();
+  const updatedSince = updatedSinceRaw
+    ? parseOptionalIsoDate(updatedSinceRaw)
+    : null;
+
+  if (updatedSinceRaw && !updatedSince) {
+    res.status(400).json({ error: "Invalid updatedSince ISO datetime." });
+    return;
+  }
+
+  const current = readDjangoIndexSyncState();
+  const nextState = {
+    ...current,
+    updatedSince: updatedSince ? updatedSince.toISOString() : "",
+    lastError: "",
+  };
+  writeDjangoIndexSyncState(nextState);
+
+  res.json({
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    state: nextState,
+  });
+});
+
+app.get("/api/admin/index/sync-status", adminAuth, (_req, res) => {
+  res.json({
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    running: djangoSyncInFlight,
+    config: {
+      enabled: DJANGO_INDEX_SYNC_ENABLED,
+      intervalMs: DJANGO_INDEX_SYNC_INTERVAL_MS,
+      startup: DJANGO_INDEX_SYNC_STARTUP,
+      defaultMaxPages: DJANGO_INDEX_SYNC_MAX_PAGES,
+      defaultPageSize: DJANGO_INDEX_SYNC_PAGE_SIZE,
+      hasDjangoAdminToken: Boolean(
+        String(process.env.DJANGO_ADMIN_TOKEN || "").trim(),
+      ),
+    },
+    runtime: djangoSyncRuntime,
+    state: readDjangoIndexSyncState(),
   });
 });
 
@@ -2865,9 +5768,59 @@ app.post("/api/admin/routing/verify", adminAuth, async (_req, res) => {
 ensureAnalyticsFile();
 backupAnalytics("startup");
 
+async function runScheduledDjangoIndexSync(reason = "scheduled") {
+  if (!DJANGO_INDEX_SYNC_ENABLED) {
+    return;
+  }
+
+  const authHeader = toBearerToken(process.env.DJANGO_ADMIN_TOKEN);
+  if (!authHeader) {
+    djangoSyncRuntime.lastError =
+      "DJANGO_ADMIN_TOKEN is not set. Scheduled sync skipped.";
+    return;
+  }
+
+  if (djangoSyncInFlight) {
+    return;
+  }
+
+  const persisted = readDjangoIndexSyncState();
+  const updatedSince = parseOptionalIsoDate(persisted.updatedSince);
+
+  try {
+    await executeDjangoIndexSync({
+      req: null,
+      authHeader,
+      source: "",
+      statusFilter: "indexed",
+      pageSize: DJANGO_INDEX_SYNC_PAGE_SIZE,
+      maxPages: DJANGO_INDEX_SYNC_MAX_PAGES,
+      createBackup: false,
+      updatedSince,
+      reason,
+    });
+  } catch (error) {
+    console.warn(
+      `[sync] Scheduled Django index sync failed: ${String(error?.message || error)}`,
+    );
+  }
+}
+
 setInterval(() => {
   backupAnalytics("scheduled");
 }, BACKUP_SCHEDULE_MS).unref();
+
+if (DJANGO_INDEX_SYNC_ENABLED) {
+  setInterval(() => {
+    runScheduledDjangoIndexSync("scheduled");
+  }, DJANGO_INDEX_SYNC_INTERVAL_MS).unref();
+
+  if (DJANGO_INDEX_SYNC_STARTUP) {
+    setTimeout(() => {
+      runScheduledDjangoIndexSync("startup");
+    }, 3000).unref();
+  }
+}
 
 app.listen(PORT, () => {
   console.log(`MAGNETO server running on http://localhost:${PORT}`);

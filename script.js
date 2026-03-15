@@ -16,10 +16,30 @@ const assistantThread = document.getElementById("assistantThread");
 const assistantForm = document.getElementById("assistantForm");
 const assistantInput = document.getElementById("assistantInput");
 const assistantSuggestions = document.getElementById("assistantSuggestions");
+const assistantStatusMessage = document.getElementById(
+  "assistantStatusMessage",
+);
 
 const resultsQuery = document.getElementById("resultsQuery");
 const resultsMeta = document.getElementById("resultsMeta");
 const resultsList = document.getElementById("resultsList");
+const resultsFilters = document.getElementById("resultsFilters");
+const resultsFilterLanguage = document.getElementById("resultsFilterLanguage");
+const resultsFilterCategory = document.getElementById("resultsFilterCategory");
+const resultsFilterSource = document.getElementById("resultsFilterSource");
+const resultsSourceOptions = document.getElementById("resultsSourceOptions");
+const resultsFilterSort = document.getElementById("resultsFilterSort");
+const resultsFilterLimit = document.getElementById("resultsFilterLimit");
+const resultsFilterReset = document.getElementById("resultsFilterReset");
+const resultsFacets = document.getElementById("resultsFacets");
+const resultsPagination = document.getElementById("resultsPagination");
+const resultsPrevPage = document.getElementById("resultsPrevPage");
+const resultsNextPage = document.getElementById("resultsNextPage");
+const resultsPageNumbers = document.getElementById("resultsPageNumbers");
+const resultsPageMeta = document.getElementById("resultsPageMeta");
+const resultsCountValue = document.getElementById("resultsCountValue");
+const resultsSortValue = document.getElementById("resultsSortValue");
+const resultsScopeValue = document.getElementById("resultsScopeValue");
 
 const adminAuthPanel = document.getElementById("adminAuthPanel");
 const adminDashboard = document.getElementById("adminDashboard");
@@ -80,6 +100,93 @@ const adminRoutingVerifyResult = document.getElementById(
   "adminRoutingVerifyResult",
 );
 const adminRoutingBtns = document.querySelectorAll(".admin-routing-btn");
+const adminSearchStatusGrid = document.getElementById("adminSearchStatusGrid");
+const adminSearchStatusMeta = document.getElementById("adminSearchStatusMeta");
+const adminSearchStatusRefreshBtn = document.getElementById(
+  "adminSearchStatusRefreshBtn",
+);
+const adminSearchSeedBtn = document.getElementById("adminSearchSeedBtn");
+const adminSearchCrawlBtn = document.getElementById("adminSearchCrawlBtn");
+const adminSearchCrawlForm = document.getElementById("adminSearchCrawlForm");
+const adminSearchSourceIds = document.getElementById("adminSearchSourceIds");
+const adminSearchMaxPages = document.getElementById("adminSearchMaxPages");
+const adminSearchForceSeed = document.getElementById("adminSearchForceSeed");
+const adminSearchRunsBody = document.getElementById("adminSearchRunsBody");
+const adminSearchRunsStatusFilter = document.getElementById(
+  "adminSearchRunsStatusFilter",
+);
+const adminSearchRunsSourceFilter = document.getElementById(
+  "adminSearchRunsSourceFilter",
+);
+const adminSearchRunsFilterClearBtn = document.getElementById(
+  "adminSearchRunsFilterClearBtn",
+);
+const adminSearchRunsExportBtn = document.getElementById(
+  "adminSearchRunsExportBtn",
+);
+const adminSearchRunsCopyBtn = document.getElementById(
+  "adminSearchRunsCopyBtn",
+);
+const adminSearchRunsPreviewBtn = document.getElementById(
+  "adminSearchRunsPreviewBtn",
+);
+const adminSearchRunsSortButtons = document.querySelectorAll(
+  ".admin-search-runs-sort-btn",
+);
+const adminSearchAutoRefreshState = document.getElementById(
+  "adminSearchAutoRefreshState",
+);
+const adminSearchCsvModal = document.getElementById("adminSearchCsvModal");
+const adminSearchCsvModalCloseBtn = document.getElementById(
+  "adminSearchCsvModalCloseBtn",
+);
+const adminSearchCsvPreviewContent = document.getElementById(
+  "adminSearchCsvPreviewContent",
+);
+const adminSearchCsvPreviewSearchInput = document.getElementById(
+  "adminSearchCsvPreviewSearchInput",
+);
+const adminSearchCsvPreviewSearchClearBtn = document.getElementById(
+  "adminSearchCsvPreviewSearchClearBtn",
+);
+const adminSearchCsvPreviewMatchCount = document.getElementById(
+  "adminSearchCsvPreviewMatchCount",
+);
+const adminSearchCsvPreviewPrevBtn = document.getElementById(
+  "adminSearchCsvPreviewPrevBtn",
+);
+const adminSearchCsvPreviewNextBtn = document.getElementById(
+  "adminSearchCsvPreviewNextBtn",
+);
+const adminSearchRunDetail = document.getElementById("adminSearchRunDetail");
+const adminSearchRunDetailCloseBtn = document.getElementById(
+  "adminSearchRunDetailCloseBtn",
+);
+const adminSearchRunDetailBody = document.getElementById(
+  "adminSearchRunDetailBody",
+);
+const adminSearchRunsCount = document.getElementById("adminSearchRunsCount");
+const adminSearchRunsRefreshBtn = document.getElementById(
+  "adminSearchRunsRefreshBtn",
+);
+const adminSearchRunsColToggleBtn = document.getElementById(
+  "adminSearchRunsColToggleBtn",
+);
+const adminSearchColTogglePanel = document.getElementById(
+  "adminSearchColTogglePanel",
+);
+const adminSearchRunsPaginationWrap = document.getElementById(
+  "adminSearchRunsPaginationWrap",
+);
+const adminSearchRunsPaginationInfo = document.getElementById(
+  "adminSearchRunsPaginationInfo",
+);
+const adminSearchRunsPrevPageBtn = document.getElementById(
+  "adminSearchRunsPrevPageBtn",
+);
+const adminSearchRunsNextPageBtn = document.getElementById(
+  "adminSearchRunsNextPageBtn",
+);
 
 const ADMIN_TOKEN_KEY = "magneto.admin.token";
 const API_BASE_URL = String(window.MAGNETO_API_BASE_URL || "")
@@ -92,6 +199,34 @@ let runtimeMetricsIntervalId = null;
 let runtimeMetricsCountdownIntervalId = null;
 let runtimeNextRefreshAtMs = 0;
 let isRuntimeRefreshInFlight = false;
+const SEARCH_AUTO_REFRESH_MS = 30000;
+let searchStatusIntervalId = null;
+let searchStatusCountdownIntervalId = null;
+let searchStatusNextRefreshAtMs = 0;
+let adminSearchRecentRuns = [];
+let adminSearchRunsSortKey = "startedAt";
+let adminSearchRunsSortDirection = "desc";
+let adminSearchCsvFullContent = "";
+let csvPreviewMarkElements = [];
+let csvPreviewCurrentMatchIndex = -1;
+let csvPreviewMatchedRowCount = 0;
+let csvPreviewTotalDataRowCount = 0;
+let adminSearchExpandedRunId = null;
+const ADMIN_SEARCH_RUNS_PAGE_SIZE = 10;
+const ADMIN_SEARCH_RUNS_HIDDEN_COLS_KEY = "magneto.admin.search.hiddenCols";
+const ADMIN_SEARCH_RUNS_COL_KEYS = [
+  "startedAt",
+  "source",
+  "status",
+  "trigger",
+  "pagesSeen",
+  "pagesIndexed",
+  "pagesUpdated",
+  "pagesFailed",
+  "pagesBlocked",
+];
+let adminSearchRunsPage = 0;
+let adminSearchRunsHiddenCols = new Set();
 const FLAG_ROTATION_DEFAULT_MS = 60000;
 const FLAG_ROTATION_MIN_MS = 5000;
 const FLAG_ROTATION_MAX_MS = 600000;
@@ -246,6 +381,41 @@ function updateRuntimeAutoRefreshCountdown() {
   setRuntimeAutoRefreshState(true, secondsRemaining);
 }
 
+function setSearchAutoRefreshState(isOn, secondsRemaining = null) {
+  if (!adminSearchAutoRefreshState) {
+    return;
+  }
+
+  const enabled = Boolean(isOn);
+  if (!enabled) {
+    adminSearchAutoRefreshState.textContent = "Auto-refresh OFF";
+  } else {
+    const secondsText = Number.isFinite(Number(secondsRemaining))
+      ? ` - next in ${Math.max(0, Math.ceil(Number(secondsRemaining)))}s`
+      : "";
+    adminSearchAutoRefreshState.textContent = `Auto-refresh ON${secondsText}`;
+  }
+
+  adminSearchAutoRefreshState.classList.toggle(
+    "admin-auto-refresh-on",
+    enabled,
+  );
+  adminSearchAutoRefreshState.classList.toggle(
+    "admin-auto-refresh-off",
+    !enabled,
+  );
+}
+
+function updateSearchAutoRefreshCountdown() {
+  if (searchStatusIntervalId == null || searchStatusNextRefreshAtMs <= 0) {
+    setSearchAutoRefreshState(false);
+    return;
+  }
+
+  const secondsRemaining = (searchStatusNextRefreshAtMs - Date.now()) / 1000;
+  setSearchAutoRefreshState(true, secondsRemaining);
+}
+
 function buildApiUrl(path) {
   const target = String(path || "").trim();
   if (!target.startsWith("/api/")) {
@@ -269,13 +439,22 @@ function syncSidePanelHeights() {
   rightPanel.style.height = "";
 }
 
-function updateStatus(message, isError = false) {
+function updateSearchStatus(message, isError = false) {
   if (!statusMessage) {
     return;
   }
 
   statusMessage.textContent = message;
   statusMessage.classList.toggle("error", isError);
+}
+
+function updateAssistantStatus(message, isError = false) {
+  if (!assistantStatusMessage) {
+    return;
+  }
+
+  assistantStatusMessage.textContent = String(message || "");
+  assistantStatusMessage.classList.toggle("error", isError);
 }
 
 function initHomeKeyboardShortcuts() {
@@ -299,7 +478,7 @@ function initHomeKeyboardShortcuts() {
       event.preventDefault();
       searchQuery.focus();
       searchQuery.select();
-      updateStatus("Search focused. Type your query and press Enter.");
+      updateSearchStatus("Search focused. Type your query and press Enter.");
       return;
     }
 
@@ -311,13 +490,13 @@ function initHomeKeyboardShortcuts() {
       event.preventDefault();
       searchQuery.focus();
       searchQuery.select();
-      updateStatus("Quick search ready.");
+      updateSearchStatus("Quick search ready.");
       return;
     }
 
     if (event.key === "Escape" && document.activeElement === searchQuery) {
       searchQuery.value = "";
-      updateStatus("Search cleared.");
+      updateSearchStatus("Search cleared.");
     }
   });
 }
@@ -427,7 +606,6 @@ function updateAssistant(query) {
 
       assistantInput.value = suggestion;
       assistantInput.focus();
-      updateStatus(`Assistant suggestion selected: ${suggestion}`);
     });
 
     assistantSuggestions.appendChild(button);
@@ -512,17 +690,19 @@ function initAssistantChat() {
 
     addAssistantMessage("user", userText);
     addAssistantMessage("bot", "Thinking...");
+    updateAssistantStatus("Assistant is replying...");
 
     const result = await requestAssistantResponse(userText);
     if (assistantThread && assistantThread.lastElementChild) {
       assistantThread.lastElementChild.textContent = result.reply;
     }
 
-    updateStatus(
-      result.provider === "local-fallback"
-        ? `Assistant fallback active. ${result.reason || ""}`.trim()
-        : "Assistant response ready.",
-    );
+    if (result.provider === "local-fallback" && result.reason) {
+      console.warn(`Assistant fallback active: ${result.reason}`);
+      updateAssistantStatus(result.reason, true);
+    } else {
+      updateAssistantStatus("");
+    }
 
     assistantInput.value = "";
     requestAnimationFrame(syncSidePanelHeights);
@@ -542,11 +722,11 @@ function initHomeForm() {
     const query = searchQuery.value.trim();
 
     if (!query) {
-      updateStatus("Please type a search query.", true);
+      updateSearchStatus("Please type a search query.", true);
       return;
     }
 
-    updateStatus("Searching with MAGNETO Core...");
+    updateSearchStatus("Searching with MAGNETO Core...");
     window.location.href = `results.html?q=${encodeURIComponent(query)}`;
   });
 
@@ -559,12 +739,19 @@ function initHomeForm() {
 
       searchQuery.value = query;
       searchQuery.focus();
-      updateStatus(`Suggestion applied: ${query}`);
+      updateSearchStatus(`Suggestion applied: ${query}`);
     });
   });
 
   initAssistantChat();
   initHomeKeyboardShortcuts();
+
+  const homeAnimatedNodes = document.querySelectorAll(
+    ".hero-metric-card, .feature-card, .search-signal",
+  );
+  homeAnimatedNodes.forEach((node, index) => {
+    node.style.animationDelay = `${Math.min(index * 70, 280)}ms`;
+  });
 }
 
 function getWeatherView(weatherCode) {
@@ -1129,54 +1316,568 @@ async function initResultsPage() {
 
   const params = new URLSearchParams(window.location.search);
   const query = String(params.get("q") || "").trim();
+  const initialLanguage = String(params.get("language") || "").trim();
+  const initialCategory = String(params.get("category") || "").trim();
+  const initialSource = String(params.get("source") || "").trim();
+  const initialSort =
+    String(params.get("sort") || "relevance").trim() || "relevance";
+  const initialLimitRaw = String(params.get("limit") || "").trim();
+  const initialLimit = /^\d+$/.test(initialLimitRaw) ? initialLimitRaw : "20";
+  const initialPageRaw = String(params.get("page") || "").trim();
+  const initialPage = /^\d+$/.test(initialPageRaw) ? Number(initialPageRaw) : 1;
 
   if (!query) {
     resultsQuery.textContent = "No active search";
     resultsMeta.textContent = "Go back to homepage and enter a query.";
+    if (resultsPagination) {
+      resultsPagination.hidden = true;
+    }
+    if (resultsFacets) {
+      resultsFacets.hidden = true;
+    }
     return;
   }
 
+  if (resultsFilterLanguage) {
+    resultsFilterLanguage.value = initialLanguage;
+  }
+  if (resultsFilterCategory) {
+    resultsFilterCategory.value = initialCategory;
+  }
+  if (resultsFilterSource) {
+    resultsFilterSource.value = initialSource;
+  }
+  if (resultsFilterSort) {
+    resultsFilterSort.value = initialSort;
+  }
+  if (resultsFilterLimit) {
+    resultsFilterLimit.value = initialLimit;
+  }
+
   resultsQuery.textContent = `Results for: ${query}`;
-  resultsMeta.textContent = "Loading data from MAGNETO Core...";
 
-  try {
-    const response = await apiFetch(
-      `/api/search?q=${encodeURIComponent(query)}`,
-    );
-    const payload = await response.json();
+  function formatResultsSort(value) {
+    const normalized = String(value || "relevance")
+      .trim()
+      .toLowerCase();
+    if (normalized === "newest") {
+      return "Newest";
+    }
+    if (normalized === "quality") {
+      return "Quality";
+    }
+    return "Relevance";
+  }
 
-    if (!response.ok) {
-      throw new Error(payload.error || "Search request failed.");
+  function extractHostname(rawUrl) {
+    try {
+      return new URL(String(rawUrl || "")).hostname.replace(/^www\./, "");
+    } catch {
+      return "";
+    }
+  }
+
+  function formatResultDate(rawValue) {
+    if (!rawValue) {
+      return "";
+    }
+    const parsed = new Date(rawValue);
+    if (Number.isNaN(parsed.getTime())) {
+      return "";
+    }
+    return parsed.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  }
+  let currentPage = Math.max(1, initialPage);
+  let lastPagination = {
+    page: currentPage,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPrevPage: false,
+    total: 0,
+  };
+
+  function setResultsUrl(pageValue) {
+    const language = String(resultsFilterLanguage?.value || "").trim();
+    const category = String(resultsFilterCategory?.value || "").trim();
+    const source = String(resultsFilterSource?.value || "").trim();
+    const sort =
+      String(resultsFilterSort?.value || "relevance").trim() || "relevance";
+    const limit = String(resultsFilterLimit?.value || "20").trim() || "20";
+
+    const urlParams = new URLSearchParams({
+      q: query,
+      limit,
+      page: String(pageValue),
+    });
+    if (language) {
+      urlParams.set("language", language);
+    }
+    if (category) {
+      urlParams.set("category", category);
+    }
+    if (source) {
+      urlParams.set("source", source);
+    }
+    if (sort) {
+      urlParams.set("sort", sort);
+    }
+    window.history.replaceState({}, "", `results.html?${urlParams.toString()}`);
+  }
+
+  function renderFacets(facets) {
+    if (!resultsFacets) {
+      return;
     }
 
-    resultsMeta.textContent = `${payload.total} results from ${payload.engine}`;
+    resultsFacets.innerHTML = "";
+
+    const groups = [
+      {
+        key: "languages",
+        label: "Language",
+        target: resultsFilterLanguage,
+      },
+      {
+        key: "categories",
+        label: "Category",
+        target: resultsFilterCategory,
+      },
+      {
+        key: "sources",
+        label: "Source",
+        target: resultsFilterSource,
+      },
+    ];
+
+    let hasAnyFacet = false;
+    for (const group of groups) {
+      const entries = Array.isArray(facets?.[group.key])
+        ? facets[group.key]
+        : [];
+      for (const entry of entries.slice(0, 8)) {
+        const value = String(entry?.value || "").trim();
+        const count = Number(entry?.count || 0);
+        if (!value || count <= 0) {
+          continue;
+        }
+
+        hasAnyFacet = true;
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "results-facet-chip";
+        chip.textContent = `${group.label}: ${value} (${count})`;
+        chip.addEventListener("click", async () => {
+          if (!group.target) {
+            return;
+          }
+          group.target.value = value;
+          currentPage = 1;
+          await performResultsSearch(true, 1);
+        });
+        resultsFacets.appendChild(chip);
+      }
+    }
+
+    resultsFacets.hidden = !hasAnyFacet;
+  }
+
+  function renderPagination(pagination) {
+    if (
+      !resultsPagination ||
+      !resultsPrevPage ||
+      !resultsNextPage ||
+      !resultsPageMeta
+    ) {
+      return;
+    }
+
+    const total = Number(pagination?.total || 0);
+    const page = Number(pagination?.page || 1);
+    const totalPages = Number(pagination?.totalPages || 0);
+    const hasPrev = Boolean(pagination?.hasPrevPage);
+    const hasNext = Boolean(pagination?.hasNextPage);
+
+    if (total <= 0) {
+      resultsPagination.hidden = true;
+      resultsPageMeta.textContent = "Page 1 of 1";
+      resultsPrevPage.disabled = true;
+      resultsNextPage.disabled = true;
+      if (resultsPageNumbers) {
+        resultsPageNumbers.innerHTML = "";
+      }
+      return;
+    }
+
+    resultsPagination.hidden = false;
+    resultsPageMeta.textContent = `Page ${page} of ${Math.max(1, totalPages)}`;
+    resultsPrevPage.disabled = !hasPrev;
+    resultsNextPage.disabled = !hasNext;
+
+    if (!resultsPageNumbers) {
+      return;
+    }
+
+    const visiblePages = [];
+    const windowStart = Math.max(1, page - 2);
+    const windowEnd = Math.min(totalPages, page + 2);
+
+    visiblePages.push(1);
+    for (let idx = windowStart; idx <= windowEnd; idx += 1) {
+      if (idx !== 1 && idx !== totalPages) {
+        visiblePages.push(idx);
+      }
+    }
+    if (totalPages > 1) {
+      visiblePages.push(totalPages);
+    }
+
+    const orderedUnique = [];
+    for (const candidate of visiblePages) {
+      if (!orderedUnique.includes(candidate)) {
+        orderedUnique.push(candidate);
+      }
+    }
+    orderedUnique.sort((a, b) => a - b);
+
+    resultsPageNumbers.innerHTML = "";
+    let lastPage = 0;
+    for (const pageNumber of orderedUnique) {
+      if (pageNumber - lastPage > 1) {
+        const ellipsis = document.createElement("span");
+        ellipsis.className = "results-page-ellipsis";
+        ellipsis.textContent = "...";
+        resultsPageNumbers.appendChild(ellipsis);
+      }
+
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "results-page-number";
+      if (pageNumber === page) {
+        button.classList.add("active");
+      }
+      button.textContent = String(pageNumber);
+      button.disabled = pageNumber === page;
+      button.addEventListener("click", async () => {
+        currentPage = pageNumber;
+        await performResultsSearch(true, pageNumber);
+      });
+      resultsPageNumbers.appendChild(button);
+
+      lastPage = pageNumber;
+    }
+  }
+
+  async function performResultsSearch(updateUrl = false, pageOverride = null) {
+    const language = String(resultsFilterLanguage?.value || "").trim();
+    const category = String(resultsFilterCategory?.value || "").trim();
+    const source = String(resultsFilterSource?.value || "").trim();
+    const sort =
+      String(resultsFilterSort?.value || "relevance").trim() || "relevance";
+    const limit = String(resultsFilterLimit?.value || "20").trim() || "20";
+    const targetPage = Math.max(
+      1,
+      Number.isFinite(Number(pageOverride))
+        ? Number(pageOverride)
+        : currentPage,
+    );
+
+    const requestParams = new URLSearchParams({
+      q: query,
+      limit,
+      page: String(targetPage),
+    });
+    if (language) {
+      requestParams.set("language", language);
+    }
+    if (category) {
+      requestParams.set("category", category);
+    }
+    if (source) {
+      requestParams.set("source", source);
+    }
+    if (sort) {
+      requestParams.set("sort", sort);
+    }
+
+    if (updateUrl) {
+      setResultsUrl(targetPage);
+    }
+
+    resultsMeta.textContent = "Loading data from MAGNETO Core...";
     resultsList.innerHTML = "";
 
-    for (const item of payload.results) {
-      const li = document.createElement("li");
-      li.className = "result-card";
+    try {
+      const response = await apiFetch(
+        `/api/search?${requestParams.toString()}`,
+      );
+      const payload = await response.json();
 
-      const anchor = document.createElement("a");
-      anchor.className = "result-link";
-      anchor.href = item.url;
-      anchor.target = "_blank";
-      anchor.rel = "noopener noreferrer";
-      anchor.textContent = item.title;
+      if (!response.ok) {
+        throw new Error(payload.error || "Search request failed.");
+      }
 
-      const description = document.createElement("p");
-      description.className = "result-description";
-      description.textContent = item.summary;
+      const applied = payload.appliedFilters || {};
+      currentPage = Number(payload.pagination?.page || targetPage || 1);
+      lastPagination = payload.pagination || lastPagination;
+      const appliedParts = [];
+      if (applied.language) {
+        appliedParts.push(`language: ${applied.language}`);
+      }
+      if (applied.category) {
+        appliedParts.push(`category: ${applied.category}`);
+      }
+      if (applied.source) {
+        appliedParts.push(`source: ${applied.source}`);
+      }
+      if (applied.sort) {
+        appliedParts.push(`sort: ${applied.sort}`);
+      }
+      if (applied.limit) {
+        appliedParts.push(`limit: ${applied.limit}`);
+      }
+      if (applied.page) {
+        appliedParts.push(`page: ${applied.page}`);
+      }
+      const filtersText = appliedParts.length
+        ? ` | Filters: ${appliedParts.join(", ")}`
+        : "";
+      resultsMeta.textContent = `${payload.total} results from ${payload.engine}${filtersText}`;
+      if (resultsCountValue) {
+        resultsCountValue.textContent = String(payload.total || 0);
+      }
+      if (resultsSortValue) {
+        resultsSortValue.textContent = formatResultsSort(applied.sort);
+      }
+      if (resultsScopeValue) {
+        resultsScopeValue.textContent = String(
+          applied.source || payload.engine || "MAGNETO Core",
+        );
+      }
+      renderFacets(payload.facets || {});
+      renderPagination(payload.pagination || {});
 
-      const category = document.createElement("p");
-      category.className = "result-description";
-      category.textContent = `Category: ${item.category}`;
+      if (!Array.isArray(payload.results) || payload.results.length === 0) {
+        const li = document.createElement("li");
+        li.className = "result-card";
 
-      li.append(anchor, description, category);
-      resultsList.appendChild(li);
+        const description = document.createElement("p");
+        description.className = "result-description";
+        description.textContent =
+          "No exact matches in MAGNETO Core index. Try broader terms or relax one filter.";
+
+        li.appendChild(description);
+        resultsList.appendChild(li);
+        renderPagination(payload.pagination || {});
+        return;
+      }
+
+      for (const item of payload.results) {
+        const li = document.createElement("li");
+        li.className = "result-card";
+        li.style.animationDelay = `${Math.min(resultsList.children.length * 55, 330)}ms`;
+
+        const top = document.createElement("div");
+        top.className = "result-card-top";
+
+        const pills = document.createElement("div");
+        pills.className = "result-card-pills";
+
+        const categoryPill = document.createElement("span");
+        categoryPill.className = "result-pill";
+        categoryPill.textContent = item.category || "General";
+        pills.appendChild(categoryPill);
+
+        if (item.language) {
+          const languagePill = document.createElement("span");
+          languagePill.className = "result-pill";
+          languagePill.textContent = String(item.language).toUpperCase();
+          pills.appendChild(languagePill);
+        }
+
+        const domain = document.createElement("p");
+        domain.className = "result-domain";
+        domain.textContent = extractHostname(item.url);
+
+        top.append(pills, domain);
+
+        const anchor = document.createElement("a");
+        anchor.className = "result-link";
+        anchor.href = item.url;
+        anchor.target = "_blank";
+        anchor.rel = "noopener noreferrer";
+        anchor.textContent = item.title;
+
+        const description = document.createElement("p");
+        description.className = "result-description";
+        description.textContent = item.summary;
+
+        const metaLine = document.createElement("p");
+        metaLine.className = "result-meta";
+        const metaParts = [];
+        if (item.sourceName) {
+          metaParts.push(`source: ${item.sourceName}`);
+        }
+        if (typeof item.qualityScore !== "undefined") {
+          metaParts.push(`quality: ${item.qualityScore}`);
+        }
+        metaLine.textContent = metaParts.length ? metaParts.join(" | ") : "";
+
+        const footer = document.createElement("div");
+        footer.className = "result-footer";
+
+        if (item.sourceName) {
+          const sourceChip = document.createElement("span");
+          sourceChip.className = "result-footer-chip";
+          sourceChip.textContent = `Source: ${item.sourceName}`;
+          footer.appendChild(sourceChip);
+        }
+
+        const dateText = formatResultDate(item.fetchedAt);
+        if (dateText) {
+          const freshnessChip = document.createElement("span");
+          freshnessChip.className = "result-footer-chip";
+          freshnessChip.textContent = `Indexed: ${dateText}`;
+          footer.appendChild(freshnessChip);
+        }
+
+        if (typeof item.qualityScore !== "undefined") {
+          const qualityChip = document.createElement("span");
+          qualityChip.className = "result-footer-chip";
+          qualityChip.textContent = `Quality: ${item.qualityScore}`;
+          footer.appendChild(qualityChip);
+        }
+
+        li.append(top, anchor, description);
+        if (metaLine.textContent) {
+          li.appendChild(metaLine);
+        }
+        if (footer.childNodes.length > 0) {
+          li.appendChild(footer);
+        }
+        resultsList.appendChild(li);
+      }
+    } catch (error) {
+      resultsMeta.textContent = error.message || "Could not load results.";
+      if (resultsCountValue) {
+        resultsCountValue.textContent = "0";
+      }
+      if (resultsFacets) {
+        resultsFacets.hidden = true;
+        resultsFacets.innerHTML = "";
+      }
+      if (resultsPagination) {
+        resultsPagination.hidden = true;
+      }
     }
-  } catch (error) {
-    resultsMeta.textContent = error.message || "Could not load results.";
   }
+
+  if (resultsFilters) {
+    resultsFilters.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      currentPage = 1;
+      await performResultsSearch(true, 1);
+    });
+  }
+
+  if (resultsFilterReset) {
+    resultsFilterReset.addEventListener("click", async () => {
+      if (resultsFilterLanguage) {
+        resultsFilterLanguage.value = "";
+      }
+      if (resultsFilterCategory) {
+        resultsFilterCategory.value = "";
+      }
+      if (resultsFilterSource) {
+        resultsFilterSource.value = "";
+      }
+      if (resultsFilterSort) {
+        resultsFilterSort.value = "relevance";
+      }
+      if (resultsFilterLimit) {
+        resultsFilterLimit.value = "20";
+      }
+      currentPage = 1;
+      await performResultsSearch(true, 1);
+    });
+  }
+
+  if (resultsPrevPage) {
+    resultsPrevPage.addEventListener("click", async () => {
+      if (!lastPagination.hasPrevPage) {
+        return;
+      }
+      currentPage = Math.max(1, currentPage - 1);
+      await performResultsSearch(true, currentPage);
+    });
+  }
+
+  if (resultsNextPage) {
+    resultsNextPage.addEventListener("click", async () => {
+      if (!lastPagination.hasNextPage) {
+        return;
+      }
+      currentPage += 1;
+      await performResultsSearch(true, currentPage);
+    });
+  }
+
+  async function loadSourceSuggestions(partial = "") {
+    if (!resultsSourceOptions) {
+      return;
+    }
+
+    const q = String(partial || "").trim();
+    const sourceParams = new URLSearchParams();
+    if (q) {
+      sourceParams.set("q", q);
+    }
+    sourceParams.set("limit", "30");
+
+    try {
+      const response = await apiFetch(
+        `/api/search/sources?${sourceParams.toString()}`,
+      );
+      const payload = await response.json();
+      if (!response.ok || !Array.isArray(payload.sources)) {
+        return;
+      }
+
+      resultsSourceOptions.innerHTML = "";
+      payload.sources.forEach((entry) => {
+        const slug = String(entry.slug || "").trim();
+        const name = String(entry.name || "").trim();
+        if (!slug && !name) {
+          return;
+        }
+
+        const slugOption = document.createElement("option");
+        slugOption.value = slug || name;
+        resultsSourceOptions.appendChild(slugOption);
+
+        if (name && name.toLowerCase() !== slug.toLowerCase()) {
+          const nameOption = document.createElement("option");
+          nameOption.value = name;
+          resultsSourceOptions.appendChild(nameOption);
+        }
+      });
+    } catch {
+      // Keep search usable even if suggestions endpoint is unavailable.
+    }
+  }
+
+  if (resultsFilterSource) {
+    resultsFilterSource.addEventListener("input", () => {
+      loadSourceSuggestions(resultsFilterSource.value);
+    });
+  }
+
+  await loadSourceSuggestions(initialSource);
+
+  await performResultsSearch(false, currentPage);
 }
 
 function setAdminStatus(message, isError = false) {
@@ -1264,6 +1965,68 @@ async function fetchAdminRuntimeMetrics() {
   const payload = await response.json();
   if (!response.ok) {
     throw new Error(payload.error || "Could not load runtime metrics.");
+  }
+
+  return payload;
+}
+
+async function fetchAdminSearchStatus() {
+  const token = getAdminToken();
+  const response = await apiFetch("/api/admin/search/status", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || "Could not load search engine status.");
+  }
+
+  return payload;
+}
+
+async function postAdminSearchSeed(force = false) {
+  const token = getAdminToken();
+  const response = await apiFetch("/api/admin/search/seed", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ force: Boolean(force) }),
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || "Could not seed search sources.");
+  }
+
+  return payload;
+}
+
+async function postAdminSearchCrawl({ sourceIds = [], maxPages = null } = {}) {
+  const token = getAdminToken();
+  const body = {};
+  if (Array.isArray(sourceIds) && sourceIds.length > 0) {
+    body.sourceIds = sourceIds;
+  }
+  if (Number.isFinite(Number(maxPages)) && Number(maxPages) > 0) {
+    body.maxPages = Number(maxPages);
+  }
+
+  const response = await apiFetch("/api/admin/search/crawl", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || "Could not start search crawl.");
   }
 
   return payload;
@@ -1427,76 +2190,721 @@ function renderRoutingVerify(result) {
   adminRoutingVerifyResult.appendChild(list);
 }
 
-async function refreshRoutingStatus(okMessage = "") {
-  if (!adminRoutingStatusGrid) {
-    return;
-  }
-  try {
-    const payload = await fetchAdminRouting();
-    renderRoutingState(payload.routing || {});
-    if (okMessage) {
-      setAdminStatus(okMessage);
-    }
-  } catch (error) {
-    if (adminRoutingStatusGrid) {
-      const errEl = document.createElement("p");
-      errEl.className = "admin-chart-empty";
-      errEl.textContent = error.message || "Could not load routing state.";
-      adminRoutingStatusGrid.innerHTML = "";
-      adminRoutingStatusGrid.appendChild(errEl);
-    }
-    if (okMessage) {
-      setAdminStatus(error.message || "Could not load routing state.", true);
-    }
-  }
-}
+function getFilteredSortedSearchRuns() {
+  const statusFilter = String(adminSearchRunsStatusFilter?.value || "all")
+    .trim()
+    .toLowerCase();
+  const sourceFilter = String(adminSearchRunsSourceFilter?.value || "")
+    .trim()
+    .toLowerCase();
 
-async function restoreBackup(fileName) {
-  const token = getAdminToken();
-  const response = await apiFetch("/api/admin/backups/restore", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ fileName }),
+  let filteredRuns = adminSearchRecentRuns.filter((run) => {
+    const runStatus = String(run?.status || "")
+      .trim()
+      .toLowerCase();
+    const runSource = String(run?.source || "")
+      .trim()
+      .toLowerCase();
+
+    if (statusFilter !== "all" && runStatus !== statusFilter) {
+      return false;
+    }
+    if (sourceFilter && !runSource.includes(sourceFilter)) {
+      return false;
+    }
+    return true;
   });
 
-  const payload = await response.json();
-  if (!response.ok) {
-    throw new Error(payload.error || "Could not restore backup.");
-  }
+  filteredRuns = [...filteredRuns].sort((a, b) => {
+    const left = getSearchRunSortValue(a, adminSearchRunsSortKey);
+    const right = getSearchRunSortValue(b, adminSearchRunsSortKey);
 
-  return payload;
+    if (left < right) {
+      return adminSearchRunsSortDirection === "asc" ? -1 : 1;
+    }
+    if (left > right) {
+      return adminSearchRunsSortDirection === "asc" ? 1 : -1;
+    }
+    return 0;
+  });
+
+  return filteredRuns;
 }
 
-function formatDeltaText(value) {
-  if (value == null) {
-    return "No previous period data";
+function escapeCsvValue(value) {
+  const text = String(value ?? "");
+  if (/[",\n\r]/.test(text)) {
+    return `"${text.replace(/"/g, '""')}"`;
   }
-
-  if (value === 0) {
-    return "No change vs previous period";
-  }
-
-  const sign = value > 0 ? "+" : "";
-  return `${sign}${value}% vs previous period`;
+  return text;
 }
 
-function applyDeltaState(element, value) {
-  if (!element) {
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function escapeRegex(value) {
+  return String(value ?? "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function highlightCsvLine(line, query) {
+  const rawLine = String(line || "");
+  const normalizedQuery = String(query || "").trim();
+  if (!normalizedQuery) {
+    return escapeHtml(rawLine);
+  }
+
+  const pattern = new RegExp(`(${escapeRegex(normalizedQuery)})`, "gi");
+  return rawLine
+    .split(pattern)
+    .map((part) => {
+      if (part.toLowerCase() === normalizedQuery.toLowerCase()) {
+        return `<mark>${escapeHtml(part)}</mark>`;
+      }
+      return escapeHtml(part);
+    })
+    .join("");
+}
+
+function closeSearchCsvPreviewModal() {
+  if (!adminSearchCsvModal) {
     return;
   }
 
-  element.textContent = formatDeltaText(value);
-  element.classList.remove("delta-positive", "delta-negative", "delta-neutral");
+  adminSearchCsvModal.hidden = true;
+  if (adminSearchCsvPreviewSearchInput) {
+    adminSearchCsvPreviewSearchInput.value = "";
+  }
+}
 
-  if (value == null || value === 0) {
-    element.classList.add("delta-neutral");
+function updateCsvPreviewNavButtons() {
+  const hasMatches = csvPreviewMarkElements.length > 0;
+  if (adminSearchCsvPreviewPrevBtn) {
+    adminSearchCsvPreviewPrevBtn.disabled = !hasMatches;
+  }
+  if (adminSearchCsvPreviewNextBtn) {
+    adminSearchCsvPreviewNextBtn.disabled = !hasMatches;
+  }
+}
+
+function renderCsvPreviewMatchCounter() {
+  if (!adminSearchCsvPreviewMatchCount) {
+    return;
+  }
+  const total = csvPreviewMarkElements.length;
+  if (csvPreviewCurrentMatchIndex >= 0 && total > 0) {
+    adminSearchCsvPreviewMatchCount.textContent = `Match ${csvPreviewCurrentMatchIndex + 1} / ${total}`;
+  } else if (total > 0) {
+    adminSearchCsvPreviewMatchCount.textContent = `${csvPreviewMatchedRowCount} / ${csvPreviewTotalDataRowCount} rows \u00b7 ${total} occurrence${total !== 1 ? "s" : ""}`;
+  } else {
+    adminSearchCsvPreviewMatchCount.textContent = `Rows: ${csvPreviewMatchedRowCount}`;
+  }
+}
+
+function navigateCsvPreviewMatch(direction) {
+  if (csvPreviewMarkElements.length === 0) {
+    return;
+  }
+  if (csvPreviewCurrentMatchIndex >= 0) {
+    csvPreviewMarkElements[csvPreviewCurrentMatchIndex].classList.remove(
+      "current",
+    );
+  }
+  if (csvPreviewCurrentMatchIndex === -1) {
+    csvPreviewCurrentMatchIndex =
+      direction === 1 ? 0 : csvPreviewMarkElements.length - 1;
+  } else {
+    csvPreviewCurrentMatchIndex =
+      (csvPreviewCurrentMatchIndex +
+        direction +
+        csvPreviewMarkElements.length) %
+      csvPreviewMarkElements.length;
+  }
+  csvPreviewMarkElements[csvPreviewCurrentMatchIndex].classList.add("current");
+  csvPreviewMarkElements[csvPreviewCurrentMatchIndex].scrollIntoView({
+    block: "nearest",
+    behavior: "smooth",
+  });
+  renderCsvPreviewMatchCounter();
+}
+
+function updateSearchCsvPreviewByQuery() {
+  if (!adminSearchCsvPreviewContent) {
     return;
   }
 
-  element.classList.add(value > 0 ? "delta-positive" : "delta-negative");
+  const full = String(adminSearchCsvFullContent || "");
+  const lines = full
+    .split(/\r?\n/)
+    .map((line) => String(line || ""))
+    .filter((line) => line.length > 0);
+
+  csvPreviewMarkElements = [];
+  csvPreviewCurrentMatchIndex = -1;
+
+  if (lines.length === 0) {
+    adminSearchCsvPreviewContent.textContent = "";
+    csvPreviewMatchedRowCount = 0;
+    csvPreviewTotalDataRowCount = 0;
+    renderCsvPreviewMatchCounter();
+    updateCsvPreviewNavButtons();
+    return;
+  }
+
+  const header = lines[0];
+  const dataLines = lines.slice(1);
+  const query = String(adminSearchCsvPreviewSearchInput?.value || "")
+    .trim()
+    .toLowerCase();
+
+  if (!query) {
+    adminSearchCsvPreviewContent.textContent = `${lines.join("\n")}\n`;
+    csvPreviewMatchedRowCount = dataLines.length;
+    csvPreviewTotalDataRowCount = dataLines.length;
+    renderCsvPreviewMatchCounter();
+    updateCsvPreviewNavButtons();
+    return;
+  }
+
+  const matched = dataLines.filter((line) =>
+    line.toLowerCase().includes(query),
+  );
+  const highlighted = [
+    escapeHtml(header),
+    ...matched.map((line) => highlightCsvLine(line, query)),
+  ];
+  adminSearchCsvPreviewContent.innerHTML = `${highlighted.join("\n")}\n`;
+  csvPreviewMarkElements = [
+    ...adminSearchCsvPreviewContent.querySelectorAll("mark"),
+  ];
+  csvPreviewMatchedRowCount = matched.length;
+  csvPreviewTotalDataRowCount = dataLines.length;
+  renderCsvPreviewMatchCounter();
+  updateCsvPreviewNavButtons();
+}
+
+function openSearchCsvPreviewModal(content) {
+  if (!adminSearchCsvModal || !adminSearchCsvPreviewContent) {
+    return;
+  }
+
+  adminSearchCsvFullContent = String(content || "");
+  if (adminSearchCsvPreviewSearchInput) {
+    adminSearchCsvPreviewSearchInput.value = "";
+  }
+  updateSearchCsvPreviewByQuery();
+
+  adminSearchCsvModal.hidden = false;
+}
+
+function buildSearchRunsCsv(rows) {
+  const header = [
+    "startedAt",
+    "source",
+    "status",
+    "trigger",
+    "pagesSeen",
+    "pagesIndexed",
+    "pagesUpdated",
+    "pagesFailed",
+    "pagesBlocked",
+  ];
+
+  const lines = [header.join(",")];
+  rows.forEach((run) => {
+    const line = [
+      run.startedAt || "",
+      run.source || "",
+      run.status || "",
+      run.trigger || "",
+      Number(run.pagesSeen || 0),
+      Number(run.pagesIndexed || 0),
+      Number(run.pagesUpdated || 0),
+      Number(run.pagesFailed || 0),
+      Number(run.pagesBlocked || 0),
+    ]
+      .map(escapeCsvValue)
+      .join(",");
+    lines.push(line);
+  });
+
+  return `${lines.join("\n")}\n`;
+}
+
+function exportSearchRunsCsv() {
+  const rows = getFilteredSortedSearchRuns();
+  if (!rows.length) {
+    setAdminStatus("No crawl runs to export for current filters.", true);
+    return;
+  }
+
+  const content = buildSearchRunsCsv(rows);
+  const blob = new Blob([content], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `magneto-crawl-runs-${new Date().toISOString().replace(/[:.]/g, "-")}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  setAdminStatus(`Exported ${rows.length} crawl run(s) to CSV.`);
+}
+
+async function copySearchRunsCsvToClipboard() {
+  const rows = getFilteredSortedSearchRuns();
+  if (!rows.length) {
+    setAdminStatus("No crawl runs to copy for current filters.", true);
+    return;
+  }
+
+  const content = buildSearchRunsCsv(rows);
+
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(content);
+    } else {
+      const area = document.createElement("textarea");
+      area.value = content;
+      area.setAttribute("readonly", "true");
+      area.style.position = "fixed";
+      area.style.top = "-9999px";
+      document.body.appendChild(area);
+      area.focus();
+      area.select();
+      const ok = document.execCommand("copy");
+      area.remove();
+      if (!ok) {
+        throw new Error("Clipboard API unavailable.");
+      }
+    }
+
+    setAdminStatus(`Copied ${rows.length} crawl run(s) as CSV.`);
+  } catch (error) {
+    setAdminStatus(error.message || "Could not copy CSV to clipboard.", true);
+  }
+}
+
+function previewSearchRunsCsv() {
+  const rows = getFilteredSortedSearchRuns();
+  if (!rows.length) {
+    setAdminStatus("No crawl runs to preview for current filters.", true);
+    return;
+  }
+
+  const content = buildSearchRunsCsv(rows);
+  openSearchCsvPreviewModal(content);
+}
+
+function getSearchRunSortValue(run, key) {
+  if (!run) {
+    return "";
+  }
+
+  const numericKeys = new Set([
+    "pagesSeen",
+    "pagesIndexed",
+    "pagesUpdated",
+    "pagesFailed",
+    "pagesBlocked",
+  ]);
+
+  if (key === "startedAt") {
+    return new Date(run.startedAt || 0).getTime() || 0;
+  }
+
+  if (numericKeys.has(key)) {
+    return Number(run[key] || 0);
+  }
+
+  return String(run[key] || "")
+    .trim()
+    .toLowerCase();
+}
+
+function updateSearchRunsSortButtonsUI() {
+  adminSearchRunsSortButtons.forEach((button) => {
+    const key = String(button.dataset.sortKey || "");
+    const label = String(button.textContent || "")
+      .replace(/[\u2191\u2193]/g, "")
+      .trim();
+    if (key === adminSearchRunsSortKey) {
+      const arrow =
+        adminSearchRunsSortDirection === "asc" ? "\u2191" : "\u2193";
+      button.textContent = `${label} ${arrow}`;
+      button.classList.add("active");
+    } else {
+      button.textContent = label;
+      button.classList.remove("active");
+    }
+  });
+}
+
+function formatRunDuration(startedAt, finishedAt) {
+  if (!startedAt || !finishedAt) {
+    return "-";
+  }
+  const start = new Date(startedAt);
+  const end = new Date(finishedAt);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return "-";
+  }
+  const secs = Math.round((end - start) / 1000);
+  if (secs < 0) {
+    return "-";
+  }
+  if (secs < 60) {
+    return `${secs}s`;
+  }
+  const mins = Math.floor(secs / 60);
+  const remSecs = secs % 60;
+  if (mins < 60) {
+    return remSecs ? `${mins}m ${remSecs}s` : `${mins}m`;
+  }
+  const hrs = Math.floor(mins / 60);
+  const remMins = mins % 60;
+  return remMins ? `${hrs}h ${remMins}m` : `${hrs}h`;
+}
+
+function loadHiddenCols() {
+  try {
+    const raw = localStorage.getItem(ADMIN_SEARCH_RUNS_HIDDEN_COLS_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) {
+        adminSearchRunsHiddenCols = new Set(
+          arr.filter((k) => ADMIN_SEARCH_RUNS_COL_KEYS.includes(k)),
+        );
+      }
+    }
+  } catch {
+    adminSearchRunsHiddenCols = new Set();
+  }
+}
+
+function saveHiddenCols() {
+  try {
+    localStorage.setItem(
+      ADMIN_SEARCH_RUNS_HIDDEN_COLS_KEY,
+      JSON.stringify([...adminSearchRunsHiddenCols]),
+    );
+  } catch {
+    // ignore
+  }
+}
+
+function updateColTogglePanelUI() {
+  ADMIN_SEARCH_RUNS_COL_KEYS.forEach((key) => {
+    const cb = document.getElementById(`adminSearchColToggle_${key}`);
+    if (cb) {
+      cb.checked = !adminSearchRunsHiddenCols.has(key);
+    }
+  });
+}
+
+function applyColHeaderVisibility() {
+  document
+    .querySelectorAll(".admin-search-runs-table thead th[data-col-key]")
+    .forEach((th) => {
+      th.hidden = adminSearchRunsHiddenCols.has(th.dataset.colKey);
+    });
+}
+
+function renderAdminSearchRunsPagination(filtered, pageCount) {
+  if (!adminSearchRunsPaginationWrap) {
+    return;
+  }
+  if (filtered === 0 || pageCount <= 1) {
+    adminSearchRunsPaginationWrap.hidden = true;
+    return;
+  }
+  adminSearchRunsPaginationWrap.hidden = false;
+  if (adminSearchRunsPaginationInfo) {
+    adminSearchRunsPaginationInfo.textContent = `Page ${adminSearchRunsPage + 1} of ${pageCount}`;
+  }
+  if (adminSearchRunsPrevPageBtn) {
+    adminSearchRunsPrevPageBtn.disabled = adminSearchRunsPage === 0;
+  }
+  if (adminSearchRunsNextPageBtn) {
+    adminSearchRunsNextPageBtn.disabled = adminSearchRunsPage >= pageCount - 1;
+  }
+}
+
+function closeSearchRunDetail() {
+  adminSearchExpandedRunId = null;
+  if (adminSearchRunDetail) {
+    adminSearchRunDetail.hidden = true;
+  }
+  if (adminSearchRunDetailBody) {
+    adminSearchRunDetailBody.innerHTML = "";
+  }
+  adminSearchRunsBody?.querySelectorAll("tr.selected").forEach((tr) => {
+    tr.classList.remove("selected");
+  });
+}
+
+function renderSearchRunDetail(run) {
+  if (!adminSearchRunDetailBody || !adminSearchRunDetail) {
+    return;
+  }
+  adminSearchRunDetailBody.innerHTML = "";
+
+  const runStatus = String(run.status || "-").toLowerCase();
+  const statusBadge = document.createElement("span");
+  statusBadge.className = "admin-search-run-status-badge";
+  if (runStatus === "completed") {
+    statusBadge.classList.add("admin-search-run-status-completed");
+  } else if (runStatus === "running") {
+    statusBadge.classList.add("admin-search-run-status-running");
+  } else if (runStatus === "partial") {
+    statusBadge.classList.add("admin-search-run-status-partial");
+  } else if (runStatus === "failed") {
+    statusBadge.classList.add("admin-search-run-status-failed");
+  }
+  statusBadge.textContent = String(run.status || "-").toUpperCase();
+
+  const textFields = [
+    ["Run ID", String(run.id ?? "-")],
+    ["Source", String(run.source || "all")],
+    ["Trigger", String(run.trigger || "-")],
+    ["Started At", formatAssistantDate(run.startedAt)],
+    ["Finished At", formatAssistantDate(run.finishedAt)],
+    ["Duration", formatRunDuration(run.startedAt, run.finishedAt)],
+    ["Pages Seen", String(Number(run.pagesSeen || 0))],
+    ["Pages Indexed", String(Number(run.pagesIndexed || 0))],
+    ["Pages Updated", String(Number(run.pagesUpdated || 0))],
+    ["Pages Failed", String(Number(run.pagesFailed || 0))],
+    ["Pages Blocked", String(Number(run.pagesBlocked || 0))],
+  ];
+  if (String(run.notes || "").trim()) {
+    textFields.push(["Notes", String(run.notes)]);
+  }
+
+  const createDetailField = (label, valueEl) => {
+    const item = document.createElement("div");
+    item.className = "admin-search-run-detail-field";
+    const dt = document.createElement("dt");
+    dt.textContent = label;
+    const dd = document.createElement("dd");
+    if (typeof valueEl === "string") {
+      dd.textContent = valueEl;
+    } else {
+      dd.appendChild(valueEl);
+    }
+    item.append(dt, dd);
+    return item;
+  };
+
+  adminSearchRunDetailBody.appendChild(
+    createDetailField("Status", statusBadge),
+  );
+  textFields.forEach(([label, value]) => {
+    adminSearchRunDetailBody.appendChild(createDetailField(label, value));
+  });
+  adminSearchRunDetail.hidden = false;
+}
+
+function toggleSearchRunDetail(run) {
+  const runId = String(run.id ?? "");
+  if (adminSearchExpandedRunId !== null && adminSearchExpandedRunId === runId) {
+    closeSearchRunDetail();
+    return;
+  }
+  adminSearchExpandedRunId = runId;
+  adminSearchRunsBody
+    ?.querySelectorAll("tr.admin-search-run-clickable")
+    .forEach((tr) => {
+      if (tr.dataset.runId === runId) {
+        tr.classList.add("selected");
+      } else {
+        tr.classList.remove("selected");
+      }
+    });
+  renderSearchRunDetail(run);
+}
+
+function renderAdminSearchRunsTable() {
+  if (!adminSearchRunsBody) {
+    return;
+  }
+
+  adminSearchRunsBody.innerHTML = "";
+  const allFiltered = getFilteredSortedSearchRuns();
+  const total = adminSearchRecentRuns.length;
+  const filtered = allFiltered.length;
+  const visibleColCount = ADMIN_SEARCH_RUNS_COL_KEYS.filter(
+    (k) => !adminSearchRunsHiddenCols.has(k),
+  ).length;
+
+  if (adminSearchRunsCount) {
+    adminSearchRunsCount.textContent = `Showing ${filtered} of ${total} run${total !== 1 ? "s" : ""}`;
+  }
+
+  const pageSize = ADMIN_SEARCH_RUNS_PAGE_SIZE;
+  const pageCount = Math.max(1, Math.ceil(filtered / pageSize));
+  if (adminSearchRunsPage >= pageCount) {
+    adminSearchRunsPage = Math.max(0, pageCount - 1);
+  }
+  const pageStart = adminSearchRunsPage * pageSize;
+  const pageRuns = allFiltered.slice(pageStart, pageStart + pageSize);
+
+  if (
+    adminSearchExpandedRunId !== null &&
+    !pageRuns.some((run) => String(run.id ?? "") === adminSearchExpandedRunId)
+  ) {
+    closeSearchRunDetail();
+  }
+
+  renderAdminSearchRunsPagination(filtered, pageCount);
+
+  if (pageRuns.length === 0) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = visibleColCount || 9;
+    cell.className = "admin-search-runs-empty";
+    cell.textContent = adminSearchRecentRuns.length
+      ? "No runs match current filters."
+      : "No crawl runs yet.";
+    row.appendChild(cell);
+    adminSearchRunsBody.appendChild(row);
+    updateSearchRunsSortButtonsUI();
+    return;
+  }
+
+  const makeTd = (colKey, text, child) => {
+    const td = document.createElement("td");
+    td.dataset.colKey = colKey;
+    if (adminSearchRunsHiddenCols.has(colKey)) {
+      td.hidden = true;
+    }
+    if (child) {
+      td.appendChild(child);
+    } else {
+      td.textContent = text;
+    }
+    return td;
+  };
+
+  pageRuns.forEach((run) => {
+    const row = document.createElement("tr");
+
+    const runStatus = String(run.status || "-").toLowerCase();
+    const statusBadge = document.createElement("span");
+    statusBadge.className = "admin-search-run-status-badge";
+    if (runStatus === "completed") {
+      statusBadge.classList.add("admin-search-run-status-completed");
+    } else if (runStatus === "running") {
+      statusBadge.classList.add("admin-search-run-status-running");
+    } else if (runStatus === "partial") {
+      statusBadge.classList.add("admin-search-run-status-partial");
+    } else if (runStatus === "failed") {
+      statusBadge.classList.add("admin-search-run-status-failed");
+    }
+    statusBadge.textContent = String(run.status || "-").toUpperCase();
+
+    row.append(
+      makeTd("startedAt", formatAssistantDate(run.startedAt)),
+      makeTd("source", String(run.source || "all")),
+      makeTd("status", "", statusBadge),
+      makeTd("trigger", String(run.trigger || "-")),
+      makeTd("pagesSeen", String(Number(run.pagesSeen || 0))),
+      makeTd("pagesIndexed", String(Number(run.pagesIndexed || 0))),
+      makeTd("pagesUpdated", String(Number(run.pagesUpdated || 0))),
+      makeTd("pagesFailed", String(Number(run.pagesFailed || 0))),
+      makeTd("pagesBlocked", String(Number(run.pagesBlocked || 0))),
+    );
+
+    row.className = "admin-search-run-clickable";
+    row.dataset.runId = String(run.id ?? "");
+    row.tabIndex = 0;
+    if (
+      adminSearchExpandedRunId !== null &&
+      adminSearchExpandedRunId === String(run.id ?? "")
+    ) {
+      row.classList.add("selected");
+    }
+    row.addEventListener("click", () => toggleSearchRunDetail(run));
+    row.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        toggleSearchRunDetail(run);
+      }
+    });
+    adminSearchRunsBody.appendChild(row);
+  });
+
+  updateSearchRunsSortButtonsUI();
+}
+
+function renderAdminSearchStatus(payload) {
+  if (!adminSearchStatusGrid) {
+    return;
+  }
+
+  adminSearchStatusGrid.innerHTML = "";
+
+  const search = payload?.search || payload || {};
+  const sources = search.sources || {};
+  const docs = search.documents || {};
+  const latestRun = search.latestRun || {};
+  adminSearchRecentRuns = Array.isArray(search.recentRuns)
+    ? [...search.recentRuns]
+    : [];
+
+  const pagesSummary = [
+    `seen=${Number(latestRun.pagesSeen || 0)}`,
+    `indexed=${Number(latestRun.pagesIndexed || 0)}`,
+    `updated=${Number(latestRun.pagesUpdated || 0)}`,
+    `failed=${Number(latestRun.pagesFailed || 0)}`,
+  ].join(" | ");
+
+  const items = [
+    [
+      "Sources",
+      `${Number(sources.active || 0)} active / ${Number(sources.total || 0)} total`,
+    ],
+    ["Indexed Docs", String(Number(docs.indexed || 0))],
+    ["Blocked Docs", String(Number(docs.blocked || 0))],
+    ["Errored Docs", String(Number(docs.errors || 0))],
+    ["Block Rules", String(Number(search.blockRules || 0))],
+    ["Latest Run Status", String(latestRun.status || "idle")],
+    ["Latest Run Started", formatAssistantDate(latestRun.startedAt)],
+    ["Latest Run Finished", formatAssistantDate(latestRun.finishedAt)],
+    ["Latest Run Pages", pagesSummary],
+  ];
+
+  items.forEach(([label, value]) => {
+    adminSearchStatusGrid.appendChild(
+      createAssistantStatusItem(label, String(value)),
+    );
+  });
+
+  if (adminSearchStatusMeta) {
+    adminSearchStatusMeta.textContent = `Updated: ${new Date().toLocaleString()}`;
+  }
+
+  renderAdminSearchRunsTable();
+}
+
+function renderAdminSearchStatusError(errorMessage) {
+  if (!adminSearchStatusGrid) {
+    return;
+  }
+
+  adminSearchStatusGrid.innerHTML = "";
+  const fallback = document.createElement("p");
+  fallback.className = "admin-status-error";
+  fallback.textContent = `Could not load search engine status: ${String(errorMessage)}`;
+  adminSearchStatusGrid.appendChild(fallback);
+
+  if (adminSearchStatusMeta) {
+    adminSearchStatusMeta.textContent = `Error: ${new Date().toLocaleString()}`;
+  }
 }
 
 function renderBarChart(
@@ -2106,8 +3514,45 @@ function stopRuntimeAutoRefresh() {
   setRuntimeAutoRefreshState(false);
 }
 
+function stopSearchAutoRefresh() {
+  if (searchStatusCountdownIntervalId != null) {
+    window.clearInterval(searchStatusCountdownIntervalId);
+    searchStatusCountdownIntervalId = null;
+  }
+  searchStatusNextRefreshAtMs = 0;
+
+  if (searchStatusIntervalId == null) {
+    setSearchAutoRefreshState(false);
+    return;
+  }
+
+  window.clearInterval(searchStatusIntervalId);
+  searchStatusIntervalId = null;
+  setSearchAutoRefreshState(false);
+}
+
 function shouldRunRuntimeAutoRefresh() {
   if (!adminRuntimeMetricsGrid || !adminDashboard) {
+    return false;
+  }
+
+  if (adminDashboard.hidden) {
+    return false;
+  }
+
+  if (!getAdminToken()) {
+    return false;
+  }
+
+  if (document.visibilityState === "hidden") {
+    return false;
+  }
+
+  return true;
+}
+
+function shouldRunSearchAutoRefresh() {
+  if (!adminSearchStatusGrid || !adminDashboard) {
     return false;
   }
 
@@ -2158,6 +3603,40 @@ function ensureRuntimeAutoRefresh() {
   }
 
   updateRuntimeAutoRefreshCountdown();
+}
+
+function ensureSearchAutoRefresh() {
+  if (!shouldRunSearchAutoRefresh()) {
+    stopSearchAutoRefresh();
+    return;
+  }
+
+  if (searchStatusIntervalId != null) {
+    updateSearchAutoRefreshCountdown();
+    return;
+  }
+
+  searchStatusNextRefreshAtMs = Date.now() + SEARCH_AUTO_REFRESH_MS;
+
+  searchStatusIntervalId = window.setInterval(() => {
+    if (!shouldRunSearchAutoRefresh()) {
+      stopSearchAutoRefresh();
+      return;
+    }
+
+    searchStatusNextRefreshAtMs = Date.now() + SEARCH_AUTO_REFRESH_MS;
+    updateSearchAutoRefreshCountdown();
+    refreshSearchStatusWithMessage("");
+  }, SEARCH_AUTO_REFRESH_MS);
+
+  if (searchStatusCountdownIntervalId == null) {
+    searchStatusCountdownIntervalId = window.setInterval(
+      updateSearchAutoRefreshCountdown,
+      1000,
+    );
+  }
+
+  updateSearchAutoRefreshCountdown();
 }
 
 async function refreshAssistantStatusWithStatus(okMessage = "") {
@@ -2211,11 +3690,14 @@ async function tryAutoLogin() {
     await refreshRuntimeMetricsWithStatus("");
     await refreshAssistantStatusWithStatus("");
     await refreshRoutingStatus("");
+    await refreshSearchStatusWithMessage("");
     ensureRuntimeAutoRefresh();
+    ensureSearchAutoRefresh();
     return true;
   } catch {
     setAdminToken("");
     stopRuntimeAutoRefresh();
+    stopSearchAutoRefresh();
     return false;
   }
 }
@@ -2226,6 +3708,10 @@ function initAdminPage() {
   }
 
   setRuntimeAutoRefreshState(false);
+  setSearchAutoRefreshState(false);
+  loadHiddenCols();
+  applyColHeaderVisibility();
+  updateColTogglePanelUI();
 
   if (adminRange) {
     adminRange.value = currentAdminRange;
@@ -2240,13 +3726,18 @@ function initAdminPage() {
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
       ensureRuntimeAutoRefresh();
+      ensureSearchAutoRefresh();
       if (shouldRunRuntimeAutoRefresh()) {
         refreshRuntimeMetricsWithStatus("");
+      }
+      if (shouldRunSearchAutoRefresh()) {
+        refreshSearchStatusWithMessage("");
       }
       return;
     }
 
     stopRuntimeAutoRefresh();
+    stopSearchAutoRefresh();
   });
 
   adminLoginForm.addEventListener("submit", async (event) => {
@@ -2286,7 +3777,9 @@ function initAdminPage() {
       await refreshRuntimeMetricsWithStatus("");
       await refreshAssistantStatusWithStatus("");
       await refreshRoutingStatus("");
+      await refreshSearchStatusWithMessage("");
       ensureRuntimeAutoRefresh();
+      ensureSearchAutoRefresh();
       setAdminStatus("Signed in.");
     } catch (error) {
       setAdminStatus(error.message || "Could not sign in.", true);
@@ -2296,6 +3789,7 @@ function initAdminPage() {
   if (adminLogoutBtn) {
     adminLogoutBtn.addEventListener("click", () => {
       stopRuntimeAutoRefresh();
+      stopSearchAutoRefresh();
       setAdminToken("");
       adminDashboard.hidden = true;
       adminAuthPanel.hidden = false;
@@ -2330,7 +3824,9 @@ function initAdminPage() {
         renderAdminDashboard(data);
         await refreshRuntimeMetricsWithStatus("");
         await refreshAssistantStatusWithStatus("");
+        await refreshSearchStatusWithMessage("");
         ensureRuntimeAutoRefresh();
+        ensureSearchAutoRefresh();
         setAdminStatus("Analytics refreshed.");
       } catch (error) {
         setAdminStatus(error.message || "Could not refresh analytics.", true);
@@ -2490,6 +3986,314 @@ function initAdminPage() {
       } catch (error) {
         setAdminStatus(error.message || "Could not update routing.", true);
       }
+    });
+  });
+
+  if (adminSearchStatusRefreshBtn) {
+    adminSearchStatusRefreshBtn.addEventListener("click", async () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+      await refreshSearchStatusWithMessage("Search status refreshed.");
+      ensureSearchAutoRefresh();
+    });
+  }
+
+  if (adminSearchRunsRefreshBtn) {
+    adminSearchRunsRefreshBtn.addEventListener("click", async () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+      await refreshSearchStatusWithMessage("Search runs refreshed.");
+      ensureSearchAutoRefresh();
+    });
+  }
+
+  if (adminSearchRunsColToggleBtn && adminSearchColTogglePanel) {
+    adminSearchRunsColToggleBtn.addEventListener("click", (event) => {
+      event.preventDefault();
+      adminSearchColTogglePanel.hidden = !adminSearchColTogglePanel.hidden;
+      adminSearchRunsColToggleBtn.setAttribute(
+        "aria-expanded",
+        String(!adminSearchColTogglePanel.hidden),
+      );
+      if (!adminSearchColTogglePanel.hidden) {
+        updateColTogglePanelUI();
+      }
+    });
+
+    document.addEventListener("click", (event) => {
+      if (adminSearchColTogglePanel.hidden) {
+        return;
+      }
+      if (
+        adminSearchColTogglePanel.contains(event.target) ||
+        adminSearchRunsColToggleBtn.contains(event.target)
+      ) {
+        return;
+      }
+      adminSearchColTogglePanel.hidden = true;
+      adminSearchRunsColToggleBtn.setAttribute("aria-expanded", "false");
+    });
+
+    adminSearchColTogglePanel.addEventListener("change", (event) => {
+      const input = event.target;
+      if (!(input instanceof HTMLInputElement) || input.type !== "checkbox") {
+        return;
+      }
+      const colKey = (
+        String(input.dataset.colKey || "") ||
+        String(input.id || "").replace("adminSearchColToggle_", "")
+      ).trim();
+      if (!ADMIN_SEARCH_RUNS_COL_KEYS.includes(colKey)) {
+        return;
+      }
+      if (input.checked) {
+        adminSearchRunsHiddenCols.delete(colKey);
+      } else {
+        adminSearchRunsHiddenCols.add(colKey);
+      }
+      saveHiddenCols();
+      applyColHeaderVisibility();
+      renderAdminSearchRunsTable();
+    });
+  }
+
+  if (adminSearchRunsPrevPageBtn) {
+    adminSearchRunsPrevPageBtn.addEventListener("click", () => {
+      if (adminSearchRunsPage <= 0) {
+        return;
+      }
+      adminSearchRunsPage -= 1;
+      renderAdminSearchRunsTable();
+    });
+  }
+
+  if (adminSearchRunsNextPageBtn) {
+    adminSearchRunsNextPageBtn.addEventListener("click", () => {
+      adminSearchRunsPage += 1;
+      renderAdminSearchRunsTable();
+    });
+  }
+
+  if (adminSearchSeedBtn) {
+    adminSearchSeedBtn.addEventListener("click", async () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+
+      const force = Boolean(adminSearchForceSeed?.checked);
+      adminSearchSeedBtn.disabled = true;
+      try {
+        const payload = await postAdminSearchSeed(force);
+        renderAdminSearchStatus(payload);
+        ensureSearchAutoRefresh();
+        setAdminStatus(
+          `Seed completed. Created ${Number(payload.created || 0)}, updated ${Number(payload.updated || 0)}.`,
+        );
+      } catch (error) {
+        setAdminStatus(error.message || "Could not seed search sources.", true);
+      } finally {
+        adminSearchSeedBtn.disabled = false;
+      }
+    });
+  }
+
+  if (adminSearchCrawlBtn) {
+    adminSearchCrawlBtn.addEventListener("click", async () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+
+      const sourceIds = String(adminSearchSourceIds?.value || "")
+        .split(/[^0-9]+/)
+        .map((value) => Number(value))
+        .filter((value) => Number.isInteger(value) && value > 0);
+      const uniqueSourceIds = [...new Set(sourceIds)];
+
+      const maxPagesRaw = String(adminSearchMaxPages?.value || "").trim();
+      const maxPages = /^\d+$/.test(maxPagesRaw) ? Number(maxPagesRaw) : null;
+
+      adminSearchCrawlBtn.disabled = true;
+      try {
+        const payload = await postAdminSearchCrawl({
+          sourceIds: uniqueSourceIds,
+          maxPages,
+        });
+        if (payload.search) {
+          renderAdminSearchStatus(payload);
+        } else {
+          await refreshSearchStatusWithMessage("");
+        }
+        ensureSearchAutoRefresh();
+
+        const runsCount = Array.isArray(payload.runs) ? payload.runs.length : 0;
+        setAdminStatus(`Crawl completed for ${runsCount} source run(s).`);
+      } catch (error) {
+        setAdminStatus(error.message || "Could not run search crawl.", true);
+      } finally {
+        adminSearchCrawlBtn.disabled = false;
+      }
+    });
+  }
+
+  if (adminSearchCrawlForm && adminSearchCrawlBtn) {
+    adminSearchCrawlForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      adminSearchCrawlBtn.click();
+    });
+  }
+
+  if (adminSearchRunsStatusFilter) {
+    adminSearchRunsStatusFilter.addEventListener("change", () => {
+      adminSearchRunsPage = 0;
+      renderAdminSearchRunsTable();
+    });
+  }
+
+  if (adminSearchRunsSourceFilter) {
+    adminSearchRunsSourceFilter.addEventListener("input", () => {
+      adminSearchRunsPage = 0;
+      renderAdminSearchRunsTable();
+    });
+  }
+
+  if (adminSearchRunsFilterClearBtn) {
+    adminSearchRunsFilterClearBtn.addEventListener("click", () => {
+      if (adminSearchRunsStatusFilter) {
+        adminSearchRunsStatusFilter.value = "all";
+      }
+      if (adminSearchRunsSourceFilter) {
+        adminSearchRunsSourceFilter.value = "";
+      }
+      adminSearchRunsPage = 0;
+      renderAdminSearchRunsTable();
+    });
+  }
+
+  if (adminSearchRunsExportBtn) {
+    adminSearchRunsExportBtn.addEventListener("click", () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+      exportSearchRunsCsv();
+    });
+  }
+
+  if (adminSearchRunsCopyBtn) {
+    adminSearchRunsCopyBtn.addEventListener("click", async () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+      await copySearchRunsCsvToClipboard();
+    });
+  }
+
+  if (adminSearchRunsPreviewBtn) {
+    adminSearchRunsPreviewBtn.addEventListener("click", () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+      previewSearchRunsCsv();
+    });
+  }
+
+  if (adminSearchCsvModalCloseBtn) {
+    adminSearchCsvModalCloseBtn.addEventListener(
+      "click",
+      closeSearchCsvPreviewModal,
+    );
+  }
+
+  if (adminSearchCsvModal) {
+    adminSearchCsvModal.addEventListener("click", (event) => {
+      if (event.target === adminSearchCsvModal) {
+        closeSearchCsvPreviewModal();
+      }
+    });
+  }
+
+  document.addEventListener("keydown", (event) => {
+    if (
+      event.key === "Escape" &&
+      adminSearchCsvModal &&
+      !adminSearchCsvModal.hidden
+    ) {
+      closeSearchCsvPreviewModal();
+    }
+  });
+
+  if (adminSearchCsvPreviewSearchInput) {
+    adminSearchCsvPreviewSearchInput.addEventListener(
+      "input",
+      updateSearchCsvPreviewByQuery,
+    );
+  }
+
+  if (adminSearchCsvPreviewSearchClearBtn) {
+    adminSearchCsvPreviewSearchClearBtn.addEventListener("click", () => {
+      if (adminSearchCsvPreviewSearchInput) {
+        adminSearchCsvPreviewSearchInput.value = "";
+      }
+      updateSearchCsvPreviewByQuery();
+    });
+  }
+
+  if (adminSearchCsvPreviewSearchInput) {
+    adminSearchCsvPreviewSearchInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        navigateCsvPreviewMatch(event.shiftKey ? -1 : 1);
+      }
+    });
+  }
+
+  if (adminSearchCsvPreviewPrevBtn) {
+    adminSearchCsvPreviewPrevBtn.addEventListener("click", () =>
+      navigateCsvPreviewMatch(-1),
+    );
+  }
+
+  if (adminSearchCsvPreviewNextBtn) {
+    adminSearchCsvPreviewNextBtn.addEventListener("click", () =>
+      navigateCsvPreviewMatch(1),
+    );
+  }
+
+  if (adminSearchRunDetailCloseBtn) {
+    adminSearchRunDetailCloseBtn.addEventListener(
+      "click",
+      closeSearchRunDetail,
+    );
+  }
+
+  adminSearchRunsSortButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const key = String(button.dataset.sortKey || "").trim();
+      if (!key) {
+        return;
+      }
+
+      if (adminSearchRunsSortKey === key) {
+        adminSearchRunsSortDirection =
+          adminSearchRunsSortDirection === "asc" ? "desc" : "asc";
+      } else {
+        adminSearchRunsSortKey = key;
+        const descendingByDefault = new Set([
+          "startedAt",
+          "pagesSeen",
+          "pagesIndexed",
+          "pagesUpdated",
+          "pagesFailed",
+          "pagesBlocked",
+        ]);
+        adminSearchRunsSortDirection = descendingByDefault.has(key)
+          ? "desc"
+          : "asc";
+      }
+
+      adminSearchRunsPage = 0;
+      renderAdminSearchRunsTable();
     });
   });
 }

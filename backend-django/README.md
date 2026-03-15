@@ -83,6 +83,32 @@ Production fail-fast security checks:
 6. Start server:
    - `python manage.py runserver 8000`
 
+## Search engine foundation (new MAGNETO engine)
+
+The Django backend now includes the first real search-engine building blocks:
+
+- persistent search sources in database
+- persistent crawled documents in database
+- crawl run tracking
+- block rules for domains/URL patterns
+- Django admin controls for sources, documents, block rules, and crawl runs
+- management commands to seed curated sources and crawl them
+
+Bootstrap commands:
+
+- `python manage.py migrate`
+- `python manage.py seed_search_sources`
+- `python manage.py crawl_search_sources --max-pages 10`
+
+Optional targeted crawl:
+
+- `python manage.py crawl_search_sources --source wikipedia-ro --source hotnews --max-pages 15`
+
+Current implementation goal:
+
+- phase 1 foundation for a MAGNETO-owned search index over curated sources
+- DB-backed `/api/search` now prefers crawled documents and falls back to the legacy JSON index only when DB search has no matches
+
 ## Run tests
 
 - API regression tests (health + auth + search + location + events + admin + assistant + backup + export endpoints): `python manage.py test core.tests.test_api -v 2`

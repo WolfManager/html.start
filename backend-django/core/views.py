@@ -43,7 +43,9 @@ from .services.assistant_runtime_service import (
 from .services.assistant_service import generate_assistant_response, probe_providers_health
 from .services.location_service import resolve_approx_location
 from .services.runtime_metrics_service import get_runtime_metrics
-from .services.search_service import run_search
+from .services.search_crawler_service import crawl_due_sources
+from .services.search_index_service import seed_default_sources
+from .services.search_service import get_search_sources, run_search_page
 
 
 def _admin_auth_error(request):
@@ -91,19 +93,333 @@ def search(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    results = run_search(query)
+    language = str(request.query_params.get("language") or "").strip()
+    category = str(request.query_params.get("category") or "").strip()
+    source = str(request.query_params.get("source") or "").strip()
+    sort = str(request.query_params.get("sort") or "relevance").strip()
+    limit_raw = str(request.query_params.get("limit") or "").strip()
+    limit = int(limit_raw) if limit_raw.isdigit() else 20
+    page_raw = str(request.query_params.get("page") or "").strip()
+    page = int(page_raw) if page_raw.isdigit() else 1
+    page = max(1, min(500, page))
+    safe_limit = max(1, min(50, limit))
+    offset = (page - 1) * safe_limit
+
+    payload = run_search_page(
+        query,
+        language=language,
+        category=category,
+        source=source,
+        sort=sort,
+        limit=safe_limit,
+        offset=offset,
+    )
     log_search(
         query=query,
-        result_count=len(results),
+        result_count=int(payload.get("total", 0) or 0),
         ip=get_client_ip(request.META),
     )
+
+    total = int(payload.get("total", 0) or 0)
+    total_pages = int(payload.get("totalPages", 0) or 0)
+    current_page = int(payload.get("page", page) or page)
+    has_next_page = bool(payload.get("hasNextPage"))
+    has_prev_page = bool(payload.get("hasPrevPage"))
 
     return Response(
         {
             "engine": "MAGNETO Core",
             "query": query,
-            "total": len(results),
-            "results": results,
+            "total": total,
+            "appliedFilters": {
+                "language": language,
+                "category": category,
+                "source": source,
+                "sort": sort or "relevance",
+                "limit": safe_limit,
+                "page": current_page,
+            },
+            "pagination": {
+                "page": current_page,
+                "pageSize": safe_limit,
+                "offset": int(payload.get("offset", offset) or offset),
+                "total": total,
+                "totalPages": total_pages,
+                "hasNextPage": has_next_page,
+                "hasPrevPage": has_prev_page,
+                "nextPage": current_page + 1 if has_next_page else None,
+                "prevPage": current_page - 1 if has_prev_page else None,
+            },
+            "facets": payload.get("facets") or {
+                "languages": [],
+                "categories": [],
+                "sources": [],
+            },
+            "results": payload.get("results") or [],
+        }
+    )
+
+
+@api_view(["GET"])
+def search_sources(request):
+    query = str(request.query_params.get("q") or "").strip()
+    limit_raw = str(request.query_params.get("limit") or "").strip()
+    limit = int(limit_raw) if limit_raw.isdigit() else 20
+    sources = get_search_sources(query=query, limit=limit)
+    return Response(
+        {
+            "ok": True,
+            "total": len(sources),
+            "sources": sources,
+        }
+    )
+
+
+def _search_admin_payload() -> dict:
+    from .models import CrawlRun, SearchBlockRule, SearchDocument, SearchSource
+
+    latest_run = CrawlRun.objects.order_by("-started_at").first()
+    recent_runs = CrawlRun.objects.select_related("source").order_by("-started_at")[:12]
+    return {
+        "sources": {
+            "total": SearchSource.objects.count(),
+            "active": SearchSource.objects.filter(is_active=True).count(),
+        },
+        "documents": {
+            "indexed": SearchDocument.objects.filter(
+                status=SearchDocument.STATUS_INDEXED
+            ).count(),
+            "blocked": SearchDocument.objects.filter(
+                status=SearchDocument.STATUS_BLOCKED
+            ).count(),
+            "errors": SearchDocument.objects.filter(
+                status=SearchDocument.STATUS_ERROR
+            ).count(),
+        },
+        "blockRules": SearchBlockRule.objects.filter(is_active=True).count(),
+        "latestRun": {
+            "status": latest_run.status if latest_run else "idle",
+            "startedAt": latest_run.started_at.isoformat().replace("+00:00", "Z")
+            if latest_run
+            else "",
+            "finishedAt": latest_run.finished_at.isoformat().replace("+00:00", "Z")
+            if latest_run and latest_run.finished_at
+            else "",
+            "pagesSeen": latest_run.pages_seen if latest_run else 0,
+            "pagesIndexed": latest_run.pages_indexed if latest_run else 0,
+            "pagesUpdated": latest_run.pages_updated if latest_run else 0,
+            "pagesFailed": latest_run.pages_failed if latest_run else 0,
+        },
+        "recentRuns": [
+            {
+                "id": run.pk,
+                "source": run.source.slug if run.source else "all",
+                "status": run.status,
+                "trigger": run.trigger,
+                "startedAt": run.started_at.isoformat().replace("+00:00", "Z")
+                if run.started_at
+                else "",
+                "finishedAt": run.finished_at.isoformat().replace("+00:00", "Z")
+                if run.finished_at
+                else "",
+                "pagesSeen": run.pages_seen,
+                "pagesIndexed": run.pages_indexed,
+                "pagesUpdated": run.pages_updated,
+                "pagesFailed": run.pages_failed,
+                "pagesBlocked": run.pages_blocked,
+                "notes": run.notes,
+            }
+            for run in recent_runs
+        ],
+    }
+
+
+def _parse_iso_datetime(raw_value: str):
+    value = str(raw_value or "").strip()
+    if not value:
+        return None
+
+    normalized = value
+    if normalized.endswith("Z"):
+        normalized = f"{normalized[:-1]}+00:00"
+
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError:
+        return None
+
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+
+    return parsed
+
+
+def _iso_or_empty(value) -> str:
+    if not value:
+        return ""
+    return value.isoformat().replace("+00:00", "Z")
+
+
+@api_view(["POST"])
+def admin_search_seed(request):
+    auth_error = _admin_auth_error(request)
+    if auth_error is not None:
+        return auth_error
+
+    force = bool((request.data or {}).get("force"))
+    created, updated = seed_default_sources(force=force)
+    return Response(
+        {
+            "ok": True,
+            "created": created,
+            "updated": updated,
+            "search": _search_admin_payload(),
+        }
+    )
+
+
+@api_view(["POST"])
+def admin_search_crawl(request):
+    auth_error = _admin_auth_error(request)
+    if auth_error is not None:
+        return auth_error
+
+    raw_source_ids = (request.data or {}).get("sourceIds") or []
+    source_ids = [int(item) for item in raw_source_ids if str(item).isdigit()]
+    max_pages_raw = str((request.data or {}).get("maxPages") or "").strip()
+    max_pages = int(max_pages_raw) if max_pages_raw.isdigit() else None
+    runs = crawl_due_sources(
+        trigger="admin-api",
+        source_ids=source_ids or None,
+        max_pages=max_pages,
+    )
+    return Response(
+        {
+            "ok": True,
+            "runs": [
+                {
+                    "id": run.pk,
+                    "source": run.source.slug if run.source else "all",
+                    "status": run.status,
+                    "pagesSeen": run.pages_seen,
+                    "pagesIndexed": run.pages_indexed,
+                    "pagesUpdated": run.pages_updated,
+                    "pagesFailed": run.pages_failed,
+                    "pagesBlocked": run.pages_blocked,
+                    "notes": run.notes,
+                }
+                for run in runs
+            ],
+            "search": _search_admin_payload(),
+        }
+    )
+
+
+@api_view(["GET"])
+def admin_search_status(request):
+    auth_error = _admin_auth_error(request)
+    if auth_error is not None:
+        return auth_error
+
+    return Response({"ok": True, "search": _search_admin_payload()})
+
+
+@api_view(["GET"])
+def admin_search_export(request):
+    auth_error = _admin_auth_error(request)
+    if auth_error is not None:
+        return auth_error
+
+    from .models import SearchDocument
+
+    source_slug = str(request.query_params.get("source") or "").strip().lower()
+    status_filter = str(request.query_params.get("status") or "indexed").strip().lower()
+    updated_since_raw = str(request.query_params.get("updatedSince") or "").strip()
+    limit_raw = str(request.query_params.get("limit") or "").strip()
+    page_raw = str(request.query_params.get("page") or "").strip()
+
+    limit = int(limit_raw) if limit_raw.isdigit() else 200
+    page = int(page_raw) if page_raw.isdigit() else 1
+    safe_limit = max(1, min(500, limit))
+    safe_page = max(1, min(10000, page))
+    offset = (safe_page - 1) * safe_limit
+
+    allowed_statuses = {
+        "indexed",
+        "blocked",
+        "error",
+        "all",
+    }
+    if status_filter not in allowed_statuses:
+        return Response(
+            {"error": "Invalid status. Allowed: indexed, blocked, error, all."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    updated_since = None
+    if updated_since_raw:
+        updated_since = _parse_iso_datetime(updated_since_raw)
+        if updated_since is None:
+            return Response(
+                {"error": "Invalid updatedSince ISO datetime."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+    queryset = SearchDocument.objects.select_related("source")
+    if status_filter != "all":
+        queryset = queryset.filter(status=status_filter)
+    if source_slug:
+        queryset = queryset.filter(source__slug=source_slug)
+    if updated_since is not None:
+        queryset = queryset.filter(updated_at__gte=updated_since)
+
+    total = queryset.count()
+    docs = list(queryset.order_by("updated_at", "id")[offset : offset + safe_limit])
+    has_next_page = offset + len(docs) < total
+
+    return Response(
+        {
+            "ok": True,
+            "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "filters": {
+                "status": status_filter,
+                "source": source_slug,
+                "updatedSince": updated_since_raw,
+            },
+            "pagination": {
+                "page": safe_page,
+                "pageSize": safe_limit,
+                "offset": offset,
+                "total": total,
+                "hasNextPage": has_next_page,
+                "nextPage": safe_page + 1 if has_next_page else None,
+            },
+            "documents": [
+                {
+                    "id": doc.pk,
+                    "url": doc.url,
+                    "canonicalUrl": doc.canonical_url,
+                    "title": doc.title,
+                    "summary": doc.summary,
+                    "content": doc.content,
+                    "language": doc.language,
+                    "category": doc.category,
+                    "tags": doc.tags,
+                    "status": doc.status,
+                    "qualityScore": doc.quality_score,
+                    "crawlDepth": doc.crawl_depth,
+                    "fetchedAt": _iso_or_empty(doc.fetched_at),
+                    "indexedAt": _iso_or_empty(doc.indexed_at),
+                    "updatedAt": _iso_or_empty(doc.updated_at),
+                    "source": {
+                        "id": doc.source_id,
+                        "slug": doc.source.slug,
+                        "name": doc.source.name,
+                        "baseUrl": doc.source.base_url,
+                    },
+                }
+                for doc in docs
+            ],
         }
     )
 
