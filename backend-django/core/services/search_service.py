@@ -9,6 +9,7 @@ from django.utils import timezone
 from django.db.models import Count
 
 from core.models import SearchDocument, SearchSource
+from .analytics_service import read_analytics
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 SEARCH_INDEX_PATH = BASE_DIR.parent / "data" / "search-index.json"
@@ -474,7 +475,25 @@ def _run_local_index_search(
         if score > 0:
             ranked_with_score.append({**doc, "score": score})
 
-    ranked_with_score.sort(key=lambda item: int(item.get("score", 0)), reverse=True)
+    normalized_sort = _normalize_filter_value(sort) or "relevance"
+    if normalized_sort == "newest":
+        ranked_with_score.sort(
+            key=lambda item: (
+                str(item.get("fetchedAt") or ""),
+                int(item.get("score", 0)),
+            ),
+            reverse=True,
+        )
+    elif normalized_sort == "quality":
+        ranked_with_score.sort(
+            key=lambda item: (
+                float(item.get("qualityScore", 0)),
+                int(item.get("score", 0)),
+            ),
+            reverse=True,
+        )
+    else:
+        ranked_with_score.sort(key=lambda item: int(item.get("score", 0)), reverse=True)
     if not ranked_with_score:
         return []
 
@@ -641,3 +660,139 @@ def get_search_sources(*, query: str = "", limit: int = 20) -> list[dict[str, An
         }
         for source in queryset[:safe_limit]
     ]
+
+
+def _get_popular_query_suggestions(partial: str, limit: int) -> list[dict[str, Any]]:
+    normalized_partial = _normalize_filter_value(partial)
+    if not normalized_partial:
+        return []
+
+    analytics = read_analytics()
+    searches = list(analytics.get("searches") or [])
+    stats: dict[str, dict[str, int]] = {}
+
+    for item in searches:
+        query = str(item.get("query") or "").strip()
+        normalized = _normalize_filter_value(query)
+        if not normalized or len(normalized) < 2:
+            continue
+        if normalized_partial not in normalized:
+            continue
+
+        result_count = int(item.get("resultCount") or 0)
+        current = stats.get(query) or {
+            "hits": 0,
+            "positive_hits": 0,
+        }
+        current["hits"] += 1
+        if result_count > 0:
+            current["positive_hits"] += 1
+        stats[query] = current
+
+    ranked = sorted(
+        [
+            {
+                "value": query,
+                "score": int(item["positive_hits"] * 2 + item["hits"]),
+                "source": "analytics",
+            }
+            for query, item in stats.items()
+            if item["positive_hits"] > 0
+        ],
+        key=lambda item: (-int(item["score"]), str(item["value"]).lower()),
+    )
+    return ranked[:limit]
+
+
+def _get_index_query_suggestions(partial: str, limit: int) -> list[dict[str, Any]]:
+    normalized_partial = _normalize_filter_value(partial)
+    if not normalized_partial:
+        return []
+
+    index = _read_search_index()
+    suggestions: dict[str, dict[str, Any]] = {}
+
+    for doc in index:
+        title = str(doc.get("title") or "").strip()
+        normalized_title = _normalize_filter_value(title)
+        if not title or normalized_partial not in normalized_title:
+            continue
+
+        key = normalized_title
+        current = suggestions.get(key)
+        if current:
+            current["score"] = int(current["score"]) + 3
+        else:
+            suggestions[key] = {
+                "value": title,
+                "score": 3,
+                "source": "index-title",
+            }
+
+        if len(suggestions) >= limit * 2:
+            break
+
+    for doc in index:
+        if len(suggestions) >= limit * 3:
+            break
+
+        for token in tokenize(str(doc.get("title") or "")):
+            if len(token) < 3 or not token.startswith(normalized_partial):
+                continue
+
+            key = _normalize_filter_value(token)
+            if key in suggestions:
+                continue
+
+            suggestions[key] = {
+                "value": token,
+                "score": 2,
+                "source": "index-token",
+            }
+
+            if len(suggestions) >= limit * 3:
+                break
+
+    ranked = sorted(
+        suggestions.values(),
+        key=lambda item: (-int(item["score"]), str(item["value"]).lower()),
+    )
+    return ranked[:limit]
+
+
+def get_search_suggestions(*, partial: str, limit: int = 10) -> list[str]:
+    normalized_partial = _normalize_filter_value(partial)
+    if len(normalized_partial) < 2:
+        return []
+
+    safe_limit = max(1, min(20, int(limit or 10)))
+    merged: dict[str, dict[str, Any]] = {}
+
+    for item in _get_popular_query_suggestions(partial, safe_limit):
+        key = _normalize_filter_value(item.get("value") or "")
+        if not key:
+            continue
+        merged[key] = {
+            "value": str(item.get("value") or "").strip(),
+            "score": int(item.get("score") or 0),
+        }
+
+    for item in _get_index_query_suggestions(partial, safe_limit):
+        key = _normalize_filter_value(item.get("value") or "")
+        if not key:
+            continue
+
+        existing = merged.get(key)
+        if existing:
+            existing["score"] = int(existing["score"]) + int(item.get("score") or 0)
+        else:
+            merged[key] = {
+                "value": str(item.get("value") or "").strip(),
+                "score": int(item.get("score") or 0),
+            }
+
+    ranked = sorted(
+        merged.values(),
+        key=lambda item: (-int(item["score"]), str(item["value"]).lower()),
+    )
+    return [str(item["value"]) for item in ranked[:safe_limit]]

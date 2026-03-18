@@ -12,7 +12,10 @@
     fromStorage = "";
   }
 
-  var defaultBase = "http://127.0.0.1:8000";
+  var isHttp =
+    window.location.protocol === "http:" ||
+    window.location.protocol === "https:";
+  var defaultBase = isHttp ? window.location.origin : "http://127.0.0.1:3000";
   var selected = fromQuery || fromStorage || defaultBase;
 
   // Normalize trailing slashes to avoid double-slash API URLs.

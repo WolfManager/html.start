@@ -12,16 +12,27 @@
     "dev:node": "node scripts/dev-full.js --node-only",
     "dev:django": "node scripts/dev-full.js --django-only",
     "dev:django:stable": "node scripts/dev-full.js --django-only --noreload",
-    "dev:full:alt-ports": "set MAGNETO_NODE_PORT=3100 && set MAGNETO_DJANGO_PORT=8100 && node scripts/dev-full.js --noreload",
+    "dev:full:alt-ports": "cross-env MAGNETO_NODE_PORT=3100 MAGNETO_DJANGO_PORT=8100 node scripts/dev-full.js --noreload",
     "health:check": "node scripts/health-check.js",
     "health:check:json": "node scripts/health-check.js --json",
     "health:check:gate": "node scripts/health-check.js --json --require-admin --max-latency-ms=2500",
     "health:check:gate:save": "node scripts/health-check.js --json --require-admin --max-latency-ms=2500 --save-report",
-    "health:check:gate:daily": "node scripts/health-check.js --json --require-admin --max-latency-ms=2500 --out=data/backups/health-check/latest-gate.json --label=daily"
+    "health:check:gate:daily": "node scripts/health-check.js --json --require-admin --max-latency-ms=2500 --out=data/backups/health-check/latest-gate.json --label=daily",
+    "search:benchmark": "node scripts/search-benchmark.js",
+    "search:benchmark:romanian": "node scripts/search-benchmark-romanian.js",
+    "search:parity": "node scripts/search-parity-check.js",
+    "search:parity:gate": "npm run search:parity:strict",
+    "search:parity:strict": "cross-env PARITY_MODE=strict node scripts/search-parity-check.js",
+    "search:parity:compat": "cross-env PARITY_MODE=compat node scripts/search-parity-check.js",
+    "assistant:benchmark": "node scripts/assistant-benchmark.js",
+    "benchmark:all": "node test-all-benchmarks.js"
   },
   "dependencies": {
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0"
   }
 }

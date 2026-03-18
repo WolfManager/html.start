@@ -1,13 +1,17 @@
 const searchForm = document.getElementById("searchForm");
 const searchQuery = document.getElementById("searchQuery");
 const statusMessage = document.getElementById("statusMessage");
+const searchHistoryPanel = document.getElementById("searchHistoryPanel");
+const searchHistoryList = document.getElementById("searchHistoryList");
+const searchHistoryClear = document.getElementById("searchHistoryClear");
+const popularSearchesPanel = document.getElementById("popularSearchesPanel");
+const popularSearchesList = document.getElementById("popularSearchesList");
 const quickTags = document.querySelectorAll(".quick-tags .tag");
 
 const weatherIcon = document.getElementById("weatherIcon");
 const weatherTemp = document.getElementById("weatherTemp");
 const weatherSummary = document.getElementById("weatherSummary");
 const weatherLocation = document.getElementById("weatherLocation");
-const weatherForecast = document.getElementById("weatherForecast");
 const weatherPanel = document.querySelector(".weather-panel");
 const rightPanel = document.querySelector(".right-panel");
 const magnetoTitle = document.querySelector(".hero h1");
@@ -16,12 +20,19 @@ const assistantThread = document.getElementById("assistantThread");
 const assistantForm = document.getElementById("assistantForm");
 const assistantInput = document.getElementById("assistantInput");
 const assistantSuggestions = document.getElementById("assistantSuggestions");
+const assistantLaunchBtn = document.getElementById("assistantLaunchBtn");
+const assistantModal = document.getElementById("assistantModal");
+const assistantModalHeader = document.getElementById("assistantModalHeader");
+const assistantCloseBtn = document.getElementById("assistantCloseBtn");
 const assistantStatusMessage = document.getElementById(
   "assistantStatusMessage",
 );
 
 const resultsQuery = document.getElementById("resultsQuery");
 const resultsMeta = document.getElementById("resultsMeta");
+const resultsAssist = document.getElementById("resultsAssist");
+const resultsDidYouMean = document.getElementById("resultsDidYouMean");
+const resultsSuggestChips = document.getElementById("resultsSuggestChips");
 const resultsList = document.getElementById("resultsList");
 const resultsFilters = document.getElementById("resultsFilters");
 const resultsFilterLanguage = document.getElementById("resultsFilterLanguage");
@@ -48,17 +59,51 @@ const adminAuthStatus = document.getElementById("adminAuthStatus");
 const adminLogoutBtn = document.getElementById("adminLogoutBtn");
 const adminRange = document.getElementById("adminRange");
 const adminRefreshBtn = document.getElementById("adminRefreshBtn");
+const adminResetClickTelemetryBtn = document.getElementById(
+  "adminResetClickTelemetryBtn",
+);
+const adminSnapshotResetClickTelemetryBtn = document.getElementById(
+  "adminSnapshotResetClickTelemetryBtn",
+);
 const adminExportBtn = document.getElementById("adminExportBtn");
 
 const kpiTotalSearches = document.getElementById("kpiTotalSearches");
 const kpiTotalViews = document.getElementById("kpiTotalViews");
 const kpiUniqueQueries = document.getElementById("kpiUniqueQueries");
+const kpiTotalClicks = document.getElementById("kpiTotalClicks");
 const kpiSearchesDelta = document.getElementById("kpiSearchesDelta");
 const kpiViewsDelta = document.getElementById("kpiViewsDelta");
 const kpiUniqueDelta = document.getElementById("kpiUniqueDelta");
+const kpiClicksDelta = document.getElementById("kpiClicksDelta");
+const kpiSafetyRate = document.getElementById("kpiSafetyRate");
+const kpiSafetyMeta = document.getElementById("kpiSafetyMeta");
 const topQueriesList = document.getElementById("topQueriesList");
 const trafficList = document.getElementById("trafficList");
 const latestSearchesList = document.getElementById("latestSearchesList");
+const topClickedResultsList = document.getElementById("topClickedResultsList");
+const topClickPairsList = document.getElementById("topClickPairsList");
+const adminClickSignalMeta = document.getElementById("adminClickSignalMeta");
+const adminClickSnapshotHistoryList = document.getElementById(
+  "adminClickSnapshotHistoryList",
+);
+const adminClickSnapshotDiff = document.getElementById(
+  "adminClickSnapshotDiff",
+);
+const adminClickSnapshotBaselineDiff = document.getElementById(
+  "adminClickSnapshotBaselineDiff",
+);
+const adminClickSnapshotBaselineMeta = document.getElementById(
+  "adminClickSnapshotBaselineMeta",
+);
+const adminPinClickSnapshotBaselineBtn = document.getElementById(
+  "adminPinClickSnapshotBaselineBtn",
+);
+const adminClearClickSnapshotBaselineBtn = document.getElementById(
+  "adminClearClickSnapshotBaselineBtn",
+);
+const adminClearClickSnapshotHistoryBtn = document.getElementById(
+  "adminClearClickSnapshotHistoryBtn",
+);
 const topQueriesChart = document.getElementById("topQueriesChart");
 const trafficChart = document.getElementById("trafficChart");
 const dailyTrendChart = document.getElementById("dailyTrendChart");
@@ -111,6 +156,21 @@ const adminSearchCrawlForm = document.getElementById("adminSearchCrawlForm");
 const adminSearchSourceIds = document.getElementById("adminSearchSourceIds");
 const adminSearchMaxPages = document.getElementById("adminSearchMaxPages");
 const adminSearchForceSeed = document.getElementById("adminSearchForceSeed");
+const adminRankingConfigJson = document.getElementById(
+  "adminRankingConfigJson",
+);
+const adminRankingConfigMeta = document.getElementById(
+  "adminRankingConfigMeta",
+);
+const adminRankingConfigRefreshBtn = document.getElementById(
+  "adminRankingConfigRefreshBtn",
+);
+const adminRankingConfigSaveBtn = document.getElementById(
+  "adminRankingConfigSaveBtn",
+);
+const adminRankingConfigResetBtn = document.getElementById(
+  "adminRankingConfigResetBtn",
+);
 const adminSearchRunsBody = document.getElementById("adminSearchRunsBody");
 const adminSearchRunsStatusFilter = document.getElementById(
   "adminSearchRunsStatusFilter",
@@ -187,13 +247,70 @@ const adminSearchRunsPrevPageBtn = document.getElementById(
 const adminSearchRunsNextPageBtn = document.getElementById(
   "adminSearchRunsNextPageBtn",
 );
+const adminIndexSyncStatusGrid = document.getElementById(
+  "adminIndexSyncStatusGrid",
+);
+const adminIndexSyncMeta = document.getElementById("adminIndexSyncMeta");
+const adminIndexSyncStatusBtn = document.getElementById(
+  "adminIndexSyncStatusBtn",
+);
+const adminIndexSyncRunBtn = document.getElementById("adminIndexSyncRunBtn");
+const adminIndexSyncResetWatermarkBtn = document.getElementById(
+  "adminIndexSyncResetWatermarkBtn",
+);
+const adminIndexSyncForm = document.getElementById("adminIndexSyncForm");
+const adminIndexSyncSource = document.getElementById("adminIndexSyncSource");
+const adminIndexSyncStatusFilter = document.getElementById(
+  "adminIndexSyncStatusFilter",
+);
+const adminIndexSyncPageSize = document.getElementById(
+  "adminIndexSyncPageSize",
+);
+const adminIndexSyncMaxPages = document.getElementById(
+  "adminIndexSyncMaxPages",
+);
+const adminIndexSyncUpdatedSince = document.getElementById(
+  "adminIndexSyncUpdatedSince",
+);
+const adminIndexSyncUseWatermark = document.getElementById(
+  "adminIndexSyncUseWatermark",
+);
+const adminIndexSyncCreateBackup = document.getElementById(
+  "adminIndexSyncCreateBackup",
+);
+const adminIndexStatusGrid = document.getElementById("adminIndexStatusGrid");
+const adminIndexMeta = document.getElementById("adminIndexMeta");
+const adminIndexBackupsList = document.getElementById("adminIndexBackupsList");
+const adminIndexStatusBtn = document.getElementById("adminIndexStatusBtn");
+const adminIndexRefreshBtn = document.getElementById("adminIndexRefreshBtn");
+const adminIndexBackupsBtn = document.getElementById("adminIndexBackupsBtn");
+const adminIndexRestoreBtn = document.getElementById("adminIndexRestoreBtn");
+const adminIndexForm = document.getElementById("adminIndexForm");
+const adminIndexBackupReasonFilter = document.getElementById(
+  "adminIndexBackupReasonFilter",
+);
+const adminIndexRestoreFile = document.getElementById("adminIndexRestoreFile");
+const adminIndexBackupFiles = document.getElementById("adminIndexBackupFiles");
+const adminIndexRefreshCreateBackup = document.getElementById(
+  "adminIndexRefreshCreateBackup",
+);
+const adminIndexRestoreCreateBackup = document.getElementById(
+  "adminIndexRestoreCreateBackup",
+);
 
 const ADMIN_TOKEN_KEY = "magneto.admin.token";
+const ADMIN_CLICK_SNAPSHOT_HISTORY_KEY = "magneto.admin.click-snapshot.history";
+const ADMIN_CLICK_SNAPSHOT_BASELINE_KEY =
+  "magneto.admin.click-snapshot.baseline";
+const ADMIN_CLICK_SNAPSHOT_CLEANUP_DISMISS_KEY =
+  "magneto.admin.click-snapshot.cleanup-dismiss";
+const ADMIN_CLICK_SNAPSHOT_HISTORY_MAX = 12;
 const API_BASE_URL = String(window.MAGNETO_API_BASE_URL || "")
   .trim()
   .replace(/\/+$/, "");
 let currentAdminRange = "all";
 let currentBackupReason = "all";
+let currentIndexBackupReason = "all";
 const RUNTIME_AUTO_REFRESH_MS = 30000;
 let runtimeMetricsIntervalId = null;
 let runtimeMetricsCountdownIntervalId = null;
@@ -227,6 +344,12 @@ const ADMIN_SEARCH_RUNS_COL_KEYS = [
 ];
 let adminSearchRunsPage = 0;
 let adminSearchRunsHiddenCols = new Set();
+let adminClickSnapshotAutoHealState = {
+  ran: false,
+  at: "",
+  compactedCount: 0,
+};
+const ADMIN_CLICK_SNAPSHOT_AUTOHEAL_VISIBLE_MS = 60 * 1000;
 const FLAG_ROTATION_DEFAULT_MS = 60000;
 const FLAG_ROTATION_MIN_MS = 5000;
 const FLAG_ROTATION_MAX_MS = 600000;
@@ -612,8 +735,39 @@ function updateAssistant(query) {
   });
 }
 
-function buildLocalAssistantFallback(query) {
+async function buildLocalAssistantFallback(query) {
   const content = buildAssistantContent(query);
+
+  try {
+    const params = new URLSearchParams({
+      q: String(query || "").trim(),
+      limit: "3",
+      sort: "relevance",
+    });
+    const response = await apiFetch(`/api/search?${params.toString()}`);
+    const payload = await response.json().catch(() => ({}));
+    const results = Array.isArray(payload.results) ? payload.results : [];
+
+    if (response.ok && results.length > 0) {
+      const topRows = results.slice(0, 3).map((item, index) => {
+        const title = String(item?.title || item?.url || "Result").trim();
+        return `${index + 1}. ${title}`;
+      });
+
+      return {
+        reply:
+          "AI is temporarily unavailable, but I found these relevant MAGNETO results:\n" +
+          topRows.join("\n"),
+        suggestions: [
+          `Open results for ${query}`,
+          ...content.suggestions.slice(0, 2),
+        ],
+      };
+    }
+  } catch {
+    // Keep local generic fallback if search grounding also fails.
+  }
+
   return {
     reply: content.message,
     suggestions: content.suggestions,
@@ -659,7 +813,7 @@ async function requestAssistantResponse(userText) {
       provider: String(payload.provider || "unknown"),
     };
   } catch (error) {
-    const fallback = buildLocalAssistantFallback(userText);
+    const fallback = await buildLocalAssistantFallback(userText);
     const reason = String(error?.message || "Assistant unavailable.");
     const isFileProtocol = window.location.protocol === "file:";
     const help = isFileProtocol
@@ -678,6 +832,124 @@ async function requestAssistantResponse(userText) {
 function initAssistantChat() {
   if (!assistantThread || !assistantForm || !assistantInput) {
     return;
+  }
+
+  let isDraggingAssistant = false;
+  let dragOffsetX = 0;
+  let dragOffsetY = 0;
+
+  const clampAssistantPosition = (left, top) => {
+    if (!assistantModal) {
+      return { left, top };
+    }
+
+    const modalWidth = assistantModal.offsetWidth || 440;
+    const maxLeft = Math.max(8, window.innerWidth - modalWidth - 8);
+    const clampedLeft = Math.max(8, Math.min(left, maxLeft));
+    const clampedTop = Math.max(8, Math.min(top, window.innerHeight - 120));
+    return { left: clampedLeft, top: clampedTop };
+  };
+
+  const applyAssistantPosition = (left, top) => {
+    if (!assistantModal) {
+      return;
+    }
+    const next = clampAssistantPosition(left, top);
+    assistantModal.style.left = `${Math.round(next.left)}px`;
+    assistantModal.style.top = `${Math.round(next.top)}px`;
+    assistantModal.style.right = "auto";
+  };
+
+  const openAssistantModal = () => {
+    if (!assistantModal) {
+      return;
+    }
+    assistantModal.hidden = false;
+
+    if (!assistantModal.dataset.positioned) {
+      requestAnimationFrame(() => {
+        if (!assistantModal) {
+          return;
+        }
+        const modalWidth = assistantModal.offsetWidth || 440;
+        applyAssistantPosition(window.innerWidth - modalWidth - 18, 108);
+        assistantModal.dataset.positioned = "true";
+      });
+    }
+
+    requestAnimationFrame(() => {
+      assistantInput.focus();
+    });
+  };
+
+  const closeAssistantModal = () => {
+    if (!assistantModal) {
+      return;
+    }
+    assistantModal.hidden = true;
+  };
+
+  if (assistantLaunchBtn) {
+    assistantLaunchBtn.addEventListener("click", openAssistantModal);
+  }
+
+  if (assistantCloseBtn) {
+    assistantCloseBtn.addEventListener("click", closeAssistantModal);
+  }
+
+  if (assistantModal) {
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !assistantModal.hidden) {
+        closeAssistantModal();
+      }
+    });
+
+    window.addEventListener("resize", () => {
+      if (assistantModal.hidden) {
+        return;
+      }
+      const rect = assistantModal.getBoundingClientRect();
+      applyAssistantPosition(rect.left, rect.top);
+    });
+  }
+
+  if (assistantModalHeader && assistantModal) {
+    assistantModalHeader.addEventListener("mousedown", (event) => {
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.closest("button") ||
+          target.closest("input") ||
+          target.closest("a"))
+      ) {
+        return;
+      }
+
+      const rect = assistantModal.getBoundingClientRect();
+      isDraggingAssistant = true;
+      dragOffsetX = event.clientX - rect.left;
+      dragOffsetY = event.clientY - rect.top;
+      document.body.style.userSelect = "none";
+    });
+
+    window.addEventListener("mousemove", (event) => {
+      if (!isDraggingAssistant || !assistantModal || assistantModal.hidden) {
+        return;
+      }
+
+      applyAssistantPosition(
+        event.clientX - dragOffsetX,
+        event.clientY - dragOffsetY,
+      );
+    });
+
+    window.addEventListener("mouseup", () => {
+      if (!isDraggingAssistant) {
+        return;
+      }
+      isDraggingAssistant = false;
+      document.body.style.userSelect = "";
+    });
   }
 
   assistantForm.addEventListener("submit", async (event) => {
@@ -711,9 +983,244 @@ function initAssistantChat() {
   requestAnimationFrame(syncSidePanelHeights);
 }
 
+const SEARCH_HISTORY_KEY = "magneto.search-history";
+const SEARCH_HISTORY_LIMIT = 10;
+
+function getSearchHistory() {
+  try {
+    const json = localStorage.getItem(SEARCH_HISTORY_KEY);
+    return Array.isArray(JSON.parse(json || "[]")) ? JSON.parse(json) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveSearchHistory(queries) {
+  try {
+    localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(queries));
+  } catch (error) {
+    console.warn("Could not save search history:", error);
+  }
+}
+
+function addToSearchHistory(query) {
+  const normalized = String(query || "").trim();
+  if (!normalized || normalized.length < 2) {
+    return;
+  }
+
+  const history = getSearchHistory();
+  const filtered = history.filter(
+    (q) =>
+      String(q || "")
+        .trim()
+        .toLowerCase() !== normalized.toLowerCase(),
+  );
+  const updated = [normalized, ...filtered].slice(0, SEARCH_HISTORY_LIMIT);
+  saveSearchHistory(updated);
+  renderSearchHistory(updated);
+}
+
+function renderSearchHistory(queries) {
+  if (!searchHistoryPanel || !searchHistoryList) {
+    return;
+  }
+
+  if (!Array.isArray(queries) || queries.length === 0) {
+    searchHistoryPanel.hidden = true;
+    return;
+  }
+
+  searchHistoryList.innerHTML = "";
+  queries.forEach((query) => {
+    const normalizedQuery = String(query || "").trim();
+    if (!normalizedQuery) {
+      return;
+    }
+
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "search-history-chip";
+    chip.textContent = normalizedQuery;
+    chip.addEventListener("click", () => {
+      searchQuery.value = normalizedQuery;
+      searchForm.dispatchEvent(new Event("submit", { bubbles: true }));
+    });
+
+    searchHistoryList.appendChild(chip);
+  });
+
+  if (searchHistoryList.childNodes.length > 0) {
+    searchHistoryPanel.hidden = false;
+  }
+}
+
+function clearSearchHistory() {
+  saveSearchHistory([]);
+  if (searchHistoryPanel) {
+    searchHistoryPanel.hidden = true;
+  }
+  if (searchHistoryList) {
+    searchHistoryList.innerHTML = "";
+  }
+}
+
+async function fetchPopularSearches() {
+  try {
+    const response = await apiFetch("/api/analytics/popular-searches");
+    if (!response.ok) {
+      return [];
+    }
+    const payload = await response.json();
+    return Array.isArray(payload.queries) ? payload.queries : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function renderPopularSearches(queries) {
+  if (!popularSearchesPanel || !popularSearchesList) {
+    return;
+  }
+
+  if (!Array.isArray(queries) || queries.length === 0) {
+    popularSearchesPanel.hidden = true;
+    return;
+  }
+
+  popularSearchesList.innerHTML = "";
+  queries.slice(0, 6).forEach((query) => {
+    const normalizedQuery = String(query || "").trim();
+    if (!normalizedQuery) {
+      return;
+    }
+
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "popular-search-chip";
+    chip.textContent = normalizedQuery;
+    chip.addEventListener("click", () => {
+      searchQuery.value = normalizedQuery;
+      searchForm.dispatchEvent(new Event("submit", { bubbles: true }));
+    });
+
+    popularSearchesList.appendChild(chip);
+  });
+
+  if (popularSearchesList.childNodes.length > 0) {
+    popularSearchesPanel.hidden = false;
+  }
+}
+
 function initHomeForm() {
   if (!searchForm || !searchQuery) {
     return;
+  }
+
+  let searchSuggestAbortController = null;
+  let searchSuggestDebounceId = null;
+  const searchSuggestDataListId = "searchQuerySuggestions";
+  let searchSuggestDataList = document.getElementById(searchSuggestDataListId);
+
+  if (!searchSuggestDataList) {
+    searchSuggestDataList = document.createElement("datalist");
+    searchSuggestDataList.id = searchSuggestDataListId;
+    document.body.appendChild(searchSuggestDataList);
+  }
+
+  searchQuery.setAttribute("list", searchSuggestDataListId);
+
+  const renderSearchSuggestions = (items) => {
+    if (!searchSuggestDataList) {
+      return;
+    }
+
+    searchSuggestDataList.innerHTML = "";
+    if (!Array.isArray(items) || items.length === 0) {
+      return;
+    }
+
+    items.forEach((value) => {
+      const normalized = String(value || "").trim();
+      if (!normalized) {
+        return;
+      }
+      const option = document.createElement("option");
+      option.value = normalized;
+      searchSuggestDataList.appendChild(option);
+    });
+  };
+
+  const fetchSearchSuggestions = async (partial) => {
+    const query = String(partial || "").trim();
+    if (query.length < 2) {
+      renderSearchSuggestions([]);
+      return;
+    }
+
+    if (searchSuggestAbortController) {
+      searchSuggestAbortController.abort();
+    }
+    searchSuggestAbortController = new AbortController();
+
+    try {
+      const params = new URLSearchParams({ q: query, limit: "8" });
+      const response = await apiFetch(
+        `/api/search/suggest?${params.toString()}`,
+        {
+          signal: searchSuggestAbortController.signal,
+        },
+      );
+      const payload = await response.json();
+      if (!response.ok) {
+        renderSearchSuggestions([]);
+        return;
+      }
+
+      const suggestions = Array.isArray(payload.suggestions)
+        ? payload.suggestions.slice(0, 8)
+        : [];
+      renderSearchSuggestions(suggestions);
+    } catch (error) {
+      if (error?.name === "AbortError") {
+        return;
+      }
+      renderSearchSuggestions([]);
+    }
+  };
+
+  searchQuery.addEventListener("input", () => {
+    if (searchSuggestDebounceId != null) {
+      window.clearTimeout(searchSuggestDebounceId);
+    }
+
+    const currentValue = searchQuery.value;
+    searchSuggestDebounceId = window.setTimeout(() => {
+      fetchSearchSuggestions(currentValue);
+    }, 160);
+  });
+
+  searchQuery.addEventListener("blur", () => {
+    if (!searchSuggestDataList) {
+      return;
+    }
+    window.setTimeout(() => {
+      if (document.activeElement !== searchQuery) {
+        searchSuggestDataList.innerHTML = "";
+      }
+    }, 120);
+  });
+
+  if (searchHistoryClear) {
+    searchHistoryClear.addEventListener("click", () => {
+      const confirmed = window.confirm(
+        "Clear your entire search history? This cannot be undone.",
+      );
+      if (confirmed) {
+        clearSearchHistory();
+        updateSearchStatus("Search history cleared.");
+      }
+    });
   }
 
   searchForm.addEventListener("submit", (event) => {
@@ -726,6 +1233,7 @@ function initHomeForm() {
       return;
     }
 
+    addToSearchHistory(query);
     updateSearchStatus("Searching with MAGNETO Core...");
     window.location.href = `results.html?q=${encodeURIComponent(query)}`;
   });
@@ -804,8 +1312,7 @@ async function fetchWeatherByCoords(latitude, longitude) {
     `https://api.open-meteo.com/v1/forecast?latitude=${encodeURIComponent(latitude)}` +
     `&longitude=${encodeURIComponent(longitude)}` +
     "&current=temperature_2m,weather_code" +
-    "&daily=weather_code,temperature_2m_max,temperature_2m_min" +
-    "&forecast_days=7&timezone=auto";
+    "&timezone=auto";
 
   const response = await fetch(weatherUrl);
   if (!response.ok) {
@@ -814,32 +1321,14 @@ async function fetchWeatherByCoords(latitude, longitude) {
 
   const data = await response.json();
   const current = data.current;
-  const daily = data.daily;
 
   if (!current || typeof current.temperature_2m !== "number") {
     throw new Error("Incomplete weather data.");
   }
 
-  const hasDaily =
-    daily &&
-    Array.isArray(daily.time) &&
-    Array.isArray(daily.weather_code) &&
-    Array.isArray(daily.temperature_2m_max) &&
-    Array.isArray(daily.temperature_2m_min);
-
-  const forecast = hasDaily
-    ? daily.time.slice(0, 7).map((dateIso, index) => ({
-        dateIso,
-        weatherCode: Number(daily.weather_code[index]),
-        tempMax: Number(daily.temperature_2m_max[index]),
-        tempMin: Number(daily.temperature_2m_min[index]),
-      }))
-    : [];
-
   return {
     temperature: current.temperature_2m,
     weatherCode: current.weather_code,
-    forecast,
   };
 }
 
@@ -870,52 +1359,7 @@ async function fetchLocationName(latitude, longitude) {
   return city || country;
 }
 
-function formatForecastDay(dateIso, index) {
-  const date = new Date(`${dateIso}T12:00:00`);
-  if (index === 0) {
-    return "Today";
-  }
-
-  return date.toLocaleDateString("en-US", { weekday: "long" });
-}
-
-function renderWeatherForecast(forecast) {
-  if (!weatherForecast) {
-    return;
-  }
-
-  weatherForecast.innerHTML = "";
-
-  if (!Array.isArray(forecast) || forecast.length === 0) {
-    const message = document.createElement("p");
-    message.className = "weather-forecast-empty";
-    message.textContent = "7-day forecast unavailable.";
-    weatherForecast.appendChild(message);
-    return;
-  }
-
-  forecast.forEach((day, index) => {
-    const item = document.createElement("article");
-    item.className = "weather-day";
-
-    const label = document.createElement("p");
-    label.className = "weather-day-label";
-    label.textContent = formatForecastDay(day.dateIso, index);
-
-    const icon = document.createElement("span");
-    icon.className = "weather-day-icon";
-    icon.innerHTML = getWeatherView(day.weatherCode).icon;
-
-    const temp = document.createElement("p");
-    temp.className = "weather-day-temp";
-    temp.textContent = `${Math.round(day.tempMax)}\u00B0C`;
-
-    item.append(label, icon, temp);
-    weatherForecast.appendChild(item);
-  });
-}
-
-function setWeatherUI({ temperature, weatherCode, locationText, forecast }) {
+function setWeatherUI({ temperature, weatherCode, locationText }) {
   if (!weatherTemp || !weatherSummary || !weatherLocation || !weatherIcon) {
     return;
   }
@@ -925,7 +1369,6 @@ function setWeatherUI({ temperature, weatherCode, locationText, forecast }) {
   weatherSummary.textContent = view.summary;
   weatherLocation.textContent = locationText;
   weatherIcon.innerHTML = view.icon;
-  renderWeatherForecast(forecast || []);
 }
 
 const WEATHER_IP_CACHE_KEY = "magneto.weather.ipLocation";
@@ -1292,7 +1735,6 @@ function initWeatherWidget() {
     } catch {
       weatherSummary.textContent = "Weather unavailable";
       weatherLocation.textContent = "Could not detect location automatically.";
-      renderWeatherForecast([]);
     }
   })();
 }
@@ -1315,7 +1757,7 @@ async function initResultsPage() {
   }
 
   const params = new URLSearchParams(window.location.search);
-  const query = String(params.get("q") || "").trim();
+  const initialQuery = String(params.get("q") || "").trim();
   const initialLanguage = String(params.get("language") || "").trim();
   const initialCategory = String(params.get("category") || "").trim();
   const initialSource = String(params.get("source") || "").trim();
@@ -1326,7 +1768,7 @@ async function initResultsPage() {
   const initialPageRaw = String(params.get("page") || "").trim();
   const initialPage = /^\d+$/.test(initialPageRaw) ? Number(initialPageRaw) : 1;
 
-  if (!query) {
+  if (!initialQuery) {
     resultsQuery.textContent = "No active search";
     resultsMeta.textContent = "Go back to homepage and enter a query.";
     if (resultsPagination) {
@@ -1354,7 +1796,11 @@ async function initResultsPage() {
     resultsFilterLimit.value = initialLimit;
   }
 
-  resultsQuery.textContent = `Results for: ${query}`;
+  let currentQuery = initialQuery;
+  const renderResultsHeading = () => {
+    resultsQuery.textContent = `Results for: ${currentQuery}`;
+  };
+  renderResultsHeading();
 
   function formatResultsSort(value) {
     const normalized = String(value || "relevance")
@@ -1409,7 +1855,7 @@ async function initResultsPage() {
     const limit = String(resultsFilterLimit?.value || "20").trim() || "20";
 
     const urlParams = new URLSearchParams({
-      q: query,
+      q: currentQuery,
       limit,
       page: String(pageValue),
     });
@@ -1586,7 +2032,7 @@ async function initResultsPage() {
     );
 
     const requestParams = new URLSearchParams({
-      q: query,
+      q: currentQuery,
       limit,
       page: String(targetPage),
     });
@@ -1618,6 +2064,82 @@ async function initResultsPage() {
 
       if (!response.ok) {
         throw new Error(payload.error || "Search request failed.");
+      }
+
+      if (resultsAssist) {
+        resultsAssist.hidden = true;
+      }
+      if (resultsDidYouMean) {
+        resultsDidYouMean.hidden = true;
+        resultsDidYouMean.innerHTML = "";
+      }
+      if (resultsSuggestChips) {
+        resultsSuggestChips.hidden = true;
+        resultsSuggestChips.innerHTML = "";
+      }
+
+      const correction = payload.queryCorrection || null;
+      const correctionOriginal = String(correction?.originalQuery || "").trim();
+      const correctionApplied = String(correction?.correctedQuery || "").trim();
+
+      if (
+        resultsAssist &&
+        resultsDidYouMean &&
+        correctionOriginal &&
+        correctionApplied &&
+        correctionOriginal.toLowerCase() !== correctionApplied.toLowerCase() &&
+        String(payload.queryUsed || "")
+          .trim()
+          .toLowerCase() === correctionApplied.toLowerCase()
+      ) {
+        const prefix = document.createElement("span");
+        prefix.textContent = `Showing results for ${correctionApplied}. `;
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "results-didyoumean-btn";
+        btn.textContent = `Search instead for ${correctionOriginal}`;
+        btn.addEventListener("click", async () => {
+          currentQuery = correctionOriginal;
+          currentPage = 1;
+          renderResultsHeading();
+          await performResultsSearch(true, 1);
+        });
+
+        resultsDidYouMean.append(prefix, btn);
+        resultsDidYouMean.hidden = false;
+        resultsAssist.hidden = false;
+      }
+
+      if (resultsAssist && resultsSuggestChips) {
+        const suggestions = Array.isArray(payload.suggestions)
+          ? payload.suggestions
+              .map((item) => String(item || "").trim())
+              .filter((item) => item.length > 0)
+              .filter((item, index, arr) => arr.indexOf(item) === index)
+              .filter(
+                (item) => item.toLowerCase() !== currentQuery.toLowerCase(),
+              )
+              .slice(0, 5)
+          : [];
+
+        if (suggestions.length > 0) {
+          suggestions.forEach((suggestion) => {
+            const chip = document.createElement("button");
+            chip.type = "button";
+            chip.className = "results-suggest-chip";
+            chip.textContent = suggestion;
+            chip.addEventListener("click", async () => {
+              currentQuery = suggestion;
+              currentPage = 1;
+              renderResultsHeading();
+              await performResultsSearch(true, 1);
+            });
+            resultsSuggestChips.appendChild(chip);
+          });
+
+          resultsSuggestChips.hidden = false;
+          resultsAssist.hidden = false;
+        }
       }
 
       const applied = payload.appliedFilters || {};
@@ -1710,10 +2232,13 @@ async function initResultsPage() {
         anchor.target = "_blank";
         anchor.rel = "noopener noreferrer";
         anchor.textContent = item.title;
+        anchor.addEventListener("click", () => {
+          trackResultClick(item.url, item.title, currentQuery);
+        });
 
         const description = document.createElement("p");
         description.className = "result-description";
-        description.textContent = item.summary;
+        description.innerHTML = item.snippetHtml || escapeHtml(item.summary);
 
         const metaLine = document.createElement("p");
         metaLine.className = "result-meta";
@@ -1762,6 +2287,9 @@ async function initResultsPage() {
       }
     } catch (error) {
       resultsMeta.textContent = error.message || "Could not load results.";
+      if (resultsAssist) {
+        resultsAssist.hidden = true;
+      }
       if (resultsCountValue) {
         resultsCountValue.textContent = "0";
       }
@@ -1902,6 +2430,434 @@ function setAdminToken(token) {
   localStorage.setItem(ADMIN_TOKEN_KEY, token);
 }
 
+function areAdminClickSnapshotsEquivalent(a, b) {
+  if (!a || !b) {
+    return false;
+  }
+
+  return (
+    Number(a.searchesEvaluated || 0) === Number(b.searchesEvaluated || 0) &&
+    Number(a.docsEvaluated || 0) === Number(b.docsEvaluated || 0) &&
+    Number(a.boostApplied || 0) === Number(b.boostApplied || 0) &&
+    Number(a.suppressedMinBase || 0) === Number(b.suppressedMinBase || 0) &&
+    Number(a.suppressedNoSignal || 0) === Number(b.suppressedNoSignal || 0) &&
+    Number(a.cappedByGuardrail || 0) === Number(b.cappedByGuardrail || 0) &&
+    Number(a.totalBoost || 0) === Number(b.totalBoost || 0) &&
+    Math.abs(Number(a.avgBoostApplied || 0) - Number(b.avgBoostApplied || 0)) <
+      0.0005
+  );
+}
+
+function getAdminClickSnapshotTimeMs(item) {
+  const parsed = Date.parse(String(item?.at || ""));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function normalizeAdminClickSnapshotHistory(items) {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  const dedupeWindowMs = 2 * 60 * 1000;
+  const normalized = items
+    .filter((item) => item && typeof item === "object")
+    .map((item) => ({
+      at: String(item.at || item.generatedAt || new Date().toISOString()),
+      searchesEvaluated: Number(item.searchesEvaluated || 0),
+      docsEvaluated: Number(item.docsEvaluated || 0),
+      boostApplied: Number(item.boostApplied || 0),
+      suppressedMinBase: Number(item.suppressedMinBase || 0),
+      suppressedNoSignal: Number(item.suppressedNoSignal || 0),
+      cappedByGuardrail: Number(item.cappedByGuardrail || 0),
+      totalBoost: Number(item.totalBoost || 0),
+      avgBoostApplied: Number(item.avgBoostApplied || 0),
+    }))
+    .sort((a, b) => {
+      return getAdminClickSnapshotTimeMs(b) - getAdminClickSnapshotTimeMs(a);
+    });
+
+  const deduped = [];
+  for (const item of normalized) {
+    const previous = deduped[deduped.length - 1];
+    if (!previous) {
+      deduped.push(item);
+      continue;
+    }
+
+    const sameTelemetry = areAdminClickSnapshotsEquivalent(item, previous);
+    const timeGapMs = Math.abs(
+      getAdminClickSnapshotTimeMs(item) - getAdminClickSnapshotTimeMs(previous),
+    );
+    if (sameTelemetry && timeGapMs <= dedupeWindowMs) {
+      continue;
+    }
+
+    deduped.push(item);
+  }
+
+  return deduped.slice(0, ADMIN_CLICK_SNAPSHOT_HISTORY_MAX);
+}
+
+function getAdminClickSnapshotHistory() {
+  try {
+    const raw = localStorage.getItem(ADMIN_CLICK_SNAPSHOT_HISTORY_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    const normalized = normalizeAdminClickSnapshotHistory(parsed);
+
+    if (
+      Array.isArray(parsed) &&
+      JSON.stringify(parsed) !== JSON.stringify(normalized)
+    ) {
+      const compactedCount = Math.max(0, parsed.length - normalized.length);
+      localStorage.setItem(
+        ADMIN_CLICK_SNAPSHOT_HISTORY_KEY,
+        JSON.stringify(normalized),
+      );
+      adminClickSnapshotAutoHealState = {
+        ran: true,
+        at: new Date().toISOString(),
+        compactedCount,
+      };
+    }
+
+    return normalized;
+  } catch {
+    return [];
+  }
+}
+
+function getAdminClickSnapshotAutoHealText() {
+  if (!adminClickSnapshotAutoHealState.ran) {
+    return "";
+  }
+
+  const healedAtMs = Date.parse(
+    String(adminClickSnapshotAutoHealState.at || ""),
+  );
+  if (
+    Number.isFinite(healedAtMs) &&
+    Date.now() - healedAtMs > ADMIN_CLICK_SNAPSHOT_AUTOHEAL_VISIBLE_MS
+  ) {
+    adminClickSnapshotAutoHealState = {
+      ran: false,
+      at: "",
+      compactedCount: 0,
+    };
+    return "";
+  }
+
+  const atLabel = adminClickSnapshotAutoHealState.at
+    ? new Date(adminClickSnapshotAutoHealState.at).toLocaleString()
+    : "just now";
+  return ` Auto-heal applied at ${atLabel} (${adminClickSnapshotAutoHealState.compactedCount} merged).`;
+}
+
+function getAdminClickSnapshotHistoryCleanupInfo() {
+  try {
+    const raw = localStorage.getItem(ADMIN_CLICK_SNAPSHOT_HISTORY_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    const rawCount = Array.isArray(parsed) ? parsed.length : 0;
+    const normalizedCount = normalizeAdminClickSnapshotHistory(parsed).length;
+    return {
+      rawCount,
+      normalizedCount,
+      compactedCount: Math.max(0, rawCount - normalizedCount),
+    };
+  } catch {
+    return {
+      rawCount: 0,
+      normalizedCount: 0,
+      compactedCount: 0,
+    };
+  }
+}
+
+function buildAdminClickSnapshotCleanupSignature(cleanupInfo, latest) {
+  const latestAt = String(latest?.at || "");
+  return [
+    Number(cleanupInfo?.compactedCount || 0),
+    Number(cleanupInfo?.rawCount || 0),
+    Number(cleanupInfo?.normalizedCount || 0),
+    latestAt,
+  ].join("|");
+}
+
+function getDismissedAdminClickSnapshotCleanupSignature() {
+  try {
+    return String(
+      localStorage.getItem(ADMIN_CLICK_SNAPSHOT_CLEANUP_DISMISS_KEY) || "",
+    );
+  } catch {
+    return "";
+  }
+}
+
+function setDismissedAdminClickSnapshotCleanupSignature(signature) {
+  try {
+    const normalized = String(signature || "").trim();
+    if (!normalized) {
+      localStorage.removeItem(ADMIN_CLICK_SNAPSHOT_CLEANUP_DISMISS_KEY);
+      return;
+    }
+    localStorage.setItem(ADMIN_CLICK_SNAPSHOT_CLEANUP_DISMISS_KEY, normalized);
+  } catch {
+    // Non-blocking when storage is unavailable.
+  }
+}
+
+function saveAdminClickSnapshotHistory(items) {
+  const safe = normalizeAdminClickSnapshotHistory(items);
+
+  try {
+    localStorage.setItem(
+      ADMIN_CLICK_SNAPSHOT_HISTORY_KEY,
+      JSON.stringify(safe),
+    );
+  } catch {
+    // Non-blocking when storage is unavailable.
+  }
+}
+
+function addAdminClickSnapshotHistoryItem(snapshot) {
+  if (!snapshot || typeof snapshot !== "object") {
+    return;
+  }
+
+  const telemetry = snapshot.clickSignalTelemetry || {};
+  const item = {
+    at: String(snapshot.generatedAt || new Date().toISOString()),
+    searchesEvaluated: Number(telemetry.searchesEvaluated || 0),
+    docsEvaluated: Number(telemetry.docsEvaluated || 0),
+    boostApplied: Number(telemetry.boostApplied || 0),
+    suppressedMinBase: Number(telemetry.suppressedMinBase || 0),
+    suppressedNoSignal: Number(telemetry.suppressedNoSignal || 0),
+    cappedByGuardrail: Number(telemetry.cappedByGuardrail || 0),
+    totalBoost: Number(telemetry.totalBoost || 0),
+    avgBoostApplied: Number(telemetry.lastRun?.avgBoostApplied || 0),
+  };
+
+  const history = getAdminClickSnapshotHistory();
+  const latest = history[0];
+  if (latest && areAdminClickSnapshotsEquivalent(item, latest)) {
+    const latestTime = Date.parse(String(latest.at || ""));
+    const itemTime = Date.parse(String(item.at || ""));
+    const latestMs = Number.isFinite(latestTime) ? latestTime : 0;
+    const itemMs = Number.isFinite(itemTime) ? itemTime : 0;
+    const dedupeWindowMs = 2 * 60 * 1000;
+
+    if (Math.abs(itemMs - latestMs) <= dedupeWindowMs) {
+      return;
+    }
+  }
+
+  history.unshift(item);
+  saveAdminClickSnapshotHistory(history);
+}
+
+function getAdminClickSnapshotBaseline() {
+  try {
+    const raw = localStorage.getItem(ADMIN_CLICK_SNAPSHOT_BASELINE_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveAdminClickSnapshotBaseline(item) {
+  if (!item || typeof item !== "object") {
+    localStorage.removeItem(ADMIN_CLICK_SNAPSHOT_BASELINE_KEY);
+    return;
+  }
+
+  try {
+    localStorage.setItem(
+      ADMIN_CLICK_SNAPSHOT_BASELINE_KEY,
+      JSON.stringify(item),
+    );
+  } catch {
+    // Non-blocking when storage is unavailable.
+  }
+}
+
+function clearAdminClickSnapshotHistory() {
+  saveAdminClickSnapshotHistory([]);
+}
+
+function formatDiffDelta(value, decimals = 0) {
+  const safeValue = Number(value || 0);
+  const rounded = Number(safeValue.toFixed(decimals));
+  const className =
+    rounded > 0
+      ? "delta-positive"
+      : rounded < 0
+        ? "delta-negative"
+        : "delta-neutral";
+  const trend = rounded > 0 ? "up" : rounded < 0 ? "down" : "flat";
+  const text = `${rounded > 0 ? "+" : ""}${rounded} (${trend})`;
+  return { className, text, trend };
+}
+
+function renderAdminClickSnapshotHistory() {
+  const history = getAdminClickSnapshotHistory();
+  const baseline = getAdminClickSnapshotBaseline();
+  const cleanupInfo = getAdminClickSnapshotHistoryCleanupInfo();
+  const autoHealText = getAdminClickSnapshotAutoHealText();
+  const latest = history[0];
+  const cleanupSignature = buildAdminClickSnapshotCleanupSignature(
+    cleanupInfo,
+    latest,
+  );
+  const cleanupDismissed =
+    getDismissedAdminClickSnapshotCleanupSignature() === cleanupSignature;
+  const cleanupText =
+    cleanupInfo.compactedCount > 0 && !cleanupDismissed
+      ? ` Local cleanup: merged ${cleanupInfo.compactedCount} duplicate snapshots.`
+      : "";
+  const latestSnapshotText = latest
+    ? `Latest snapshot: ${new Date(String(latest.at || "")).toLocaleString()}.`
+    : "Latest snapshot: none yet.";
+
+  if (adminPinClickSnapshotBaselineBtn) {
+    adminPinClickSnapshotBaselineBtn.disabled = history.length === 0;
+    adminPinClickSnapshotBaselineBtn.title =
+      history.length === 0
+        ? "Create at least one snapshot first."
+        : "Use the newest snapshot as baseline.";
+  }
+  if (adminClearClickSnapshotBaselineBtn) {
+    adminClearClickSnapshotBaselineBtn.disabled = !baseline;
+    adminClearClickSnapshotBaselineBtn.title = baseline
+      ? "Remove the current baseline."
+      : "No baseline is pinned yet.";
+  }
+  if (adminClearClickSnapshotHistoryBtn) {
+    adminClearClickSnapshotHistoryBtn.disabled = history.length === 0;
+    adminClearClickSnapshotHistoryBtn.textContent =
+      history.length > 0
+        ? `Clear History (${history.length})`
+        : "Clear History";
+    adminClearClickSnapshotHistoryBtn.title =
+      history.length === 0
+        ? "No local snapshots to clear."
+        : `Delete all local telemetry snapshots (${history.length}).`;
+  }
+
+  const historyItemsForRender =
+    cleanupInfo.compactedCount > 0 && !cleanupDismissed
+      ? [
+          {
+            __cleanupSummary: true,
+            compactedCount: cleanupInfo.compactedCount,
+            rawCount: cleanupInfo.rawCount,
+            normalizedCount: cleanupInfo.normalizedCount,
+          },
+          ...history,
+        ]
+      : history;
+
+  renderListItems(
+    adminClickSnapshotHistoryList,
+    historyItemsForRender,
+    (item) => {
+      if (item.__cleanupSummary) {
+        return `Cleanup summary | merged ${item.compactedCount} duplicates (${item.rawCount} raw -> ${item.normalizedCount} kept)`;
+      }
+
+      return `${new Date(item.at).toLocaleString()} | searches ${item.searchesEvaluated}, docs ${item.docsEvaluated}, applied ${item.boostApplied}, capped ${item.cappedByGuardrail}, suppressed ${item.suppressedMinBase + item.suppressedNoSignal}, avg ${item.avgBoostApplied}`;
+    },
+  );
+
+  if (
+    cleanupInfo.compactedCount > 0 &&
+    !cleanupDismissed &&
+    adminClickSnapshotHistoryList
+  ) {
+    const firstRow = adminClickSnapshotHistoryList.firstElementChild;
+    if (firstRow) {
+      firstRow.classList.add("admin-list-cleanup-summary");
+
+      const dismissBtn = document.createElement("button");
+      dismissBtn.type = "button";
+      dismissBtn.className = "admin-list-cleanup-dismiss";
+      dismissBtn.textContent = "Dismiss";
+      dismissBtn.title = "Hide cleanup summary until history changes.";
+      dismissBtn.addEventListener("click", () => {
+        setDismissedAdminClickSnapshotCleanupSignature(cleanupSignature);
+        renderAdminClickSnapshotHistory();
+      });
+      firstRow.appendChild(dismissBtn);
+    }
+  }
+
+  if (!adminClickSnapshotDiff) {
+    return;
+  }
+
+  if (history.length < 2) {
+    adminClickSnapshotDiff.textContent =
+      "Snapshot diff: need at least 2 snapshots.";
+  } else {
+    const latest = history[0];
+    const previous = history[1];
+    const diffApplied = latest.boostApplied - previous.boostApplied;
+    const diffCapped = latest.cappedByGuardrail - previous.cappedByGuardrail;
+    const diffSuppressed =
+      latest.suppressedMinBase +
+      latest.suppressedNoSignal -
+      (previous.suppressedMinBase + previous.suppressedNoSignal);
+    const diffAvg = Number(
+      (latest.avgBoostApplied - previous.avgBoostApplied).toFixed(3),
+    );
+
+    const appliedDelta = formatDiffDelta(diffApplied, 0);
+    const cappedDelta = formatDiffDelta(diffCapped, 0);
+    const suppressedDelta = formatDiffDelta(diffSuppressed, 0);
+    const avgDelta = formatDiffDelta(diffAvg, 3);
+
+    adminClickSnapshotDiff.innerHTML = `Snapshot diff (latest vs previous): applied <span class="${appliedDelta.className}">${appliedDelta.text}</span>, capped <span class="${cappedDelta.className}">${cappedDelta.text}</span>, suppressed <span class="${suppressedDelta.className}">${suppressedDelta.text}</span>, avg boost <span class="${avgDelta.className}">${avgDelta.text}</span>.`;
+  }
+
+  if (!adminClickSnapshotBaselineDiff) {
+    return;
+  }
+
+  if (!baseline || !latest) {
+    adminClickSnapshotBaselineDiff.textContent =
+      "Baseline diff: no baseline pinned.";
+    if (adminClickSnapshotBaselineMeta) {
+      adminClickSnapshotBaselineMeta.textContent = `Baseline status: none pinned. ${latestSnapshotText}${cleanupText}${autoHealText}`;
+    }
+    return;
+  }
+
+  if (adminClickSnapshotBaselineMeta) {
+    adminClickSnapshotBaselineMeta.textContent = `Baseline status: pinned at ${new Date(String(baseline.at || "")).toLocaleString()}. ${latestSnapshotText}${cleanupText}${autoHealText}`;
+  }
+
+  const baselineApplied = Number(baseline.boostApplied || 0);
+  const baselineCapped = Number(baseline.cappedByGuardrail || 0);
+  const baselineSuppressed =
+    Number(baseline.suppressedMinBase || 0) +
+    Number(baseline.suppressedNoSignal || 0);
+  const baselineAvg = Number(baseline.avgBoostApplied || 0);
+
+  const diffAppliedVsBaseline = latest.boostApplied - baselineApplied;
+  const diffCappedVsBaseline = latest.cappedByGuardrail - baselineCapped;
+  const diffSuppressedVsBaseline =
+    latest.suppressedMinBase + latest.suppressedNoSignal - baselineSuppressed;
+  const diffAvgVsBaseline = Number(
+    (latest.avgBoostApplied - baselineAvg).toFixed(3),
+  );
+
+  const appliedBaselineDelta = formatDiffDelta(diffAppliedVsBaseline, 0);
+  const cappedBaselineDelta = formatDiffDelta(diffCappedVsBaseline, 0);
+  const suppressedBaselineDelta = formatDiffDelta(diffSuppressedVsBaseline, 0);
+  const avgBaselineDelta = formatDiffDelta(diffAvgVsBaseline, 3);
+
+  adminClickSnapshotBaselineDiff.innerHTML = `Baseline diff (${new Date(String(baseline.at || "")).toLocaleString()} -> latest): applied <span class="${appliedBaselineDelta.className}">${appliedBaselineDelta.text}</span>, capped <span class="${cappedBaselineDelta.className}">${cappedBaselineDelta.text}</span>, suppressed <span class="${suppressedBaselineDelta.className}">${suppressedBaselineDelta.text}</span>, avg boost <span class="${avgBaselineDelta.className}">${avgBaselineDelta.text}</span>.`;
+}
+
 async function fetchAdminOverview(range = "all") {
   const token = getAdminToken();
   const params = new URLSearchParams({ range });
@@ -1919,6 +2875,50 @@ async function fetchAdminOverview(range = "all") {
   }
 
   return payload;
+}
+
+async function resetClickSignalTelemetry() {
+  const token = getAdminToken();
+  const response = await apiFetch("/api/admin/click-signal/reset", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload.error || "Could not reset click telemetry.");
+  }
+
+  return payload;
+}
+
+async function snapshotAndResetClickSignalTelemetry() {
+  const token = getAdminToken();
+  const response = await apiFetch("/api/admin/click-signal/snapshot-reset", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload.error || "Could not snapshot and reset telemetry.");
+  }
+
+  return payload;
+}
+
+function setClickTelemetryActionButtonsBusy(isBusy) {
+  const busy = Boolean(isBusy);
+  if (adminResetClickTelemetryBtn) {
+    adminResetClickTelemetryBtn.disabled = busy;
+  }
+  if (adminSnapshotResetClickTelemetryBtn) {
+    adminSnapshotResetClickTelemetryBtn.disabled = busy;
+  }
 }
 
 async function fetchAdminBackups(reason = "all") {
@@ -1986,6 +2986,44 @@ async function fetchAdminSearchStatus() {
   return payload;
 }
 
+async function fetchAdminRankingConfig() {
+  const token = getAdminToken();
+  const response = await apiFetch("/api/admin/search/ranking-config", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || "Could not load ranking config.");
+  }
+
+  return payload;
+}
+
+async function postAdminRankingConfig({ rankingConfig = null, reset = false }) {
+  const token = getAdminToken();
+  const response = await apiFetch("/api/admin/search/ranking-config", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      reset: Boolean(reset),
+      rankingConfig: rankingConfig || undefined,
+    }),
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || "Could not update ranking config.");
+  }
+
+  return payload;
+}
+
 async function postAdminSearchSeed(force = false) {
   const token = getAdminToken();
   const response = await apiFetch("/api/admin/search/seed", {
@@ -2027,6 +3065,134 @@ async function postAdminSearchCrawl({ sourceIds = [], maxPages = null } = {}) {
   const payload = await response.json();
   if (!response.ok) {
     throw new Error(payload.error || "Could not start search crawl.");
+  }
+
+  return payload;
+}
+
+async function fetchAdminIndexSyncStatus() {
+  const token = getAdminToken();
+  const response = await apiFetch("/api/admin/index/sync-status", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || "Could not load index sync status.");
+  }
+
+  return payload;
+}
+
+async function postAdminIndexSync(body = {}) {
+  const token = getAdminToken();
+  const response = await apiFetch("/api/admin/index/sync-django", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || "Could not run index sync.");
+  }
+
+  return payload;
+}
+
+async function postAdminIndexSyncResetWatermark(updatedSince = "") {
+  const token = getAdminToken();
+  const response = await apiFetch("/api/admin/index/sync-reset-watermark", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ updatedSince: String(updatedSince || "").trim() }),
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || "Could not reset sync watermark.");
+  }
+
+  return payload;
+}
+
+async function fetchAdminIndexStatus() {
+  const token = getAdminToken();
+  const response = await apiFetch("/api/admin/index/status", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || "Could not load local index status.");
+  }
+
+  return payload;
+}
+
+async function postAdminIndexRefresh(body = {}) {
+  const token = getAdminToken();
+  const response = await apiFetch("/api/admin/index/refresh", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || "Could not rebuild local index.");
+  }
+
+  return payload;
+}
+
+async function fetchAdminIndexBackups(reason = "all") {
+  const token = getAdminToken();
+  const params = new URLSearchParams({ reason });
+  const response = await apiFetch(
+    `/api/admin/index/backups?${params.toString()}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || "Could not load local index backups.");
+  }
+
+  return payload;
+}
+
+async function postAdminIndexRestore(body = {}) {
+  const token = getAdminToken();
+  const response = await apiFetch("/api/admin/index/restore", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || "Could not restore local index backup.");
   }
 
   return payload;
@@ -2891,6 +4057,19 @@ function renderAdminSearchStatus(payload) {
   renderAdminSearchRunsTable();
 }
 
+function renderAdminRankingConfig(payload) {
+  if (!adminRankingConfigJson) {
+    return;
+  }
+
+  const config = payload?.rankingConfig || payload || {};
+  adminRankingConfigJson.value = JSON.stringify(config, null, 2);
+
+  if (adminRankingConfigMeta) {
+    adminRankingConfigMeta.textContent = `Updated: ${formatAssistantDate(payload?.generatedAt)}`;
+  }
+}
+
 function renderAdminSearchStatusError(errorMessage) {
   if (!adminSearchStatusGrid) {
     return;
@@ -2904,6 +4083,363 @@ function renderAdminSearchStatusError(errorMessage) {
 
   if (adminSearchStatusMeta) {
     adminSearchStatusMeta.textContent = `Error: ${new Date().toLocaleString()}`;
+  }
+}
+
+function renderAdminIndexSyncStatus(payload) {
+  if (!adminIndexSyncStatusGrid) {
+    return;
+  }
+
+  adminIndexSyncStatusGrid.innerHTML = "";
+  const config = payload?.config || {};
+  const runtime = payload?.runtime || {};
+  const state = payload?.state || {};
+  const summary = runtime.lastSummary || {};
+
+  const items = [
+    ["Running", payload?.running ? "Yes" : "No"],
+    ["Sync Enabled", config.enabled ? "Yes" : "No"],
+    ["Startup Sync", config.startup ? "Yes" : "No"],
+    ["Interval", `${Math.round(Number(config.intervalMs || 0) / 1000)}s`],
+    [
+      "Defaults",
+      `maxPages=${config.defaultMaxPages || "-"}, pageSize=${config.defaultPageSize || "-"}`,
+    ],
+    ["Django Token", config.hasDjangoAdminToken ? "Configured" : "Missing"],
+    ["Watermark", String(state.updatedSince || "-")],
+    ["Last Run", formatAssistantDate(state.lastRunAt || runtime.lastRunAt)],
+    [
+      "Last Success",
+      formatAssistantDate(state.lastSuccessAt || runtime.lastSuccessAt),
+    ],
+    ["Last Error", String(state.lastError || runtime.lastError || "None")],
+    [
+      "Last Imported",
+      typeof summary.importedDocuments === "number"
+        ? String(summary.importedDocuments)
+        : "-",
+    ],
+    [
+      "Last Duration",
+      typeof summary.durationMs === "number" ? `${summary.durationMs} ms` : "-",
+    ],
+  ];
+
+  items.forEach(([label, value]) => {
+    adminIndexSyncStatusGrid.appendChild(
+      createAssistantStatusItem(label, String(value)),
+    );
+  });
+
+  if (adminIndexSyncMeta) {
+    adminIndexSyncMeta.textContent = `Updated: ${formatAssistantDate(payload?.generatedAt)}`;
+  }
+}
+
+function renderAdminIndexSyncStatusError(errorMessage) {
+  if (!adminIndexSyncStatusGrid) {
+    return;
+  }
+
+  adminIndexSyncStatusGrid.innerHTML = "";
+  const fallback = document.createElement("p");
+  fallback.className = "admin-status-error";
+  fallback.textContent = `Could not load index sync status: ${String(errorMessage)}`;
+  adminIndexSyncStatusGrid.appendChild(fallback);
+
+  if (adminIndexSyncMeta) {
+    adminIndexSyncMeta.textContent = `Error: ${new Date().toLocaleString()}`;
+  }
+}
+
+function renderAdminIndexStatus(payload) {
+  if (!adminIndexStatusGrid) {
+    return;
+  }
+
+  adminIndexStatusGrid.innerHTML = "";
+  const index = payload?.index || {};
+  const file = index.file || {};
+  const topLanguages = Array.isArray(index.topLanguages)
+    ? index.topLanguages.slice(0, 4)
+    : [];
+  const topSources = Array.isArray(index.topSources)
+    ? index.topSources.slice(0, 4)
+    : [];
+
+  const items = [
+    ["Total Docs", String(Number(index.totalDocs || 0))],
+    [
+      "Index File",
+      `${Math.max(1, Math.round(Number(file.sizeBytes || 0) / 1024))} KB`,
+    ],
+    ["File Updated", formatAssistantDate(file.mtime)],
+    [
+      "Top Languages",
+      topLanguages.length
+        ? topLanguages
+            .map((item) => `${item.value} (${item.count})`)
+            .join(" | ")
+        : "-",
+    ],
+    [
+      "Top Sources",
+      topSources.length
+        ? topSources.map((item) => `${item.value} (${item.count})`).join(" | ")
+        : "-",
+    ],
+  ];
+
+  items.forEach(([label, value]) => {
+    adminIndexStatusGrid.appendChild(
+      createAssistantStatusItem(label, String(value)),
+    );
+  });
+
+  if (adminIndexMeta) {
+    adminIndexMeta.textContent = `Updated: ${formatAssistantDate(payload?.generatedAt)}`;
+  }
+}
+
+function renderAdminIndexBackups(backups) {
+  if (!adminIndexBackupsList) {
+    return;
+  }
+
+  adminIndexBackupsList.innerHTML = "";
+  if (adminIndexBackupFiles) {
+    adminIndexBackupFiles.innerHTML = "";
+  }
+
+  if (!Array.isArray(backups) || backups.length === 0) {
+    const li = document.createElement("li");
+    li.textContent = "No index backups available.";
+    adminIndexBackupsList.appendChild(li);
+    return;
+  }
+
+  backups.forEach((item) => {
+    const fileName = String(item.fileName || "").trim();
+    if (!fileName) {
+      return;
+    }
+
+    if (adminIndexBackupFiles) {
+      const option = document.createElement("option");
+      option.value = fileName;
+      adminIndexBackupFiles.appendChild(option);
+    }
+
+    const li = document.createElement("li");
+    li.className = "admin-backup-item";
+
+    const meta = document.createElement("div");
+    meta.className = "admin-backup-meta";
+    const sizeKb = Math.max(1, Math.round(Number(item.sizeBytes || 0) / 1024));
+    meta.textContent = `${fileName} | ${formatAssistantDate(item.createdAt)} | ${String(item.reason || "-")} | ${sizeKb} KB`;
+
+    const useBtn = document.createElement("button");
+    useBtn.type = "button";
+    useBtn.className = "results-back-link admin-restore-btn";
+    useBtn.textContent = "Use";
+    useBtn.addEventListener("click", () => {
+      if (adminIndexRestoreFile) {
+        adminIndexRestoreFile.value = fileName;
+      }
+    });
+
+    const actions = document.createElement("div");
+    actions.className = "admin-backup-actions";
+    actions.appendChild(useBtn);
+
+    li.append(meta, actions);
+    adminIndexBackupsList.appendChild(li);
+  });
+}
+
+function renderAdminIndexStatusError(errorMessage) {
+  if (!adminIndexStatusGrid) {
+    return;
+  }
+
+  adminIndexStatusGrid.innerHTML = "";
+  const fallback = document.createElement("p");
+  fallback.className = "admin-status-error";
+  fallback.textContent = `Could not load local index status: ${String(errorMessage)}`;
+  adminIndexStatusGrid.appendChild(fallback);
+}
+
+function renderAdminIndexBackupsError(errorMessage) {
+  if (!adminIndexBackupsList) {
+    return;
+  }
+
+  adminIndexBackupsList.innerHTML = "";
+  const li = document.createElement("li");
+  li.className = "admin-status-error";
+  li.textContent = `Could not load local index backups: ${String(errorMessage)}`;
+  adminIndexBackupsList.appendChild(li);
+}
+
+async function refreshAdminIndexStatusWithMessage(okMessage = "") {
+  if (!adminIndexStatusGrid) {
+    return;
+  }
+
+  try {
+    const payload = await fetchAdminIndexStatus();
+    renderAdminIndexStatus(payload);
+    if (okMessage) {
+      setAdminStatus(okMessage);
+    }
+  } catch (error) {
+    renderAdminIndexStatusError(
+      error.message || "Could not load local index status.",
+    );
+    if (okMessage) {
+      setAdminStatus(
+        error.message || "Could not load local index status.",
+        true,
+      );
+    }
+  }
+}
+
+async function refreshAdminIndexBackupsWithMessage(okMessage = "") {
+  if (!adminIndexBackupsList) {
+    return;
+  }
+
+  try {
+    const payload = await fetchAdminIndexBackups(currentIndexBackupReason);
+    renderAdminIndexBackups(payload.backups || []);
+    if (okMessage) {
+      setAdminStatus(okMessage);
+    }
+  } catch (error) {
+    renderAdminIndexBackupsError(
+      error.message || "Could not load local index backups.",
+    );
+    if (okMessage) {
+      setAdminStatus(
+        error.message || "Could not load local index backups.",
+        true,
+      );
+    }
+  }
+}
+
+async function refreshAdminIndexPanelWithMessage(okMessage = "") {
+  await Promise.all([
+    refreshAdminIndexStatusWithMessage(""),
+    refreshAdminIndexBackupsWithMessage(""),
+  ]);
+
+  if (okMessage) {
+    setAdminStatus(okMessage);
+  }
+}
+
+async function refreshIndexSyncStatusWithMessage(okMessage = "") {
+  if (!adminIndexSyncStatusGrid) {
+    return;
+  }
+
+  try {
+    const payload = await fetchAdminIndexSyncStatus();
+    renderAdminIndexSyncStatus(payload);
+    if (okMessage) {
+      setAdminStatus(okMessage);
+    }
+  } catch (error) {
+    renderAdminIndexSyncStatusError(
+      error.message || "Could not load index sync status.",
+    );
+    if (okMessage) {
+      setAdminStatus(
+        error.message || "Could not load index sync status.",
+        true,
+      );
+    }
+  }
+}
+
+async function refreshSearchStatusWithMessage(okMessage = "") {
+  if (!adminSearchStatusGrid) {
+    return;
+  }
+
+  try {
+    const payload = await fetchAdminSearchStatus();
+    renderAdminSearchStatus(payload);
+    if (payload?.search?.rankingConfig) {
+      renderAdminRankingConfig({
+        generatedAt: payload.generatedAt,
+        rankingConfig: payload.search.rankingConfig,
+      });
+    }
+    await refreshIndexSyncStatusWithMessage("");
+    if (okMessage) {
+      setAdminStatus(okMessage);
+    }
+  } catch (error) {
+    renderAdminSearchStatusError(
+      error.message || "Could not load search engine status.",
+    );
+    if (okMessage) {
+      setAdminStatus(
+        error.message || "Could not load search engine status.",
+        true,
+      );
+    }
+  }
+}
+
+async function refreshRankingConfigWithMessage(okMessage = "") {
+  if (!adminRankingConfigJson) {
+    return;
+  }
+
+  try {
+    const payload = await fetchAdminRankingConfig();
+    renderAdminRankingConfig(payload);
+    if (okMessage) {
+      setAdminStatus(okMessage);
+    }
+  } catch (error) {
+    if (okMessage) {
+      setAdminStatus(error.message || "Could not load ranking config.", true);
+    }
+    if (adminRankingConfigMeta) {
+      adminRankingConfigMeta.textContent = "Could not load ranking config.";
+    }
+  }
+}
+
+async function trackResultClick(url, title, query) {
+  try {
+    const normalizedUrl = String(url || "").trim();
+    const normalizedTitle = String(title || "").trim();
+    const normalizedQuery = String(query || "").trim();
+
+    if (!normalizedUrl || !normalizedTitle || !normalizedQuery) {
+      return;
+    }
+
+    await apiFetch("/api/events/result-click", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        url: normalizedUrl,
+        title: normalizedTitle,
+        query: normalizedQuery,
+      }),
+    });
+  } catch (error) {
+    console.debug("Could not track result click:", error);
   }
 }
 
@@ -3060,12 +4596,39 @@ function renderAdminDashboard(data) {
     kpiUniqueQueries.textContent = String(data.totals?.uniqueQueries || 0);
   }
 
+  if (kpiTotalClicks) {
+    kpiTotalClicks.textContent = String(data.totals?.totalResultClicks || 0);
+  }
+
   applyDeltaState(
     kpiSearchesDelta,
     data.comparison?.deltaPercent?.totalSearches,
   );
   applyDeltaState(kpiViewsDelta, data.comparison?.deltaPercent?.totalPageViews);
   applyDeltaState(kpiUniqueDelta, data.comparison?.deltaPercent?.uniqueQueries);
+  applyDeltaState(
+    kpiClicksDelta,
+    data.comparison?.deltaPercent?.totalResultClicks,
+  );
+
+  if (kpiSafetyRate || kpiSafetyMeta) {
+    const telemetry = data.clickSignalTelemetry || {};
+    const docs = Number(telemetry.docsEvaluated || 0);
+    const applied = Number(telemetry.boostApplied || 0);
+    const capped = Number(telemetry.cappedByGuardrail || 0);
+    const suppressed =
+      Number(telemetry.suppressedMinBase || 0) +
+      Number(telemetry.suppressedNoSignal || 0);
+    const coverage = docs > 0 ? Number(((applied / docs) * 100).toFixed(1)) : 0;
+
+    if (kpiSafetyRate) {
+      kpiSafetyRate.textContent = `${coverage}%`;
+    }
+
+    if (kpiSafetyMeta) {
+      kpiSafetyMeta.textContent = `Applied ${applied}/${docs}, capped ${capped}, suppressed ${suppressed}`;
+    }
+  }
 
   renderListItems(
     topQueriesList,
@@ -3086,6 +4649,27 @@ function renderAdminDashboard(data) {
       `${new Date(item.at).toLocaleString()} | ${item.query} (${item.resultCount} results)`,
   );
 
+  renderListItems(
+    topClickedResultsList,
+    data.topClickedResults || [],
+    (item) =>
+      `${item.count} clicks (${item.percent}%) | ${item.title || item.url}${item.lastQuery ? ` | query: ${item.lastQuery}` : ""}`,
+  );
+
+  renderListItems(
+    topClickPairsList,
+    data.topClickPairs || [],
+    (item) =>
+      `${item.count} clicks (${item.percent}% of clicks, ${item.ctrPercent || 0}% CTR over ${item.queryTotalClicks || 0} query clicks) | ${item.query} -> ${item.title || item.url}`,
+  );
+
+  if (adminClickSignalMeta) {
+    const cfg = data.clickSignalConfig || {};
+    const telemetry = data.clickSignalTelemetry || {};
+    const lastRun = telemetry.lastRun || {};
+    adminClickSignalMeta.textContent = `Click signal: window ${cfg.windowDays || "-"}d, half-life ${cfg.decayHalfLifeDays || "-"}d, min decay ${cfg.decayMinWeight ?? "-"}, max boost ${cfg.maxBoost || "-"}, CTR max ${cfg.ctrMaxBoost || "-"}, guardrail min base ${cfg.guardrailMinBaseScore || "-"}, guardrail share ${cfg.guardrailMaxShare ?? "-"}, dedup ${cfg.dedupSeconds || "-"}s. Telemetry: searches ${telemetry.searchesEvaluated || 0}, docs ${telemetry.docsEvaluated || 0}, applied ${telemetry.boostApplied || 0}, suppressed(min base) ${telemetry.suppressedMinBase || 0}, suppressed(no signal) ${telemetry.suppressedNoSignal || 0}, capped ${telemetry.cappedByGuardrail || 0}, last-run avg boost ${lastRun.avgBoostApplied || 0}.`;
+  }
+
   renderBarChart(topQueriesChart, data.topQueries || [], {
     labelKey: "query",
     valueKey: "percent",
@@ -3100,6 +4684,7 @@ function renderAdminDashboard(data) {
 
   renderTrendChart(dailyTrendChart, data.trends?.daily || []);
   renderTrendChart(weeklyTrendChart, data.trends?.weekly || []);
+  renderAdminClickSnapshotHistory();
 }
 
 function renderBackupList(items) {
@@ -3691,6 +5276,7 @@ async function tryAutoLogin() {
     await refreshAssistantStatusWithStatus("");
     await refreshRoutingStatus("");
     await refreshSearchStatusWithMessage("");
+    await refreshAdminIndexPanelWithMessage("");
     ensureRuntimeAutoRefresh();
     ensureSearchAutoRefresh();
     return true;
@@ -3719,6 +5305,9 @@ function initAdminPage() {
 
   if (adminBackupReason) {
     adminBackupReason.value = currentBackupReason;
+  }
+  if (adminIndexBackupReasonFilter) {
+    adminIndexBackupReasonFilter.value = currentIndexBackupReason;
   }
 
   tryAutoLogin();
@@ -3778,6 +5367,7 @@ function initAdminPage() {
       await refreshAssistantStatusWithStatus("");
       await refreshRoutingStatus("");
       await refreshSearchStatusWithMessage("");
+      await refreshAdminIndexPanelWithMessage("");
       ensureRuntimeAutoRefresh();
       ensureSearchAutoRefresh();
       setAdminStatus("Signed in.");
@@ -3825,6 +5415,7 @@ function initAdminPage() {
         await refreshRuntimeMetricsWithStatus("");
         await refreshAssistantStatusWithStatus("");
         await refreshSearchStatusWithMessage("");
+        await refreshAdminIndexPanelWithMessage("");
         ensureRuntimeAutoRefresh();
         ensureSearchAutoRefresh();
         setAdminStatus("Analytics refreshed.");
@@ -3892,6 +5483,137 @@ function initAdminPage() {
       } catch (error) {
         setAdminStatus(error.message || "Could not export CSV.", true);
       }
+    });
+  }
+
+  if (adminResetClickTelemetryBtn) {
+    adminResetClickTelemetryBtn.addEventListener("click", async () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+
+      if (
+        !window.confirm(
+          "Reset click telemetry counters now? This cannot be undone.",
+        )
+      ) {
+        return;
+      }
+
+      setClickTelemetryActionButtonsBusy(true);
+      try {
+        await resetClickSignalTelemetry();
+        const data = await fetchAdminOverview(currentAdminRange);
+        renderAdminDashboard(data);
+        setAdminStatus("Click telemetry reset.");
+      } catch (error) {
+        setAdminStatus(
+          error.message || "Could not reset click telemetry.",
+          true,
+        );
+      } finally {
+        setClickTelemetryActionButtonsBusy(false);
+      }
+    });
+  }
+
+  if (adminSnapshotResetClickTelemetryBtn) {
+    adminSnapshotResetClickTelemetryBtn.addEventListener("click", async () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+
+      if (
+        !window.confirm(
+          "Create snapshot and reset click telemetry counters now?",
+        )
+      ) {
+        return;
+      }
+
+      setClickTelemetryActionButtonsBusy(true);
+      try {
+        const payload = await snapshotAndResetClickSignalTelemetry();
+        addAdminClickSnapshotHistoryItem(payload.snapshot);
+        const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+        const blob = new Blob(
+          [JSON.stringify(payload.snapshot || {}, null, 2)],
+          {
+            type: "application/json;charset=utf-8",
+          },
+        );
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `magneto-click-telemetry-${stamp}.json`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+
+        const data = await fetchAdminOverview(currentAdminRange);
+        renderAdminDashboard(data);
+        setAdminStatus("Telemetry snapshot downloaded and counters reset.");
+      } catch (error) {
+        setAdminStatus(
+          error.message || "Could not snapshot/reset click telemetry.",
+          true,
+        );
+      } finally {
+        setClickTelemetryActionButtonsBusy(false);
+      }
+    });
+  }
+
+  if (adminClearClickSnapshotHistoryBtn) {
+    adminClearClickSnapshotHistoryBtn.addEventListener("click", () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+
+      if (!getAdminClickSnapshotHistory().length) {
+        setAdminStatus("No local telemetry snapshots to clear.");
+        renderAdminClickSnapshotHistory();
+        return;
+      }
+
+      if (!window.confirm("Clear all local telemetry snapshots?")) {
+        return;
+      }
+
+      clearAdminClickSnapshotHistory();
+      renderAdminClickSnapshotHistory();
+      setAdminStatus("Local telemetry snapshot history cleared.");
+    });
+  }
+
+  if (adminPinClickSnapshotBaselineBtn) {
+    adminPinClickSnapshotBaselineBtn.addEventListener("click", () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+
+      const history = getAdminClickSnapshotHistory();
+      if (!history.length) {
+        setAdminStatus("No snapshots available to pin as baseline.", true);
+        return;
+      }
+
+      saveAdminClickSnapshotBaseline(history[0]);
+      renderAdminClickSnapshotHistory();
+      setAdminStatus("Latest snapshot pinned as baseline.");
+    });
+  }
+
+  if (adminClearClickSnapshotBaselineBtn) {
+    adminClearClickSnapshotBaselineBtn.addEventListener("click", () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+
+      saveAdminClickSnapshotBaseline(null);
+      renderAdminClickSnapshotHistory();
+      setAdminStatus("Baseline cleared.");
     });
   }
 
@@ -3996,6 +5718,249 @@ function initAdminPage() {
       }
       await refreshSearchStatusWithMessage("Search status refreshed.");
       ensureSearchAutoRefresh();
+    });
+  }
+
+  if (adminRankingConfigRefreshBtn) {
+    adminRankingConfigRefreshBtn.addEventListener("click", async () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+      await refreshRankingConfigWithMessage("Ranking config refreshed.");
+    });
+  }
+
+  if (adminRankingConfigSaveBtn) {
+    adminRankingConfigSaveBtn.addEventListener("click", async () => {
+      if (adminDashboard.hidden || !adminRankingConfigJson) {
+        return;
+      }
+
+      let parsed = null;
+      try {
+        parsed = JSON.parse(String(adminRankingConfigJson.value || "{}"));
+      } catch {
+        setAdminStatus("Ranking config JSON is invalid.", true);
+        return;
+      }
+
+      adminRankingConfigSaveBtn.disabled = true;
+      try {
+        const payload = await postAdminRankingConfig({ rankingConfig: parsed });
+        renderAdminRankingConfig(payload);
+        await refreshSearchStatusWithMessage("");
+        setAdminStatus("Ranking config saved.");
+      } catch (error) {
+        setAdminStatus(error.message || "Could not save ranking config.", true);
+      } finally {
+        adminRankingConfigSaveBtn.disabled = false;
+      }
+    });
+  }
+
+  if (adminRankingConfigResetBtn) {
+    adminRankingConfigResetBtn.addEventListener("click", async () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+      const confirmed = window.confirm(
+        "Reset search ranking config to defaults?",
+      );
+      if (!confirmed) {
+        return;
+      }
+
+      adminRankingConfigResetBtn.disabled = true;
+      try {
+        const payload = await postAdminRankingConfig({ reset: true });
+        renderAdminRankingConfig(payload);
+        await refreshSearchStatusWithMessage("");
+        setAdminStatus("Ranking config reset to defaults.");
+      } catch (error) {
+        setAdminStatus(
+          error.message || "Could not reset ranking config.",
+          true,
+        );
+      } finally {
+        adminRankingConfigResetBtn.disabled = false;
+      }
+    });
+  }
+
+  if (adminIndexSyncStatusBtn) {
+    adminIndexSyncStatusBtn.addEventListener("click", async () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+      await refreshIndexSyncStatusWithMessage("Index sync status refreshed.");
+    });
+  }
+
+  if (adminIndexSyncRunBtn) {
+    adminIndexSyncRunBtn.addEventListener("click", async () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+
+      const payload = {
+        source: String(adminIndexSyncSource?.value || "").trim(),
+        status: String(adminIndexSyncStatusFilter?.value || "indexed").trim(),
+        pageSize: Number(adminIndexSyncPageSize?.value || 200),
+        maxPages: Number(adminIndexSyncMaxPages?.value || 50),
+        updatedSince: String(adminIndexSyncUpdatedSince?.value || "").trim(),
+        useWatermark: Boolean(adminIndexSyncUseWatermark?.checked),
+        createBackup: Boolean(adminIndexSyncCreateBackup?.checked),
+      };
+
+      adminIndexSyncRunBtn.disabled = true;
+      try {
+        const result = await postAdminIndexSync(payload);
+        await refreshSearchStatusWithMessage("");
+        await refreshIndexSyncStatusWithMessage("");
+        const imported = Number(result?.sync?.importedDocuments || 0);
+        const fetched = Number(result?.sync?.fetchedDocuments || 0);
+        setAdminStatus(
+          `Index sync finished. Imported ${imported}, fetched ${fetched}.`,
+        );
+      } catch (error) {
+        setAdminStatus(error.message || "Could not run index sync.", true);
+      } finally {
+        adminIndexSyncRunBtn.disabled = false;
+      }
+    });
+  }
+
+  if (adminIndexSyncForm && adminIndexSyncRunBtn) {
+    adminIndexSyncForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      adminIndexSyncRunBtn.click();
+    });
+  }
+
+  if (adminIndexSyncResetWatermarkBtn) {
+    adminIndexSyncResetWatermarkBtn.addEventListener("click", async () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+
+      const updatedSince = String(
+        adminIndexSyncUpdatedSince?.value || "",
+      ).trim();
+      adminIndexSyncResetWatermarkBtn.disabled = true;
+      try {
+        await postAdminIndexSyncResetWatermark(updatedSince);
+        await refreshIndexSyncStatusWithMessage("");
+        setAdminStatus(
+          updatedSince
+            ? `Sync watermark set to ${updatedSince}.`
+            : "Sync watermark reset.",
+        );
+      } catch (error) {
+        setAdminStatus(
+          error.message || "Could not update sync watermark.",
+          true,
+        );
+      } finally {
+        adminIndexSyncResetWatermarkBtn.disabled = false;
+      }
+    });
+  }
+
+  if (adminIndexStatusBtn) {
+    adminIndexStatusBtn.addEventListener("click", async () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+      await refreshAdminIndexStatusWithMessage("Local index status refreshed.");
+    });
+  }
+
+  if (adminIndexBackupsBtn) {
+    adminIndexBackupsBtn.addEventListener("click", async () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+      await refreshAdminIndexBackupsWithMessage(
+        "Local index backups refreshed.",
+      );
+    });
+  }
+
+  if (adminIndexBackupReasonFilter) {
+    adminIndexBackupReasonFilter.addEventListener("change", async () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+      currentIndexBackupReason =
+        String(adminIndexBackupReasonFilter.value || "all").trim() || "all";
+      await refreshAdminIndexBackupsWithMessage("Index backup filter applied.");
+    });
+  }
+
+  if (adminIndexRefreshBtn) {
+    adminIndexRefreshBtn.addEventListener("click", async () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+
+      const createBackup = Boolean(adminIndexRefreshCreateBackup?.checked);
+      adminIndexRefreshBtn.disabled = true;
+      try {
+        const payload = await postAdminIndexRefresh({ createBackup });
+        renderAdminIndexStatus(payload);
+        await refreshAdminIndexBackupsWithMessage("");
+        const count = Number(
+          payload?.refresh?.afterCount || payload?.index?.totalDocs || 0,
+        );
+        setAdminStatus(`Local index rebuilt. Total docs: ${count}.`);
+      } catch (error) {
+        setAdminStatus(error.message || "Could not rebuild local index.", true);
+      } finally {
+        adminIndexRefreshBtn.disabled = false;
+      }
+    });
+  }
+
+  if (adminIndexRestoreBtn) {
+    adminIndexRestoreBtn.addEventListener("click", async () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+
+      const fileName = String(adminIndexRestoreFile?.value || "").trim();
+      if (!fileName) {
+        setAdminStatus("Choose a backup file to restore.", true);
+        return;
+      }
+
+      const confirmed = window.confirm(
+        `Restore local index from backup '${fileName}'?`,
+      );
+      if (!confirmed) {
+        return;
+      }
+
+      const createBackup = Boolean(adminIndexRestoreCreateBackup?.checked);
+      adminIndexRestoreBtn.disabled = true;
+      try {
+        await postAdminIndexRestore({ fileName, createBackup });
+        await refreshAdminIndexPanelWithMessage("");
+        setAdminStatus(`Local index restored from ${fileName}.`);
+      } catch (error) {
+        setAdminStatus(
+          error.message || "Could not restore local index backup.",
+          true,
+        );
+      } finally {
+        adminIndexRestoreBtn.disabled = false;
+      }
+    });
+  }
+
+  if (adminIndexForm && adminIndexRefreshBtn) {
+    adminIndexForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      adminIndexRefreshBtn.click();
     });
   }
 
@@ -4309,6 +6274,10 @@ function getPageNameFromPath() {
 }
 
 initHomeForm();
+renderSearchHistory(getSearchHistory());
+fetchPopularSearches().then((queries) => {
+  renderPopularSearches(queries);
+});
 initMagnetoFlagRotation();
 initWeatherWidget();
 initResultsPage();

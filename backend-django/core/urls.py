@@ -21,6 +21,7 @@ from .views import (
     location_auto,
     page_view,
     search,
+    search_suggest,
     search_sources,
 )
 
@@ -29,6 +30,7 @@ urlpatterns = [
     path("health", health, name="health"),
     path("location/auto", location_auto, name="location-auto"),
     path("search", search, name="search"),
+    path("search/suggest", search_suggest, name="search-suggest"),
     path("search/sources", search_sources, name="search-sources"),
     path("events/page-view", page_view, name="page-view"),
     path("assistant/chat", assistant_chat, name="assistant-chat"),

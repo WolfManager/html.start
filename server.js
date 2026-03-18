@@ -21,8 +21,8 @@ const ANTHROPIC_MODEL =
   "claude-3-5-sonnet-latest";
 const GEMINI_API_KEY = String(process.env.GEMINI_API_KEY || "").trim();
 const GEMINI_MODEL =
-  String(process.env.GEMINI_MODEL || "gemini-1.5-flash").trim() ||
-  "gemini-1.5-flash";
+  String(process.env.GEMINI_MODEL || "gemini-2.5-flash").trim() ||
+  "gemini-2.5-flash";
 
 function parseModelCandidates(value, defaults) {
   const list = String(value || "")
@@ -43,8 +43,15 @@ const ANTHROPIC_MODEL_CANDIDATES = parseModelCandidates(
 );
 const GEMINI_MODEL_CANDIDATES = parseModelCandidates(
   process.env.GEMINI_MODEL_CANDIDATES,
-  [GEMINI_MODEL, "gemini-1.5-flash", "gemini-1.5-pro"],
+  [GEMINI_MODEL, "gemini-2.5-flash", "gemini-2.5-pro", "gemini-flash-latest"],
 );
+
+function parseProviderOrder(value) {
+  return String(value || "")
+    .split(",")
+    .map((item) => normalizeAiProvider(item, ""))
+    .filter(Boolean);
+}
 
 function normalizeAiProvider(input, fallback = "openai") {
   const normalized = String(input || "")
@@ -73,6 +80,7 @@ const AI_ROUTING_MODE =
   String(process.env.AI_ROUTING_MODE || "smart")
     .trim()
     .toLowerCase() || "smart";
+const AI_PROVIDER_ORDER = parseProviderOrder(process.env.AI_PROVIDER_ORDER);
 
 const dataDir = path.join(__dirname, "data");
 const analyticsPath = path.join(dataDir, "analytics.json");
@@ -81,6 +89,7 @@ const backupDir = path.join(dataDir, "backups");
 const assistantMemoryPath = path.join(dataDir, "assistant-memory.json");
 const routingStatePath = path.join(dataDir, "routing-state.json");
 const indexSyncStatePath = path.join(dataDir, "index-sync-state.json");
+const rankingConfigPath = path.join(dataDir, "search-ranking-config.json");
 const SEARCH_PROXY_TIMEOUT_MS = envNumber("SEARCH_PROXY_TIMEOUT_MS", 5000, {
   min: 500,
   max: 30000,
@@ -248,6 +257,42 @@ const ASSISTANT_SIMPLE_QUERY_WORDS = envNumber(
     max: 20,
   },
 );
+const CLICK_SIGNAL_WINDOW_DAYS = envNumber("CLICK_SIGNAL_WINDOW_DAYS", 30, {
+  min: 1,
+  max: 180,
+});
+const CLICK_SIGNAL_CACHE_TTL_MS =
+  envNumber("CLICK_SIGNAL_CACHE_TTL_SECONDS", 30, { min: 5, max: 300 }) * 1000;
+const CLICK_SIGNAL_MAX_BOOST = envNumber("CLICK_SIGNAL_MAX_BOOST", 10, {
+  min: 1,
+  max: 50,
+});
+const CLICK_SIGNAL_CTR_MAX_BOOST = envNumber("CLICK_SIGNAL_CTR_MAX_BOOST", 3, {
+  min: 0,
+  max: 20,
+});
+const CLICK_SIGNAL_GUARDRAIL_MIN_BASE_SCORE = envNumber(
+  "CLICK_SIGNAL_GUARDRAIL_MIN_BASE_SCORE",
+  4,
+  { min: 0, max: 30 },
+);
+const CLICK_SIGNAL_GUARDRAIL_MAX_SHARE = envNumber(
+  "CLICK_SIGNAL_GUARDRAIL_MAX_SHARE",
+  0.8,
+  { min: 0, max: 2 },
+);
+const CLICK_SIGNAL_DECAY_HALFLIFE_DAYS = envNumber(
+  "CLICK_SIGNAL_DECAY_HALFLIFE_DAYS",
+  7,
+  { min: 1, max: 120 },
+);
+const CLICK_SIGNAL_DECAY_MIN_WEIGHT = envNumber(
+  "CLICK_SIGNAL_DECAY_MIN_WEIGHT",
+  0.05,
+  { min: 0, max: 1 },
+);
+const CLICK_SIGNAL_DEDUP_WINDOW_MS =
+  envNumber("CLICK_SIGNAL_DEDUP_SECONDS", 20, { min: 1, max: 300 }) * 1000;
 
 const loginAttemptMap = new Map();
 const adminRateMap = new Map();
@@ -277,6 +322,21 @@ let djangoSyncRuntime = {
   lastError: "",
   lastSummary: null,
 };
+function createClickSignalTelemetryState() {
+  return {
+    searchesEvaluated: 0,
+    docsEvaluated: 0,
+    boostApplied: 0,
+    suppressedMinBase: 0,
+    suppressedNoSignal: 0,
+    cappedByGuardrail: 0,
+    totalBoost: 0,
+    lastUpdatedAt: "",
+    lastRun: null,
+  };
+}
+
+let clickSignalTelemetry = createClickSignalTelemetryState();
 
 app.use(express.json({ limit: "250kb" }));
 app.use((req, res, next) => {
@@ -341,6 +401,22 @@ function ensureAnalyticsFile() {
           lastRunAt: "",
           lastSuccessAt: "",
           lastError: "",
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+  }
+
+  if (!fs.existsSync(rankingConfigPath)) {
+    fs.writeFileSync(
+      rankingConfigPath,
+      JSON.stringify(
+        {
+          coverageThresholdByIntent: COVERAGE_THRESHOLD_BY_INTENT,
+          sourceAuthorityBoosts: SOURCE_AUTHORITY_BOOSTS,
+          optionalQueryTokens: [...OPTIONAL_QUERY_TOKENS],
         },
         null,
         2,
@@ -766,7 +842,7 @@ function escapeCsv(value) {
   return `"${text.replace(/"/g, '""')}"`;
 }
 
-function buildOverview(searches, pageViews) {
+function buildOverview(searches, pageViews, resultClicks = []) {
   const queryCounts = {};
   for (const item of searches) {
     const key = String(item.query || "")
@@ -807,13 +883,154 @@ function buildOverview(searches, pageViews) {
         totalViews > 0 ? Number(((count / totalViews) * 100).toFixed(2)) : 0,
     }));
 
+  const clicks = Array.isArray(resultClicks) ? resultClicks : [];
+  const totalResultClicks = clicks.length;
+  const clickedUrlSet = new Set();
+  for (const item of clicks) {
+    const normalizedUrl = normalizeIndexUrl(item?.url || "");
+    if (normalizedUrl) {
+      clickedUrlSet.add(normalizedUrl);
+    }
+  }
+
+  const clickThroughRate =
+    totalSearches > 0
+      ? Number(((totalResultClicks / totalSearches) * 100).toFixed(2))
+      : 0;
+
+  const clickUrlMap = new Map();
+  const clickQueryUrlMap = new Map();
+  const queryClickTotals = new Map();
+  for (const item of clicks) {
+    const normalizedUrl = normalizeIndexUrl(item?.url || "");
+    const normalizedQuery = normalizeSearchText(item?.query || "");
+    if (!normalizedUrl) {
+      continue;
+    }
+
+    if (!clickUrlMap.has(normalizedUrl)) {
+      clickUrlMap.set(normalizedUrl, {
+        url: normalizedUrl,
+        title: String(item?.title || "").trim(),
+        lastQuery: String(item?.query || "").trim(),
+        count: 0,
+        lastAt: String(item?.at || ""),
+      });
+    }
+
+    const current = clickUrlMap.get(normalizedUrl);
+    current.count += 1;
+    if (String(item?.title || "").trim()) {
+      current.title = String(item.title).trim();
+    }
+    if (String(item?.query || "").trim()) {
+      current.lastQuery = String(item.query).trim();
+    }
+
+    const currentAtMs = Date.parse(String(current.lastAt || ""));
+    const nextAtMs = Date.parse(String(item?.at || ""));
+    if (
+      Number.isFinite(nextAtMs) &&
+      (!Number.isFinite(currentAtMs) || nextAtMs > currentAtMs)
+    ) {
+      current.lastAt = String(item.at || "");
+    }
+
+    if (normalizedQuery) {
+      queryClickTotals.set(
+        normalizedQuery,
+        (queryClickTotals.get(normalizedQuery) || 0) + 1,
+      );
+
+      const pairKey = `${normalizedQuery}||${normalizedUrl}`;
+      if (!clickQueryUrlMap.has(pairKey)) {
+        clickQueryUrlMap.set(pairKey, {
+          query: String(item?.query || "").trim(),
+          url: normalizedUrl,
+          title: String(item?.title || "").trim(),
+          count: 0,
+          lastAt: String(item?.at || ""),
+        });
+      }
+
+      const pair = clickQueryUrlMap.get(pairKey);
+      pair.count += 1;
+      if (String(item?.title || "").trim()) {
+        pair.title = String(item.title).trim();
+      }
+
+      const pairCurrentAtMs = Date.parse(String(pair.lastAt || ""));
+      const pairNextAtMs = Date.parse(String(item?.at || ""));
+      if (
+        Number.isFinite(pairNextAtMs) &&
+        (!Number.isFinite(pairCurrentAtMs) || pairNextAtMs > pairCurrentAtMs)
+      ) {
+        pair.lastAt = String(item.at || "");
+      }
+    }
+  }
+
+  const topClickedResults = [...clickUrlMap.values()]
+    .sort((left, right) => {
+      if (right.count !== left.count) {
+        return right.count - left.count;
+      }
+      const leftAt = Date.parse(String(left.lastAt || "")) || 0;
+      const rightAt = Date.parse(String(right.lastAt || "")) || 0;
+      return rightAt - leftAt;
+    })
+    .slice(0, 12)
+    .map((item) => ({
+      ...item,
+      percent:
+        totalResultClicks > 0
+          ? Number(((item.count / totalResultClicks) * 100).toFixed(2))
+          : 0,
+    }));
+
+  const topClickPairs = [...clickQueryUrlMap.values()]
+    .sort((left, right) => {
+      if (right.count !== left.count) {
+        return right.count - left.count;
+      }
+      const leftAt = Date.parse(String(left.lastAt || "")) || 0;
+      const rightAt = Date.parse(String(right.lastAt || "")) || 0;
+      return rightAt - leftAt;
+    })
+    .slice(0, 12)
+    .map((item) => {
+      const normalizedQuery = normalizeSearchText(item.query || "");
+      const queryTotalClicks = Number(
+        queryClickTotals.get(normalizedQuery) || 0,
+      );
+      const ctrPercent =
+        queryTotalClicks > 0
+          ? Number(((item.count / queryTotalClicks) * 100).toFixed(2))
+          : 0;
+
+      return {
+        ...item,
+        percent:
+          totalResultClicks > 0
+            ? Number(((item.count / totalResultClicks) * 100).toFixed(2))
+            : 0,
+        queryTotalClicks,
+        ctrPercent,
+      };
+    });
+
   return {
     totals: {
       totalSearches,
       totalPageViews: totalViews,
       uniqueQueries: Object.keys(queryCounts).length,
+      totalResultClicks,
+      uniqueClickedUrls: clickedUrlSet.size,
+      clickThroughRate,
     },
     topQueries,
+    topClickedResults,
+    topClickPairs,
     trafficByPage,
     latestSearches: searches.slice(-20).reverse(),
     trends: {
@@ -828,7 +1045,7 @@ function buildOverview(searches, pageViews) {
   };
 }
 
-function getTotalsForItems(searches, pageViews) {
+function getTotalsForItems(searches, pageViews, resultClicks = []) {
   const uniqueQuerySet = new Set(
     searches
       .map((item) =>
@@ -843,10 +1060,16 @@ function getTotalsForItems(searches, pageViews) {
     totalSearches: searches.length,
     totalPageViews: pageViews.length,
     uniqueQueries: uniqueQuerySet.size,
+    totalResultClicks: Array.isArray(resultClicks) ? resultClicks.length : 0,
   };
 }
 
-function getPeriodComparison(allSearches, allPageViews, range) {
+function getPeriodComparison(
+  allSearches,
+  allPageViews,
+  allResultClicks,
+  range,
+) {
   const rangeMs = getRangeMs(range);
   if (!rangeMs) {
     return null;
@@ -867,6 +1090,11 @@ function getPeriodComparison(allSearches, allPageViews, range) {
     return !Number.isNaN(at) && at >= currentStart;
   });
 
+  const currentResultClicks = allResultClicks.filter((item) => {
+    const at = Date.parse(String(item.at || ""));
+    return !Number.isNaN(at) && at >= currentStart;
+  });
+
   const previousSearches = allSearches.filter((item) => {
     const at = Date.parse(String(item.at || ""));
     return !Number.isNaN(at) && at >= previousStart && at < previousEnd;
@@ -877,8 +1105,20 @@ function getPeriodComparison(allSearches, allPageViews, range) {
     return !Number.isNaN(at) && at >= previousStart && at < previousEnd;
   });
 
-  const currentTotals = getTotalsForItems(currentSearches, currentPageViews);
-  const previousTotals = getTotalsForItems(previousSearches, previousPageViews);
+  const previousResultClicks = allResultClicks.filter((item) => {
+    const at = Date.parse(String(item.at || ""));
+    return !Number.isNaN(at) && at >= previousStart && at < previousEnd;
+  });
+  const currentTotals = getTotalsForItems(
+    currentSearches,
+    currentPageViews,
+    currentResultClicks,
+  );
+  const previousTotals = getTotalsForItems(
+    previousSearches,
+    previousPageViews,
+    previousResultClicks,
+  );
 
   function pctDelta(current, previous) {
     if (previous === 0) {
@@ -905,6 +1145,10 @@ function getPeriodComparison(allSearches, allPageViews, range) {
       uniqueQueries: pctDelta(
         currentTotals.uniqueQueries,
         previousTotals.uniqueQueries,
+      ),
+      totalResultClicks: pctDelta(
+        currentTotals.totalResultClicks,
+        previousTotals.totalResultClicks,
       ),
     },
   };
@@ -1141,9 +1385,39 @@ function setAssistantCacheEntry(key, value) {
 }
 
 function isSimpleAssistantQuery(message) {
-  // Premium mode: route conversational requests to AI providers.
-  void message;
-  return false;
+  const normalized = normalizeAssistantQueryKey(message);
+  if (!normalized) {
+    return true;
+  }
+
+  if (
+    /^(hi|hello|hey|salut|buna|test|ping|health check|health-check)$/i.test(
+      normalized,
+    )
+  ) {
+    return true;
+  }
+
+  const wordCount = normalized.split(/\s+/).filter(Boolean).length;
+  const charCount = normalized.length;
+  const hasQuestion = normalized.includes("?");
+  const hasSentencePunctuation = /[.!:;,]/.test(normalized);
+  const helper = classifyAssistantHelper(normalized);
+
+  if (helper === "writing") {
+    return false;
+  }
+
+  if (helper === "weather") {
+    return false;
+  }
+
+  return (
+    wordCount <= ASSISTANT_SIMPLE_QUERY_WORDS &&
+    charCount <= 48 &&
+    !hasQuestion &&
+    !hasSentencePunctuation
+  );
 }
 
 function buildRuleBasedAssistantResponse(message) {
@@ -1862,6 +2136,7 @@ function isProviderConfigured(provider) {
 
 function getAssistantProviderOrder() {
   const ordered = [
+    ...AI_PROVIDER_ORDER,
     AI_PRIMARY_PROVIDER,
     AI_FALLBACK_PROVIDER,
     "openai",
@@ -2245,7 +2520,223 @@ const QUERY_SYNONYMS = {
   ui: ["interface", "design"],
   go: ["golang"],
   db: ["database"],
+  // Romanian technical term translations
+  baze: ["database"],
+  indexare: ["indexing", "index"],
+  ghid: ["guide", "tutorial"],
+  joburi: ["jobs"],
+  stiri: ["news"],
+  documentatie: ["documentation", "docs", "reference", "manual"],
+  programare: ["programming", "coding", "code"],
+  curs: ["course", "tutorial", "guide"],
+  incepatori: ["beginner", "beginners", "basics", "starter"],
+  cercetare: ["research", "paper", "study", "academic"],
+  imagini: ["images", "photos", "pictures", "media"],
 };
+
+const OPTIONAL_QUERY_TOKENS = new Set([
+  // English query modifiers
+  "best",
+  "explained",
+  "guide",
+  "guides",
+  "latest",
+  "new",
+  "now",
+  "recent",
+  "recently",
+  "simple",
+  "today",
+  "tutorial",
+  "tutorials",
+  // Romanian prepositions and articles (shouldn't count toward coverage)
+  "de", // of
+  "din", // from
+  "la", // to/at
+  "cu", // with
+  "si", // and
+  "in", // in
+  "pe", // on
+  "pentru", // for
+  "sau", // or
+  // Romanian temporal modifiers
+  "ultimele",
+  "ultima",
+  "ultimul",
+  "azi",
+  "acum",
+  "nou",
+  "noua",
+  "noi",
+  "recent",
+  "recente",
+]);
+
+const COVERAGE_THRESHOLD_BY_INTENT = {
+  code: 0.65,
+  docs: 0.65,
+  images: 0.45,
+  jobs: 0.55,
+  news: 0.45,
+  research: 0.75,
+};
+
+const SOURCE_AUTHORITY_BOOSTS = {
+  "arxiv.org": 6,
+  "bbc.com": 4,
+  "developer.mozilla.org": 6,
+  "docs.python.org": 6,
+  "github.com": 4,
+  "kaggle.com": 3,
+  "learn.microsoft.com": 6,
+  "medium.com": 1,
+  "mongodb.com": 4,
+  "nature.com": 6,
+  "nodejs.org": 5,
+  "openai.com": 4,
+  "postgresql.org": 5,
+  "pubmed.ncbi.nlm.nih.gov": 7,
+  "pytorch.org": 5,
+  "python.org": 5,
+  "react.dev": 5,
+  "reuters.com": 5,
+  "sciencedirect.com": 5,
+  "semanticscholar.org": 5,
+  "stackoverflow.com": 4,
+  "theguardian.com": 3,
+  "wikipedia.org": 4,
+};
+
+const SEARCH_RANKING_CONFIG_LIMITS = {
+  coverageMax: 0.95,
+  coverageMin: 0.35,
+  sourceBoostMax: 20,
+  sourceBoostMin: 0,
+};
+
+let rankingConfigCache = null;
+
+function normalizeRankingCoverageConfig(input) {
+  const merged = {
+    ...COVERAGE_THRESHOLD_BY_INTENT,
+    ...(input && typeof input === "object" ? input : {}),
+  };
+
+  const normalized = {};
+  for (const [intent, value] of Object.entries(merged)) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) {
+      continue;
+    }
+    normalized[intent] = Math.min(
+      SEARCH_RANKING_CONFIG_LIMITS.coverageMax,
+      Math.max(SEARCH_RANKING_CONFIG_LIMITS.coverageMin, numeric),
+    );
+  }
+
+  return normalized;
+}
+
+function normalizeRankingSourceBoostConfig(input) {
+  const merged = {
+    ...SOURCE_AUTHORITY_BOOSTS,
+    ...(input && typeof input === "object" ? input : {}),
+  };
+
+  const normalized = {};
+  for (const [host, value] of Object.entries(merged)) {
+    const key = String(host || "")
+      .trim()
+      .toLowerCase();
+    if (!key) {
+      continue;
+    }
+
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) {
+      continue;
+    }
+
+    normalized[key] = Math.round(
+      Math.min(
+        SEARCH_RANKING_CONFIG_LIMITS.sourceBoostMax,
+        Math.max(SEARCH_RANKING_CONFIG_LIMITS.sourceBoostMin, numeric),
+      ),
+    );
+  }
+
+  return normalized;
+}
+
+function normalizeRankingOptionalTokens(input) {
+  const tokens = Array.isArray(input) ? input : [...OPTIONAL_QUERY_TOKENS];
+  const normalized = [];
+  const seen = new Set();
+
+  for (const tokenRaw of tokens) {
+    const token = String(tokenRaw || "")
+      .trim()
+      .toLowerCase();
+    if (!token || token.length < 2 || token.length > 40) {
+      continue;
+    }
+    if (!/^[\p{L}\p{N}]+$/u.test(token)) {
+      continue;
+    }
+    if (seen.has(token)) {
+      continue;
+    }
+    seen.add(token);
+    normalized.push(token);
+  }
+
+  return normalized.length > 0
+    ? normalized
+    : [...OPTIONAL_QUERY_TOKENS].map((token) => token.toLowerCase());
+}
+
+function normalizeSearchRankingConfig(input) {
+  const payload = input && typeof input === "object" ? input : {};
+  return {
+    coverageThresholdByIntent: normalizeRankingCoverageConfig(
+      payload.coverageThresholdByIntent,
+    ),
+    sourceAuthorityBoosts: normalizeRankingSourceBoostConfig(
+      payload.sourceAuthorityBoosts,
+    ),
+    optionalQueryTokens: normalizeRankingOptionalTokens(
+      payload.optionalQueryTokens,
+    ),
+  };
+}
+
+function readSearchRankingConfig() {
+  const raw = readJson(rankingConfigPath, {});
+  return normalizeSearchRankingConfig(raw);
+}
+
+function writeSearchRankingConfig(config) {
+  const normalized = normalizeSearchRankingConfig(config);
+  writeJson(rankingConfigPath, normalized);
+  rankingConfigCache = normalized;
+  return normalized;
+}
+
+function getSearchRankingConfig() {
+  if (!rankingConfigCache) {
+    rankingConfigCache = readSearchRankingConfig();
+  }
+  return rankingConfigCache;
+}
+
+function resetSearchRankingConfig() {
+  rankingConfigCache = null;
+  return writeSearchRankingConfig({
+    coverageThresholdByIntent: COVERAGE_THRESHOLD_BY_INTENT,
+    sourceAuthorityBoosts: SOURCE_AUTHORITY_BOOSTS,
+    optionalQueryTokens: [...OPTIONAL_QUERY_TOKENS],
+  });
+}
 
 const CATEGORY_FRESHNESS_BASE_DAYS = {
   news: 1,
@@ -2270,6 +2761,12 @@ let localSearchArtifactsCache = {
   tokenDfMap: new Map(),
   vocabulary: [],
   docCount: 0,
+};
+let clickSignalCache = {
+  expiresAt: 0,
+  queryUrlCounts: new Map(),
+  queryCounts: new Map(),
+  urlCounts: new Map(),
 };
 
 function getSearchIndexFileFingerprint() {
@@ -2343,6 +2840,137 @@ function getLocalSearchArtifacts() {
     size: fingerprint.size,
   };
   return localSearchArtifactsCache;
+}
+
+function buildClickSignalArtifacts() {
+  const analytics = readJson(analyticsPath, {
+    searches: [],
+    pageViews: [],
+    resultClicks: [],
+  });
+  const resultClicks = Array.isArray(analytics.resultClicks)
+    ? analytics.resultClicks
+    : [];
+  const now = Date.now();
+  const oldestMs = now - CLICK_SIGNAL_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+  const halfLifeMs = CLICK_SIGNAL_DECAY_HALFLIFE_DAYS * 24 * 60 * 60 * 1000;
+  const queryUrlCounts = new Map();
+  const queryCounts = new Map();
+  const urlCounts = new Map();
+
+  for (const item of resultClicks) {
+    const clickedAt = Date.parse(String(item?.at || ""));
+    if (!Number.isFinite(clickedAt) || clickedAt < oldestMs) {
+      continue;
+    }
+
+    const normalizedUrl = normalizeIndexUrl(item?.url || "");
+    const normalizedQuery = normalizeSearchText(item?.query || "");
+    if (!normalizedUrl || !normalizedQuery) {
+      continue;
+    }
+
+    const ageMs = Math.max(0, now - clickedAt);
+    const decayWeight = Math.max(
+      CLICK_SIGNAL_DECAY_MIN_WEIGHT,
+      Math.pow(0.5, ageMs / Math.max(1, halfLifeMs)),
+    );
+
+    const queryUrlKey = `${normalizedQuery}||${normalizedUrl}`;
+    queryUrlCounts.set(
+      queryUrlKey,
+      (queryUrlCounts.get(queryUrlKey) || 0) + decayWeight,
+    );
+    queryCounts.set(
+      normalizedQuery,
+      (queryCounts.get(normalizedQuery) || 0) + decayWeight,
+    );
+    urlCounts.set(
+      normalizedUrl,
+      (urlCounts.get(normalizedUrl) || 0) + decayWeight,
+    );
+  }
+
+  return {
+    queryUrlCounts,
+    queryCounts,
+    urlCounts,
+  };
+}
+
+function getClickSignalArtifacts() {
+  if (Date.now() < clickSignalCache.expiresAt) {
+    return clickSignalCache;
+  }
+
+  const built = buildClickSignalArtifacts();
+  clickSignalCache = {
+    ...built,
+    expiresAt: Date.now() + CLICK_SIGNAL_CACHE_TTL_MS,
+  };
+  return clickSignalCache;
+}
+
+function getResultClickBoost({ url, query, baseScore = 0, telemetry = null }) {
+  const normalizedUrl = normalizeIndexUrl(url);
+  const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedUrl || !normalizedQuery) {
+    if (telemetry && typeof telemetry === "object") {
+      telemetry.reason = "invalid-input";
+      telemetry.cappedByGuardrail = false;
+      telemetry.boost = 0;
+    }
+    return 0;
+  }
+
+  const safeBaseScore = Number(baseScore || 0);
+  if (safeBaseScore < CLICK_SIGNAL_GUARDRAIL_MIN_BASE_SCORE) {
+    if (telemetry && typeof telemetry === "object") {
+      telemetry.reason = "low-base-score";
+      telemetry.cappedByGuardrail = false;
+      telemetry.boost = 0;
+    }
+    return 0;
+  }
+
+  const clickArtifacts = getClickSignalArtifacts();
+  const queryUrlKey = `${normalizedQuery}||${normalizedUrl}`;
+  const exactPairClicks = Number(
+    clickArtifacts.queryUrlCounts.get(queryUrlKey) || 0,
+  );
+  const queryClicks = Number(
+    clickArtifacts.queryCounts.get(normalizedQuery) || 0,
+  );
+  const urlClicks = Number(clickArtifacts.urlCounts.get(normalizedUrl) || 0);
+
+  if (exactPairClicks <= 0 && urlClicks <= 0 && queryClicks <= 0) {
+    if (telemetry && typeof telemetry === "object") {
+      telemetry.reason = "no-signal";
+      telemetry.cappedByGuardrail = false;
+      telemetry.boost = 0;
+    }
+    return 0;
+  }
+
+  const pairBoost = Math.log2(1 + exactPairClicks) * 2.5;
+  const urlBoost = Math.log2(1 + urlClicks) * 0.8;
+  const ctr = queryClicks > 0 ? exactPairClicks / queryClicks : 0;
+  const ctrBoost = Math.min(
+    CLICK_SIGNAL_CTR_MAX_BOOST,
+    ctr * CLICK_SIGNAL_CTR_MAX_BOOST,
+  );
+  const uncappedBoost = pairBoost + urlBoost + ctrBoost;
+  const maxByBase = safeBaseScore * CLICK_SIGNAL_GUARDRAIL_MAX_SHARE;
+  const boost = Math.max(
+    0,
+    Math.min(CLICK_SIGNAL_MAX_BOOST, uncappedBoost, maxByBase),
+  );
+  if (telemetry && typeof telemetry === "object") {
+    telemetry.reason = boost > 0 ? "applied" : "suppressed";
+    telemetry.cappedByGuardrail = uncappedBoost > boost;
+    telemetry.boost = boost;
+  }
+  return boost;
 }
 
 function computeFreshnessScore(fetchedAt) {
@@ -2518,6 +3146,199 @@ function scoreTokenAgainstField(token, fieldTokens, weights) {
   return 0;
 }
 
+function getDocTokenBuckets(doc) {
+  return {
+    title: tokenize(String(doc.title || "")),
+    summary: tokenize(String(doc.summary || "")),
+    category: tokenize(String(doc.category || "")),
+    url: tokenize(
+      String(doc.url || "")
+        .replace(/https?:\/\//, "")
+        .replace(/[.\-/_]/g, " "),
+    ),
+    tags: Array.isArray(doc.tags)
+      ? doc.tags.flatMap((tag) => tokenize(String(tag || "")))
+      : [],
+  };
+}
+
+function doesFieldContainToken(token, fieldTokens) {
+  return fieldTokens.some(
+    (candidate) =>
+      candidate === token ||
+      candidate.startsWith(token) ||
+      token.startsWith(candidate) ||
+      isOneEditAway(token, candidate),
+  );
+}
+
+function countMatchedQueryTokens(doc, tokens) {
+  if (!Array.isArray(tokens) || tokens.length === 0) {
+    return 0;
+  }
+
+  // Expand tokens to include synonyms for matching
+  const expandedTokens = expandQueryTokens(tokens);
+
+  const buckets = getDocTokenBuckets(doc);
+  const combined = [
+    ...buckets.title,
+    ...buckets.summary,
+    ...buckets.category,
+    ...buckets.url,
+    ...buckets.tags,
+  ];
+
+  let matched = 0;
+  for (const token of tokens) {
+    // Check if this original token matches, or any of its synonyms match
+    const tokenCandidates = [token, ...(QUERY_SYNONYMS[token] || [])];
+    const anyMatch = tokenCandidates.some((candidate) =>
+      doesFieldContainToken(candidate, combined),
+    );
+    if (anyMatch) {
+      matched += 1;
+    }
+  }
+  return matched;
+}
+
+function getSourceAuthorityBoost(doc, intents) {
+  const rankingConfig = getSearchRankingConfig();
+  const sourceBoosts =
+    rankingConfig?.sourceAuthorityBoosts || SOURCE_AUTHORITY_BOOSTS;
+  let hostname = "";
+  try {
+    hostname = new URL(String(doc.url || "")).hostname.replace(/^www\./, "");
+  } catch {
+    hostname = "";
+  }
+
+  if (!hostname) {
+    return 0;
+  }
+
+  let boost = Number(sourceBoosts[hostname] || 0);
+  if (hostname.endsWith(".edu") || hostname.endsWith(".ac.uk")) {
+    boost = Math.max(boost, 4);
+  }
+  if (hostname.endsWith(".gov")) {
+    boost = Math.max(boost, 5);
+  }
+
+  if (intents?.has("research")) {
+    if (/arxiv|pubmed|nature|science|semanticscholar/.test(hostname)) {
+      boost += 2;
+    }
+  }
+
+  if (intents?.has("docs")) {
+    if (
+      /developer\.mozilla|learn\.microsoft|nodejs\.org|python\.org|react\.dev/.test(
+        hostname,
+      )
+    ) {
+      boost += 2;
+    }
+  }
+
+  if (intents?.has("news")) {
+    if (/reuters|bbc|theguardian/.test(hostname)) {
+      boost += 2;
+    }
+  }
+
+  return boost;
+}
+
+function getAdaptiveCoverageThreshold(intents, tokenCount) {
+  const rankingConfig = getSearchRankingConfig();
+  const coverageByIntent =
+    rankingConfig?.coverageThresholdByIntent || COVERAGE_THRESHOLD_BY_INTENT;
+
+  if (!intents || intents.size === 0) {
+    return {
+      ratio: 0.6,
+      requiredMatches: Math.max(2, Math.min(4, Math.ceil(tokenCount * 0.6))),
+    };
+  }
+
+  let ratio = 0.6;
+  for (const intent of intents) {
+    const candidate = coverageByIntent[intent];
+    if (typeof candidate === "number") {
+      ratio = Math.max(ratio, candidate);
+    }
+  }
+
+  // Keep research strict for long queries, but avoid over-filtering short research prompts.
+  if (intents.has("research") && tokenCount <= 3) {
+    ratio = Math.min(ratio, 0.6);
+  }
+
+  const maxRequired = intents.has("research") ? 5 : 4;
+  const requiredMatches = Math.max(
+    2,
+    Math.min(maxRequired, Math.ceil(tokenCount * ratio)),
+  );
+
+  return { ratio, requiredMatches };
+}
+
+function doesDocMeetCoverageThreshold(
+  doc,
+  tokens,
+  phrases,
+  rawQuery = "",
+  intents = new Set(),
+) {
+  const rankingConfig = getSearchRankingConfig();
+  const optionalTokenSet = new Set(
+    rankingConfig?.optionalQueryTokens || [...OPTIONAL_QUERY_TOKENS],
+  );
+
+  if (!Array.isArray(tokens) || tokens.length <= 2) {
+    return true;
+  }
+
+  const requiredTokens = tokens.filter(
+    (token) => !optionalTokenSet.has(String(token || "").toLowerCase()),
+  );
+  const coverageTokens = requiredTokens.length > 0 ? requiredTokens : tokens;
+  if (coverageTokens.length <= 2) {
+    return true;
+  }
+
+  const normalizedTitle = normalizeSearchText(doc.title || "");
+  const normalizedSummary = normalizeSearchText(doc.summary || "");
+  const normalizedQuery = normalizeSearchText(rawQuery);
+
+  if (
+    normalizedQuery &&
+    (normalizedTitle.includes(normalizedQuery) ||
+      normalizedSummary.includes(normalizedQuery))
+  ) {
+    return true;
+  }
+
+  if (
+    Array.isArray(phrases) &&
+    phrases.some(
+      (phrase) =>
+        normalizedTitle.includes(phrase) || normalizedSummary.includes(phrase),
+    )
+  ) {
+    return true;
+  }
+
+  const matchedTokens = countMatchedQueryTokens(doc, coverageTokens);
+  const threshold = getAdaptiveCoverageThreshold(
+    intents,
+    coverageTokens.length,
+  );
+  return matchedTokens >= threshold.requiredMatches;
+}
+
 function computeScore(
   doc,
   tokens,
@@ -2556,6 +3377,9 @@ function computeScore(
     .toLowerCase();
   const normalizedQuery =
     normalizeSearchText(rawQuery) || tokens.join(" ").trim();
+  const matchedOriginalTokens = countMatchedQueryTokens(doc, tokens);
+  const coverageRatio =
+    tokens.length > 0 ? matchedOriginalTokens / tokens.length : 0;
 
   let score = 0;
 
@@ -2622,6 +3446,13 @@ function computeScore(
       score += 10;
     } else if (normalizedSummary.includes(phrase)) {
       score += 5;
+    }
+  }
+
+  if (tokens.length > 1) {
+    score += coverageRatio * 8;
+    if (matchedOriginalTokens === tokens.length) {
+      score += 6;
     }
   }
 
@@ -2810,29 +3641,100 @@ function detectQueryIntents(query, tokens) {
   const hasAny = (values) => values.some((value) => tokenSet.has(value));
 
   if (
-    hasAny(["news", "latest", "today", "breaking", "stiri"]) ||
+    hasAny([
+      "news",
+      "latest",
+      "today",
+      "breaking",
+      "stiri",
+      "noutati",
+      "azi",
+      "acum",
+    ]) ||
     /\b(ce\s+mai\s+e\s+nou|ultime(le)?\s+stiri)\b/i.test(normalizedQuery)
   ) {
     intents.add("news");
   }
 
-  if (hasAny(["job", "jobs", "career", "remote", "hiring", "work"])) {
+  if (
+    hasAny([
+      "job",
+      "jobs",
+      "career",
+      "remote",
+      "hiring",
+      "work",
+      "joburi",
+      "angajare",
+      "angajari",
+      "cariere",
+      "munca",
+      "lucru",
+    ])
+  ) {
     intents.add("jobs");
   }
 
-  if (hasAny(["image", "images", "photo", "photos", "poze", "imagini"])) {
+  if (
+    hasAny([
+      "image",
+      "images",
+      "photo",
+      "photos",
+      "poze",
+      "imagini",
+      "imagine",
+      "foto",
+    ])
+  ) {
     intents.add("images");
   }
 
-  if (hasAny(["docs", "documentation", "reference", "api", "manual"])) {
+  if (
+    hasAny([
+      "docs",
+      "documentation",
+      "reference",
+      "api",
+      "manual",
+      "documentatie",
+      "referinta",
+      "ghid",
+    ])
+  ) {
     intents.add("docs");
   }
 
-  if (hasAny(["code", "coding", "programming", "tutorial", "debug"])) {
+  if (
+    hasAny([
+      "code",
+      "coding",
+      "programming",
+      "tutorial",
+      "debug",
+      "cod",
+      "programare",
+      "depanare",
+      "tutoriale",
+    ])
+  ) {
     intents.add("code");
   }
 
-  if (hasAny(["paper", "papers", "research", "study", "academic"])) {
+  if (
+    hasAny([
+      "paper",
+      "papers",
+      "research",
+      "study",
+      "academic",
+      "cercetare",
+      "studiu",
+      "studii",
+      "lucrare",
+      "lucrari",
+    ])
+  ) {
     intents.add("research");
   }
 
@@ -3224,6 +4126,14 @@ function runSearchAll(
   const normalizedCategory = normalizeFilterValue(category);
   const normalizedSource = normalizeFilterValue(source);
   const normalizedSort = normalizeFilterValue(sort) || "relevance";
+  const clickTelemetryForQuery = {
+    docsEvaluated: 0,
+    boostApplied: 0,
+    suppressedMinBase: 0,
+    suppressedNoSignal: 0,
+    cappedByGuardrail: 0,
+    totalBoost: 0,
+  };
 
   let ranked = index
     .map((doc) => {
@@ -3236,10 +4146,41 @@ function runSearchAll(
             docCount: artifacts.docCount,
           })
         : 1;
+      if (normalizedSort === "relevance") {
+        clickTelemetryForQuery.docsEvaluated += 1;
+      }
+      const boostTelemetry = {};
+      const clickBoost =
+        normalizedSort === "relevance"
+          ? getResultClickBoost({
+              url: normalized.url,
+              query: searchQuery,
+              baseScore,
+              telemetry: boostTelemetry,
+            })
+          : 0;
+      if (normalizedSort === "relevance") {
+        if (clickBoost > 0) {
+          clickTelemetryForQuery.boostApplied += 1;
+          clickTelemetryForQuery.totalBoost += clickBoost;
+        } else if (boostTelemetry.reason === "low-base-score") {
+          clickTelemetryForQuery.suppressedMinBase += 1;
+        } else if (boostTelemetry.reason === "no-signal") {
+          clickTelemetryForQuery.suppressedNoSignal += 1;
+        }
+
+        if (boostTelemetry.cappedByGuardrail) {
+          clickTelemetryForQuery.cappedByGuardrail += 1;
+        }
+      }
       return {
         ...normalized,
         freshnessScore: computeFreshnessScore(normalized.fetchedAt),
-        _score: baseScore + computeIntentBoost(normalized, intents),
+        _score:
+          baseScore +
+          computeIntentBoost(normalized, intents) +
+          getSourceAuthorityBoost(normalized, intents) +
+          clickBoost,
       };
     })
     .filter((doc) => {
@@ -3282,7 +4223,36 @@ function runSearchAll(
       }
       return true;
     })
+    .filter((doc) =>
+      doesDocMeetCoverageThreshold(doc, tokens, phrases, searchQuery, intents),
+    )
     .filter((doc) => (hasKeywordQuery ? doc._score > 0 : true));
+
+  if (normalizedSort === "relevance") {
+    clickSignalTelemetry.searchesEvaluated += 1;
+    clickSignalTelemetry.docsEvaluated += clickTelemetryForQuery.docsEvaluated;
+    clickSignalTelemetry.boostApplied += clickTelemetryForQuery.boostApplied;
+    clickSignalTelemetry.suppressedMinBase +=
+      clickTelemetryForQuery.suppressedMinBase;
+    clickSignalTelemetry.suppressedNoSignal +=
+      clickTelemetryForQuery.suppressedNoSignal;
+    clickSignalTelemetry.cappedByGuardrail +=
+      clickTelemetryForQuery.cappedByGuardrail;
+    clickSignalTelemetry.totalBoost += clickTelemetryForQuery.totalBoost;
+    clickSignalTelemetry.lastUpdatedAt = new Date().toISOString();
+    clickSignalTelemetry.lastRun = {
+      ...clickTelemetryForQuery,
+      avgBoostApplied:
+        clickTelemetryForQuery.boostApplied > 0
+          ? Number(
+              (
+                clickTelemetryForQuery.totalBoost /
+                clickTelemetryForQuery.boostApplied
+              ).toFixed(3),
+            )
+          : 0,
+    };
+  }
 
   ranked.sort((left, right) => {
     if (normalizedSort === "newest") {
@@ -4447,6 +5417,59 @@ function logPageView({ page, ip, userAgent }) {
   backupAnalytics("write");
 }
 
+function logResultClick({ url, title, query, ip }) {
+  const analytics = readJson(analyticsPath, {
+    searches: [],
+    pageViews: [],
+    resultClicks: [],
+  });
+  if (!Array.isArray(analytics.resultClicks)) {
+    analytics.resultClicks = [];
+  }
+
+  const normalizedUrl = normalizeIndexUrl(url);
+  const normalizedQuery = normalizeSearchText(query);
+  const normalizedIp = String(ip || "unknown").trim();
+  const nowMs = Date.now();
+
+  for (let i = analytics.resultClicks.length - 1; i >= 0; i -= 1) {
+    const existing = analytics.resultClicks[i];
+    const existingAtMs = Date.parse(String(existing?.at || ""));
+    if (!Number.isFinite(existingAtMs)) {
+      continue;
+    }
+
+    if (nowMs - existingAtMs > CLICK_SIGNAL_DEDUP_WINDOW_MS) {
+      break;
+    }
+
+    const sameIp = String(existing?.ip || "").trim() === normalizedIp;
+    const sameUrl = normalizeIndexUrl(existing?.url || "") === normalizedUrl;
+    const sameQuery =
+      normalizeSearchText(existing?.query || "") === normalizedQuery;
+    if (sameIp && sameUrl && sameQuery) {
+      return;
+    }
+  }
+
+  analytics.resultClicks.push({
+    id: `rc-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+    url: String(normalizedUrl || ""),
+    title: String(title || ""),
+    query: String(query || ""),
+    ip: normalizedIp,
+    at: new Date().toISOString(),
+  });
+
+  if (analytics.resultClicks.length > 50000) {
+    analytics.resultClicks = analytics.resultClicks.slice(-50000);
+  }
+
+  writeJson(analyticsPath, analytics);
+  backupAnalytics("write");
+  clickSignalCache.expiresAt = 0;
+}
+
 function adminAuth(req, res, next) {
   const authHeader = req.headers.authorization || "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
@@ -4648,6 +5671,76 @@ app.get("/api/search/trending", async (req, res) => {
   });
 });
 
+app.get("/api/analytics/popular-searches", (_req, res) => {
+  try {
+    const analyticsFile = Path.join(DATA_DIR, "analytics.json");
+    const analyticsContent = fs.readFileSync(analyticsFile, "utf-8");
+    const analytics = JSON.parse(analyticsContent);
+
+    const searches = Array.isArray(analytics.searches)
+      ? analytics.searches
+      : [];
+
+    const queryMap = new Map();
+    const now = Date.now();
+    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+
+    searches.forEach((item) => {
+      const query = String(item.query || "")
+        .trim()
+        .toLowerCase();
+      if (!query || query.length < 2) {
+        return;
+      }
+
+      const itemTime = new Date(item.at).getTime();
+      const age = now - itemTime;
+
+      if (age > sevenDaysMs) {
+        return;
+      }
+
+      if (!queryMap.has(query)) {
+        queryMap.set(query, {
+          query: String(item.query || "").trim(),
+          count: 0,
+          lastSeen: itemTime,
+        });
+      }
+
+      const entry = queryMap.get(query);
+      entry.count += 1;
+      if (itemTime > entry.lastSeen) {
+        entry.lastSeen = itemTime;
+      }
+    });
+
+    const sorted = Array.from(queryMap.values())
+      .sort((a, b) => {
+        const countDiff = b.count - a.count;
+        if (countDiff !== 0) return countDiff;
+        return b.lastSeen - a.lastSeen;
+      })
+      .slice(0, 12)
+      .map((item) => item.query);
+
+    res.json({
+      ok: true,
+      queries: sorted,
+      generatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error(
+      `[analytics] Error fetching popular searches: ${String(error?.message || error)}`,
+    );
+    res.json({
+      ok: true,
+      queries: [],
+      generatedAt: new Date().toISOString(),
+    });
+  }
+});
+
 app.get("/api/search", async (req, res) => {
   const query = String(req.query.q || "").trim();
 
@@ -4749,6 +5842,26 @@ app.post("/api/events/page-view", (req, res) => {
     ip: req.ip,
     userAgent: req.headers["user-agent"] || "unknown",
   });
+  res.json({ ok: true });
+});
+
+app.post("/api/events/result-click", (req, res) => {
+  const url = String(req.body?.url || "").trim();
+  const title = String(req.body?.title || "").trim();
+  const query = String(req.body?.query || "").trim();
+
+  if (!url || !title || !query) {
+    res.status(400).json({ error: "URL, title, and query are required." });
+    return;
+  }
+
+  logResultClick({
+    url,
+    title,
+    query,
+    ip: req.ip,
+  });
+
   res.json({ ok: true });
 });
 
@@ -5128,6 +6241,186 @@ app.get("/api/admin/runtime-metrics", adminAuth, (_req, res) => {
   });
 });
 
+function buildAdminSearchLatestRunSummary() {
+  const state = readDjangoIndexSyncState();
+  const runtime = djangoSyncRuntime || {};
+  const summary = runtime.lastSummary || {};
+  const startedAt = String(state.lastRunAt || runtime.lastRunAt || "").trim();
+  const finishedAt = String(
+    state.lastSuccessAt || runtime.lastSuccessAt || "",
+  ).trim();
+  const status = djangoSyncInFlight
+    ? "running"
+    : state.lastError
+      ? "error"
+      : finishedAt
+        ? "success"
+        : "idle";
+
+  return {
+    id: startedAt || `run-${Date.now()}`,
+    status,
+    startedAt,
+    finishedAt,
+    pagesSeen: Number(summary.fetchedDocuments || 0),
+    pagesIndexed: Number(summary.importedDocuments || 0),
+    pagesUpdated: Number(summary.importedDocuments || 0),
+    pagesFailed: state.lastError ? 1 : 0,
+    pagesBlocked: 0,
+    source: String(summary.source || "all"),
+    durationMs: Number(summary.durationMs || 0),
+    lastError: String(state.lastError || runtime.lastError || ""),
+  };
+}
+
+function getDjangoSyncAuthHeaderFromRequest(req) {
+  return (
+    toBearerToken(process.env.DJANGO_ADMIN_TOKEN) ||
+    toBearerToken(req.headers.authorization || "")
+  );
+}
+
+app.get("/api/admin/search/status", adminAuth, (_req, res) => {
+  const indexStats = getSearchIndexStats();
+  const latestRun = buildAdminSearchLatestRunSummary();
+  const rankingConfig = getSearchRankingConfig();
+  const sourceCount = Array.isArray(indexStats.topSources)
+    ? indexStats.topSources.length
+    : 0;
+
+  res.json({
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    search: {
+      sources: {
+        active: sourceCount,
+        total: sourceCount,
+      },
+      documents: {
+        indexed: Number(indexStats.totalDocs || 0),
+        blocked: 0,
+        errors: 0,
+      },
+      blockRules: 0,
+      latestRun,
+      recentRuns: latestRun.startedAt ? [latestRun] : [],
+      rankingConfig,
+    },
+  });
+});
+
+app.get("/api/admin/search/ranking-config", adminAuth, (_req, res) => {
+  res.json({
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    rankingConfig: getSearchRankingConfig(),
+  });
+});
+
+app.post("/api/admin/search/ranking-config", adminAuth, (req, res) => {
+  const shouldReset = Boolean(req.body?.reset);
+
+  try {
+    const rankingConfig = shouldReset
+      ? resetSearchRankingConfig()
+      : writeSearchRankingConfig(req.body?.rankingConfig || {});
+    res.json({
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      rankingConfig,
+    });
+  } catch (error) {
+    res.status(400).json({
+      error: String(error?.message || "Could not update ranking config."),
+    });
+  }
+});
+
+app.post("/api/admin/search/seed", adminAuth, async (req, res) => {
+  const authHeader = getDjangoSyncAuthHeaderFromRequest(req);
+  if (!authHeader) {
+    res.status(400).json({
+      error:
+        "Missing Django auth token. Set DJANGO_ADMIN_TOKEN or provide Authorization header.",
+    });
+    return;
+  }
+
+  try {
+    const result = await executeDjangoIndexSync({
+      req,
+      authHeader,
+      source: "",
+      statusFilter: "indexed",
+      pageSize: DJANGO_INDEX_SYNC_PAGE_SIZE,
+      maxPages: Math.max(5, DJANGO_INDEX_SYNC_MAX_PAGES),
+      createBackup: true,
+      updatedSince: null,
+      reason: "seed",
+    });
+
+    res.json({
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      seed: result.sync,
+      refresh: result.refresh,
+      index: result.index,
+    });
+  } catch (error) {
+    res.status(502).json({
+      error: String(error?.message || "Could not seed search sources."),
+    });
+  }
+});
+
+app.post("/api/admin/search/crawl", adminAuth, async (req, res) => {
+  const authHeader = getDjangoSyncAuthHeaderFromRequest(req);
+  if (!authHeader) {
+    res.status(400).json({
+      error:
+        "Missing Django auth token. Set DJANGO_ADMIN_TOKEN or provide Authorization header.",
+    });
+    return;
+  }
+
+  const maxPages = Math.max(
+    1,
+    Math.min(
+      300,
+      Number.parseInt(
+        String(req.body?.maxPages || DJANGO_INDEX_SYNC_MAX_PAGES),
+        10,
+      ) || DJANGO_INDEX_SYNC_MAX_PAGES,
+    ),
+  );
+
+  try {
+    const result = await executeDjangoIndexSync({
+      req,
+      authHeader,
+      source: "",
+      statusFilter: "indexed",
+      pageSize: DJANGO_INDEX_SYNC_PAGE_SIZE,
+      maxPages,
+      createBackup: true,
+      updatedSince: null,
+      reason: "crawl",
+    });
+
+    res.json({
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      crawl: result.sync,
+      refresh: result.refresh,
+      index: result.index,
+    });
+  } catch (error) {
+    res.status(502).json({
+      error: String(error?.message || "Could not start search crawl."),
+    });
+  }
+});
+
 app.get("/api/admin/index/status", adminAuth, (_req, res) => {
   res.json({
     ok: true,
@@ -5380,12 +6673,19 @@ app.get("/api/admin/index/sync-status", adminAuth, (_req, res) => {
 });
 
 app.get("/api/admin/overview", adminAuth, (req, res) => {
-  const analytics = readJson(analyticsPath, { searches: [], pageViews: [] });
+  const analytics = readJson(analyticsPath, {
+    searches: [],
+    pageViews: [],
+    resultClicks: [],
+  });
   const allSearches = Array.isArray(analytics.searches)
     ? analytics.searches
     : [];
   const allPageViews = Array.isArray(analytics.pageViews)
     ? analytics.pageViews
+    : [];
+  const allResultClicks = Array.isArray(analytics.resultClicks)
+    ? analytics.resultClicks
     : [];
   const requestedRange = String(req.query.range || "all");
   const range = ["all", "24h", "7d", "30d"].includes(requestedRange)
@@ -5395,14 +6695,69 @@ app.get("/api/admin/overview", adminAuth, (req, res) => {
   const sinceDate = parseRangeToSince(range);
   const searches = filterByDateRange(allSearches, sinceDate);
   const pageViews = filterByDateRange(allPageViews, sinceDate);
-  const overview = buildOverview(searches, pageViews);
-  const comparison = getPeriodComparison(allSearches, allPageViews, range);
+  const resultClicks = filterByDateRange(allResultClicks, sinceDate);
+  const overview = buildOverview(searches, pageViews, resultClicks);
+  const comparison = getPeriodComparison(
+    allSearches,
+    allPageViews,
+    allResultClicks,
+    range,
+  );
 
   res.json({
     generatedAt: new Date().toISOString(),
     range,
     comparison,
+    clickSignalConfig: {
+      windowDays: CLICK_SIGNAL_WINDOW_DAYS,
+      decayHalfLifeDays: CLICK_SIGNAL_DECAY_HALFLIFE_DAYS,
+      decayMinWeight: CLICK_SIGNAL_DECAY_MIN_WEIGHT,
+      maxBoost: CLICK_SIGNAL_MAX_BOOST,
+      ctrMaxBoost: CLICK_SIGNAL_CTR_MAX_BOOST,
+      guardrailMinBaseScore: CLICK_SIGNAL_GUARDRAIL_MIN_BASE_SCORE,
+      guardrailMaxShare: CLICK_SIGNAL_GUARDRAIL_MAX_SHARE,
+      dedupSeconds: Math.round(CLICK_SIGNAL_DEDUP_WINDOW_MS / 1000),
+      rangeStartAt: sinceDate ? sinceDate.toISOString() : null,
+    },
+    clickSignalTelemetry,
     ...overview,
+  });
+});
+
+app.post("/api/admin/click-signal/reset", adminAuth, (_req, res) => {
+  clickSignalTelemetry = createClickSignalTelemetryState();
+
+  res.json({
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    clickSignalTelemetry,
+  });
+});
+
+app.post("/api/admin/click-signal/snapshot-reset", adminAuth, (_req, res) => {
+  const generatedAt = new Date().toISOString();
+  const snapshot = {
+    generatedAt,
+    clickSignalConfig: {
+      windowDays: CLICK_SIGNAL_WINDOW_DAYS,
+      decayHalfLifeDays: CLICK_SIGNAL_DECAY_HALFLIFE_DAYS,
+      decayMinWeight: CLICK_SIGNAL_DECAY_MIN_WEIGHT,
+      maxBoost: CLICK_SIGNAL_MAX_BOOST,
+      ctrMaxBoost: CLICK_SIGNAL_CTR_MAX_BOOST,
+      guardrailMinBaseScore: CLICK_SIGNAL_GUARDRAIL_MIN_BASE_SCORE,
+      guardrailMaxShare: CLICK_SIGNAL_GUARDRAIL_MAX_SHARE,
+      dedupSeconds: Math.round(CLICK_SIGNAL_DEDUP_WINDOW_MS / 1000),
+    },
+    clickSignalTelemetry,
+  };
+
+  clickSignalTelemetry = createClickSignalTelemetryState();
+
+  res.json({
+    ok: true,
+    generatedAt,
+    snapshot,
+    clickSignalTelemetry,
   });
 });
 
@@ -5482,12 +6837,19 @@ app.post("/api/admin/backups/restore", adminAuth, (req, res) => {
 });
 
 app.get("/api/admin/export.csv", adminAuth, (req, res) => {
-  const analytics = readJson(analyticsPath, { searches: [], pageViews: [] });
+  const analytics = readJson(analyticsPath, {
+    searches: [],
+    pageViews: [],
+    resultClicks: [],
+  });
   const allSearches = Array.isArray(analytics.searches)
     ? analytics.searches
     : [];
   const allPageViews = Array.isArray(analytics.pageViews)
     ? analytics.pageViews
+    : [];
+  const allResultClicks = Array.isArray(analytics.resultClicks)
+    ? analytics.resultClicks
     : [];
   const requestedRange = String(req.query.range || "all");
   const range = ["all", "24h", "7d", "30d"].includes(requestedRange)
@@ -5497,7 +6859,8 @@ app.get("/api/admin/export.csv", adminAuth, (req, res) => {
   const sinceDate = parseRangeToSince(range);
   const searches = filterByDateRange(allSearches, sinceDate);
   const pageViews = filterByDateRange(allPageViews, sinceDate);
-  const overview = buildOverview(searches, pageViews);
+  const resultClicks = filterByDateRange(allResultClicks, sinceDate);
+  const overview = buildOverview(searches, pageViews, resultClicks);
 
   const lines = [];
   lines.push(
@@ -5512,6 +6875,25 @@ app.get("/api/admin/export.csv", adminAuth, (req, res) => {
         item.query || "",
         item.resultCount || 0,
         "",
+        item.ip || "",
+        "",
+        "",
+        "",
+        range,
+      ]
+        .map(escapeCsv)
+        .join(","),
+    );
+  }
+
+  for (const item of resultClicks) {
+    lines.push(
+      [
+        "result_click",
+        item.at || "",
+        item.query || "",
+        "",
+        item.url || "",
         item.ip || "",
         "",
         "",

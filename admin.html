@@ -85,6 +85,20 @@
             >
               Refresh
             </button>
+            <button
+              id="adminResetClickTelemetryBtn"
+              type="button"
+              class="results-back-link"
+            >
+              Reset Telemetry
+            </button>
+            <button
+              id="adminSnapshotResetClickTelemetryBtn"
+              type="button"
+              class="results-back-link"
+            >
+              Snapshot + Reset
+            </button>
             <button id="adminExportBtn" type="button" class="results-back-link">
               Export CSV
             </button>
@@ -109,6 +123,16 @@
             <p class="admin-kpi-label">Unique Queries</p>
             <p id="kpiUniqueQueries" class="admin-kpi-value">0</p>
             <p id="kpiUniqueDelta" class="admin-kpi-delta">No comparison</p>
+          </article>
+          <article class="result-card">
+            <p class="admin-kpi-label">Result Clicks</p>
+            <p id="kpiTotalClicks" class="admin-kpi-value">0</p>
+            <p id="kpiClicksDelta" class="admin-kpi-delta">No comparison</p>
+          </article>
+          <article class="result-card">
+            <p class="admin-kpi-label">Ranking Safety</p>
+            <p id="kpiSafetyRate" class="admin-kpi-value">0%</p>
+            <p id="kpiSafetyMeta" class="admin-kpi-delta">No telemetry yet</p>
           </article>
         </div>
 
@@ -350,6 +374,257 @@
           <div id="adminSearchStatusGrid" class="admin-assistant-status-grid">
             <p class="admin-chart-empty">Loading search engine status...</p>
           </div>
+          <div class="admin-index-sync-wrap" aria-label="Search ranking config">
+            <div class="admin-header-row admin-index-sync-header">
+              <p class="admin-search-runs-title">Search Ranking Config</p>
+              <div class="admin-actions">
+                <button
+                  id="adminRankingConfigRefreshBtn"
+                  type="button"
+                  class="results-back-link"
+                >
+                  Refresh Config
+                </button>
+                <button
+                  id="adminRankingConfigSaveBtn"
+                  type="button"
+                  class="results-back-link"
+                >
+                  Save Config
+                </button>
+                <button
+                  id="adminRankingConfigResetBtn"
+                  type="button"
+                  class="results-back-link"
+                >
+                  Reset Defaults
+                </button>
+              </div>
+            </div>
+            <textarea
+              id="adminRankingConfigJson"
+              class="admin-ranking-config-json"
+              rows="12"
+              spellcheck="false"
+              placeholder='{"coverageThresholdByIntent": {...}, "sourceAuthorityBoosts": {...}, "optionalQueryTokens": [...]}'
+            ></textarea>
+            <p id="adminRankingConfigMeta" class="admin-assistant-meta"></p>
+          </div>
+
+          <div class="admin-index-sync-wrap" aria-label="Django index sync">
+            <div class="admin-header-row admin-index-sync-header">
+              <p class="admin-search-runs-title">Django -> Node Index Sync</p>
+              <div class="admin-actions">
+                <button
+                  id="adminIndexSyncStatusBtn"
+                  type="button"
+                  class="results-back-link"
+                >
+                  Refresh Sync Status
+                </button>
+                <button
+                  id="adminIndexSyncRunBtn"
+                  type="button"
+                  class="results-back-link"
+                >
+                  Run Sync Now
+                </button>
+                <button
+                  id="adminIndexSyncResetWatermarkBtn"
+                  type="button"
+                  class="results-back-link"
+                >
+                  Reset Watermark
+                </button>
+              </div>
+            </div>
+
+            <form id="adminIndexSyncForm" class="admin-index-sync-form">
+              <label class="sr-only" for="adminIndexSyncSource"
+                >Optional source slug</label
+              >
+              <input
+                id="adminIndexSyncSource"
+                type="text"
+                maxlength="120"
+                placeholder="Source slug (optional)"
+              />
+
+              <label class="sr-only" for="adminIndexSyncStatusFilter"
+                >Status filter</label
+              >
+              <select
+                id="adminIndexSyncStatusFilter"
+                class="admin-range-select"
+                aria-label="Status filter"
+              >
+                <option value="indexed" selected>indexed</option>
+                <option value="blocked">blocked</option>
+                <option value="error">error</option>
+                <option value="all">all</option>
+              </select>
+
+              <label class="sr-only" for="adminIndexSyncPageSize"
+                >Page size</label
+              >
+              <input
+                id="adminIndexSyncPageSize"
+                type="number"
+                min="1"
+                max="500"
+                value="200"
+                placeholder="Page size"
+              />
+
+              <label class="sr-only" for="adminIndexSyncMaxPages"
+                >Max pages</label
+              >
+              <input
+                id="adminIndexSyncMaxPages"
+                type="number"
+                min="1"
+                max="300"
+                value="50"
+                placeholder="Max pages"
+              />
+
+              <label class="sr-only" for="adminIndexSyncUpdatedSince"
+                >Updated since</label
+              >
+              <input
+                id="adminIndexSyncUpdatedSince"
+                type="text"
+                placeholder="Updated since ISO (optional)"
+              />
+
+              <label
+                class="admin-search-force-label"
+                for="adminIndexSyncUseWatermark"
+              >
+                <input
+                  id="adminIndexSyncUseWatermark"
+                  type="checkbox"
+                  checked
+                />
+                Use persisted watermark
+              </label>
+
+              <label
+                class="admin-search-force-label"
+                for="adminIndexSyncCreateBackup"
+              >
+                <input id="adminIndexSyncCreateBackup" type="checkbox" />
+                Create backup
+              </label>
+            </form>
+
+            <div
+              id="adminIndexSyncStatusGrid"
+              class="admin-assistant-status-grid"
+            >
+              <p class="admin-chart-empty">Loading index sync status...</p>
+            </div>
+            <p id="adminIndexSyncMeta" class="admin-assistant-meta"></p>
+          </div>
+
+          <div
+            class="admin-index-panel-wrap"
+            aria-label="Node local index operations"
+          >
+            <div class="admin-header-row admin-index-panel-header">
+              <p class="admin-search-runs-title">Node Local Index Operations</p>
+              <div class="admin-actions">
+                <button
+                  id="adminIndexStatusBtn"
+                  type="button"
+                  class="results-back-link"
+                >
+                  Refresh Index Status
+                </button>
+                <button
+                  id="adminIndexRefreshBtn"
+                  type="button"
+                  class="results-back-link"
+                >
+                  Rebuild Index
+                </button>
+                <button
+                  id="adminIndexBackupsBtn"
+                  type="button"
+                  class="results-back-link"
+                >
+                  Refresh Backups
+                </button>
+                <button
+                  id="adminIndexRestoreBtn"
+                  type="button"
+                  class="results-back-link"
+                >
+                  Restore Backup
+                </button>
+              </div>
+            </div>
+
+            <form id="adminIndexForm" class="admin-index-form">
+              <label
+                class="admin-search-force-label"
+                for="adminIndexRefreshCreateBackup"
+              >
+                <input
+                  id="adminIndexRefreshCreateBackup"
+                  type="checkbox"
+                  checked
+                />
+                Backup before rebuild
+              </label>
+
+              <label class="sr-only" for="adminIndexBackupReasonFilter"
+                >Backup reason</label
+              >
+              <select
+                id="adminIndexBackupReasonFilter"
+                class="admin-range-select"
+                aria-label="Backup reason filter"
+              >
+                <option value="all" selected>all reasons</option>
+                <option value="index-refresh">index-refresh</option>
+                <option value="pre-restore">pre-restore</option>
+              </select>
+
+              <label class="sr-only" for="adminIndexRestoreFile"
+                >Backup file</label
+              >
+              <input
+                id="adminIndexRestoreFile"
+                type="text"
+                list="adminIndexBackupFiles"
+                placeholder="Backup file to restore"
+              />
+              <datalist id="adminIndexBackupFiles"></datalist>
+
+              <label
+                class="admin-search-force-label"
+                for="adminIndexRestoreCreateBackup"
+              >
+                <input
+                  id="adminIndexRestoreCreateBackup"
+                  type="checkbox"
+                  checked
+                />
+                Backup before restore
+              </label>
+            </form>
+
+            <div id="adminIndexStatusGrid" class="admin-assistant-status-grid">
+              <p class="admin-chart-empty">Loading index status...</p>
+            </div>
+            <ul
+              id="adminIndexBackupsList"
+              class="admin-list admin-list-scroll"
+            ></ul>
+            <p id="adminIndexMeta" class="admin-assistant-meta"></p>
+          </div>
+
           <div class="admin-search-runs-wrap" aria-label="Recent crawl runs">
             <p class="admin-search-runs-title">
               Recent Crawl Runs
@@ -667,6 +942,56 @@
           </div>
           <p id="adminSearchStatusMeta" class="admin-assistant-meta"></p>
           <ul id="latestSearchesList" class="admin-list admin-list-scroll"></ul>
+
+          <p class="admin-search-runs-title">Top Clicked Results</p>
+          <ul
+            id="topClickedResultsList"
+            class="admin-list admin-list-scroll"
+          ></ul>
+
+          <p class="admin-search-runs-title">Top Query-URL Click Pairs</p>
+          <ul id="topClickPairsList" class="admin-list admin-list-scroll"></ul>
+          <p id="adminClickSignalMeta" class="admin-assistant-meta"></p>
+
+          <div class="admin-header-row admin-assistant-status-header">
+            <p class="admin-search-runs-title">Telemetry Snapshot History</p>
+            <div class="admin-actions">
+              <button
+                id="adminPinClickSnapshotBaselineBtn"
+                type="button"
+                class="results-back-link"
+              >
+                Pin Latest Baseline
+              </button>
+              <button
+                id="adminClearClickSnapshotBaselineBtn"
+                type="button"
+                class="results-back-link"
+              >
+                Clear Baseline
+              </button>
+              <button
+                id="adminClearClickSnapshotHistoryBtn"
+                type="button"
+                class="results-back-link"
+              >
+                Clear History
+              </button>
+            </div>
+          </div>
+          <ul
+            id="adminClickSnapshotHistoryList"
+            class="admin-list admin-list-scroll"
+          ></ul>
+          <p id="adminClickSnapshotDiff" class="admin-assistant-meta"></p>
+          <p
+            id="adminClickSnapshotBaselineDiff"
+            class="admin-assistant-meta"
+          ></p>
+          <p
+            id="adminClickSnapshotBaselineMeta"
+            class="admin-assistant-meta"
+          ></p>
         </section>
       </section>
 

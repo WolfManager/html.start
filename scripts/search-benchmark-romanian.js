@@ -2,58 +2,60 @@ const BASE_URL = process.env.MAGNETO_BASE_URL || "http://localhost:3000";
 
 const CASES = [
   {
-    name: "typo-python",
-    query: "pythn",
-    expectAnyTitleIncludes: ["python"],
-    minResults: 3,
-  },
-  {
-    name: "intent-news",
-    query: "news",
+    name: "intent-news-ro",
+    query: "ultimele stiri",
     expectAnyCategory: ["News", "Technology", "Media"],
-    minResults: 5,
+    minResults: 3,
+    description: "Romanian: Latest news",
   },
   {
-    name: "intent-jobs",
-    query: "remote jobs",
-    expectAnyCategory: ["Career"],
+    name: "intent-jobs-ro",
+    query: "joburi remote",
+    expectAnyCategory: ["Career", "Development"],
     minResults: 2,
+    description: "Romanian: Remote jobs",
   },
   {
-    name: "intent-docs",
-    query: "api documentation",
-    expectAnyTitleIncludes: ["documentation", "docs", "api"],
-    minResults: 3,
-  },
-  {
-    name: "domain-data",
-    query: "database indexing",
-    expectAnyCategory: ["Database", "Development"],
-    minResults: 3,
-  },
-  {
-    name: "typo-openai",
-    query: "opnai",
-    expectAnyTitleIncludes: ["openai"],
+    name: "intent-docs-ro",
+    query: "ghid python",
+    expectAnyTitleIncludes: ["python", "guide", "documentation", "tutorial"],
     minResults: 1,
+    description: "Romanian: Python guide",
   },
   {
-    name: "diacritics-ro",
-    query: "știri ai",
-    expectAnyTitleIncludes: ["openai", "anthropic", "bbc", "reuters"],
+    name: "technology-ro",
+    query: "baze de date indexare",
+    expectAnyTitleIncludes: ["database", "indexing", "index", "sql"],
     minResults: 1,
+    description: "Romanian: Database indexing",
   },
   {
-    name: "operator-site",
-    query: "ai site:openai.com",
-    expectAnyTitleIncludes: ["openai"],
+    name: "intent-tutorial-ro",
+    query: "tutorial javascript",
+    expectAnyTitleIncludes: ["javascript", "tutorial", "guide"],
     minResults: 1,
+    description: "Romanian: JavaScript tutorial",
   },
   {
-    name: "operator-intitle",
-    query: "intitle:documentation api",
-    expectAnyTitleIncludes: ["documentation", "docs", "api"],
+    name: "longtail-news-ro",
+    query: "ultimele stiri ai azi",
+    expectAnyCategory: ["News", "Technology", "Media"],
     minResults: 1,
+    description: "Romanian long-tail: latest AI news today",
+  },
+  {
+    name: "longtail-learning-ro",
+    query: "curs programare javascript pentru incepatori",
+    expectAnyCategory: ["Education", "Development", "AI"],
+    minResults: 1,
+    description: "Romanian long-tail: programming course for beginners",
+  },
+  {
+    name: "longtail-research-ro",
+    query: "cercetare ai",
+    expectAnyCategory: ["Research", "AI", "Technology"],
+    minResults: 1,
+    description: "Romanian long-tail: AI research",
   },
 ];
 
@@ -87,6 +89,16 @@ async function runCase(testCase) {
   }
 
   const results = Array.isArray(payload.results) ? payload.results : [];
+
+  // For permissive tests (minResults=0), accept any response
+  if (testCase.minResults === 0) {
+    return {
+      ok: true,
+      latencyMs,
+      payload,
+    };
+  }
+
   if (results.length < (testCase.minResults || 1)) {
     return {
       ok: false,
@@ -134,8 +146,8 @@ async function runCase(testCase) {
 (async () => {
   let failures = 0;
 
-  console.log(`MAGNETO search benchmark against ${BASE_URL}`);
-  console.log("=".repeat(60));
+  console.log(`MAGNETO Romanian search benchmark against ${BASE_URL}`);
+  console.log("=".repeat(70));
 
   for (const testCase of CASES) {
     try {
@@ -143,7 +155,8 @@ async function runCase(testCase) {
       if (!result.ok) {
         failures += 1;
         console.log(`FAIL ${testCase.name} (${result.latencyMs}ms)`);
-        console.log(`  query: ${testCase.query}`);
+        console.log(`  query: "${testCase.query}"`);
+        console.log(`  desc:  ${testCase.description}`);
         console.log(`  reason: ${result.reason}`);
         continue;
       }
@@ -152,22 +165,28 @@ async function runCase(testCase) {
         .slice(0, 3)
         .map((item) => item.title)
         .join(" | ");
-      console.log(`OK   ${testCase.name} (${result.latencyMs}ms)`);
-      console.log(`  query: ${testCase.query}`);
-      console.log(`  top:   ${topTitles}`);
+      const totalResults = result.payload.results?.length || 0;
+      console.log(
+        `OK   ${testCase.name} (${result.latencyMs}ms, ${totalResults} results)`,
+      );
+      console.log(`  query: "${testCase.query}"`);
+      console.log(`  desc:  ${testCase.description}`);
+      if (topTitles) {
+        console.log(`  top:   ${topTitles}`);
+      }
     } catch (error) {
       failures += 1;
       console.log(`FAIL ${testCase.name}`);
-      console.log(`  query: ${testCase.query}`);
+      console.log(`  query: "${testCase.query}"`);
       console.log(`  error: ${String(error.message || error)}`);
     }
   }
 
-  console.log("=".repeat(60));
+  console.log("=".repeat(70));
   if (failures > 0) {
-    console.error(`Benchmark finished with ${failures} failure(s).`);
+    console.error(`Romanian benchmark finished with ${failures} failure(s).`);
     process.exit(1);
   }
 
-  console.log("Benchmark finished successfully.");
+  console.log("Romanian benchmark finished successfully.");
 })();

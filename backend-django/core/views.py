@@ -45,7 +45,11 @@ from .services.location_service import resolve_approx_location
 from .services.runtime_metrics_service import get_runtime_metrics
 from .services.search_crawler_service import crawl_due_sources
 from .services.search_index_service import seed_default_sources
-from .services.search_service import get_search_sources, run_search_page
+from .services.search_service import (
+    get_search_sources,
+    get_search_suggestions,
+    run_search_page,
+)
 
 
 def _admin_auth_error(request):
@@ -171,6 +175,34 @@ def search_sources(request):
             "ok": True,
             "total": len(sources),
             "sources": sources,
+        }
+    )
+
+
+@api_view(["GET"])
+def search_suggest(request):
+    query = str(request.query_params.get("q") or "").strip()
+    limit_raw = str(request.query_params.get("limit") or "").strip()
+    limit = int(limit_raw) if limit_raw.isdigit() else 10
+    safe_limit = max(1, min(20, limit))
+
+    if len(query) < 2:
+        return Response(
+            {
+                "ok": True,
+                "query": query,
+                "total": 0,
+                "suggestions": [],
+            }
+        )
+
+    suggestions = get_search_suggestions(partial=query, limit=safe_limit)
+    return Response(
+        {
+            "ok": True,
+            "query": query,
+            "total": len(suggestions),
+            "suggestions": suggestions,
         }
     )
 

@@ -24,6 +24,19 @@
         <p id="resultsMeta" class="subtitle">
           The MAGNETO Core engine is preparing relevant sources.
         </p>
+        <div
+          id="resultsAssist"
+          class="results-assist"
+          aria-live="polite"
+          hidden
+        >
+          <p id="resultsDidYouMean" class="results-didyoumean" hidden></p>
+          <div
+            id="resultsSuggestChips"
+            class="results-suggest-chips"
+            hidden
+          ></div>
+        </div>
         <div class="results-summary-grid" aria-label="Search overview">
           <article class="results-summary-card">
             <p class="results-summary-label">Results</p>
@@ -35,7 +48,9 @@
           </article>
           <article class="results-summary-card">
             <p class="results-summary-label">Search Scope</p>
-            <p id="resultsScopeValue" class="results-summary-value">MAGNETO Core</p>
+            <p id="resultsScopeValue" class="results-summary-value">
+              MAGNETO Core
+            </p>
           </article>
         </div>
       </header>
@@ -44,7 +59,8 @@
         <div class="results-filters-head">
           <p class="results-section-kicker">Precision Controls</p>
           <p class="results-section-copy">
-            Refine the engine output by language, source, category, ranking mode, and page density.
+            Refine the engine output by language, source, category, ranking
+            mode, and page density.
           </p>
         </div>
         <form id="resultsFilters" class="results-filters-form">
@@ -94,7 +110,9 @@
             <option value="50">Top 50</option>
           </select>
 
-          <button type="submit" class="results-filter-btn">Apply filters</button>
+          <button type="submit" class="results-filter-btn">
+            Apply filters
+          </button>
           <button
             id="resultsFilterReset"
             type="button"
@@ -110,15 +128,24 @@
         <div class="results-panel-head">
           <p class="results-section-kicker">Ranked Output</p>
           <p class="results-section-copy">
-            Every card is rendered from the current MAGNETO index with applied filters and live ranking context.
+            Every card is rendered from the current MAGNETO index with applied
+            filters and live ranking context.
           </p>
         </div>
         <ul id="resultsList" class="results-list"></ul>
-        <div id="resultsPagination" class="results-pagination" aria-label="Results pagination">
+        <div
+          id="resultsPagination"
+          class="results-pagination"
+          aria-label="Results pagination"
+        >
           <button id="resultsPrevPage" type="button" class="results-page-btn">
             Previous
           </button>
-          <div id="resultsPageNumbers" class="results-page-numbers" aria-live="polite"></div>
+          <div
+            id="resultsPageNumbers"
+            class="results-page-numbers"
+            aria-live="polite"
+          ></div>
           <p id="resultsPageMeta" class="results-page-meta">Page 1</p>
           <button id="resultsNextPage" type="button" class="results-page-btn">
             Next
