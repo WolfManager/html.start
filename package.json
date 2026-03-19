@@ -18,6 +18,7 @@
     "health:check:gate": "node scripts/health-check.js --json --require-admin --max-latency-ms=2500",
     "health:check:gate:save": "node scripts/health-check.js --json --require-admin --max-latency-ms=2500 --save-report",
     "health:check:gate:daily": "node scripts/health-check.js --json --require-admin --max-latency-ms=2500 --out=data/backups/health-check/latest-gate.json --label=daily",
+    "verify:update": "node scripts/post-update-verify.js",
     "search:benchmark": "node scripts/search-benchmark.js",
     "search:benchmark:romanian": "node scripts/search-benchmark-romanian.js",
     "search:parity": "node scripts/search-parity-check.js",

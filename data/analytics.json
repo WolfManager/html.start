@@ -258,6 +258,398 @@
       "resultCount": 31,
       "ip": "::ffff:127.0.0.1",
       "at": "2026-03-19T19:15:56.700Z"
+    },
+    {
+      "id": "s-1773952654369-2634",
+      "query": "test",
+      "resultCount": 5,
+      "ip": "127.0.0.1",
+      "at": "2026-03-19T20:37:34Z"
+    },
+    {
+      "id": "s-1773952678389-2255",
+      "query": "api documentation",
+      "resultCount": 31,
+      "ip": "::1",
+      "at": "2026-03-19T20:37:58.389Z"
+    },
+    {
+      "id": "s-1773952678422-3941",
+      "query": "api documentation",
+      "resultCount": 13,
+      "ip": "127.0.0.1",
+      "at": "2026-03-19T20:37:58Z"
+    },
+    {
+      "id": "s-1773952678465-5496",
+      "query": "ultimele stiri ai azi",
+      "resultCount": 62,
+      "ip": "::1",
+      "at": "2026-03-19T20:37:58.465Z"
+    },
+    {
+      "id": "s-1773952678565-1514",
+      "query": "ultimele stiri ai azi",
+      "resultCount": 31,
+      "ip": "127.0.0.1",
+      "at": "2026-03-19T20:37:58Z"
+    },
+    {
+      "id": "s-1773952678606-3857",
+      "query": "machine learning",
+      "resultCount": 38,
+      "ip": "::1",
+      "at": "2026-03-19T20:37:58.606Z"
+    },
+    {
+      "id": "s-1773952678650-4902",
+      "query": "machine learning",
+      "resultCount": 18,
+      "ip": "127.0.0.1",
+      "at": "2026-03-19T20:37:58Z"
+    },
+    {
+      "id": "s-1773952678676-8796",
+      "query": "intitle:documentation api",
+      "resultCount": 3,
+      "ip": "::1",
+      "at": "2026-03-19T20:37:58.676Z"
+    },
+    {
+      "id": "s-1773952678721-3903",
+      "query": "intitle:documentation api",
+      "resultCount": 14,
+      "ip": "127.0.0.1",
+      "at": "2026-03-19T20:37:58Z"
+    },
+    {
+      "id": "s-1773952678746-4858",
+      "query": "inurl:api documentation",
+      "resultCount": 2,
+      "ip": "::1",
+      "at": "2026-03-19T20:37:58.746Z"
+    },
+    {
+      "id": "s-1773952678796-7789",
+      "query": "inurl:api documentation",
+      "resultCount": 13,
+      "ip": "127.0.0.1",
+      "at": "2026-03-19T20:37:58Z"
+    },
+    {
+      "id": "s-1773952678827-362",
+      "query": "api documentation",
+      "resultCount": 31,
+      "ip": "::1",
+      "at": "2026-03-19T20:37:58.827Z"
+    },
+    {
+      "id": "s-1773952678861-4825",
+      "query": "api documentation",
+      "resultCount": 13,
+      "ip": "127.0.0.1",
+      "at": "2026-03-19T20:37:58Z"
+    },
+    {
+      "id": "s-1773952678885-4467",
+      "query": "python",
+      "resultCount": 8,
+      "ip": "::1",
+      "at": "2026-03-19T20:37:58.885Z"
+    },
+    {
+      "id": "s-1773952678893-6375",
+      "query": "python",
+      "resultCount": 3,
+      "ip": "127.0.0.1",
+      "at": "2026-03-19T20:37:58Z"
+    },
+    {
+      "id": "s-1773952678916-5897",
+      "query": "python",
+      "resultCount": 1,
+      "ip": "::1",
+      "at": "2026-03-19T20:37:58.916Z"
+    },
+    {
+      "id": "s-1773952678918-2133",
+      "query": "python",
+      "resultCount": 1,
+      "ip": "127.0.0.1",
+      "at": "2026-03-19T20:37:58Z"
+    },
+    {
+      "id": "s-1773952678942-3039",
+      "query": "python",
+      "resultCount": 31,
+      "ip": "::1",
+      "at": "2026-03-19T20:37:58.942Z"
+    },
+    {
+      "id": "s-1773952678973-7405",
+      "query": "python",
+      "resultCount": 11,
+      "ip": "127.0.0.1",
+      "at": "2026-03-19T20:37:58Z"
+    },
+    {
+      "id": "s-1773952678998-5115",
+      "query": "news",
+      "resultCount": 39,
+      "ip": "::1",
+      "at": "2026-03-19T20:37:58.998Z"
+    },
+    {
+      "id": "s-1773952679033-3558",
+      "query": "news",
+      "resultCount": 13,
+      "ip": "127.0.0.1",
+      "at": "2026-03-19T20:37:59Z"
+    },
+    {
+      "id": "s-1773952679059-8346",
+      "query": "api documentation",
+      "resultCount": 31,
+      "ip": "::1",
+      "at": "2026-03-19T20:37:59.059Z"
+    },
+    {
+      "id": "s-1773952679094-5469",
+      "query": "api documentation",
+      "resultCount": 13,
+      "ip": "127.0.0.1",
+      "at": "2026-03-19T20:37:59Z"
+    },
+    {
+      "id": "s-1773952679117-2544",
+      "query": "python",
+      "resultCount": 1,
+      "ip": "127.0.0.1",
+      "at": "2026-03-19T20:37:59Z"
+    },
+    {
+      "id": "s-1773952679117-9337",
+      "query": "python",
+      "resultCount": 1,
+      "ip": "::1",
+      "at": "2026-03-19T20:37:59.117Z"
+    },
+    {
+      "id": "s-1773952679137-3856",
+      "query": "python",
+      "resultCount": 1,
+      "ip": "127.0.0.1",
+      "at": "2026-03-19T20:37:59Z"
+    },
+    {
+      "id": "s-1773952679141-6097",
+      "query": "python",
+      "resultCount": 1,
+      "ip": "::1",
+      "at": "2026-03-19T20:37:59.141Z"
+    },
+    {
+      "id": "s-1773952726820-1933",
+      "query": "test",
+      "resultCount": 5,
+      "ip": "127.0.0.1",
+      "at": "2026-03-19T20:38:46Z"
+    },
+    {
+      "id": "s-1773953040434-8810",
+      "query": "test",
+      "resultCount": 5,
+      "ip": "127.0.0.1",
+      "at": "2026-03-19T20:44:00Z"
+    },
+    {
+      "id": "s-1773953117571-6916",
+      "query": "test",
+      "resultCount": 5,
+      "ip": "127.0.0.1",
+      "at": "2026-03-19T20:45:17Z"
+    },
+    {
+      "id": "s-1773953117781-752",
+      "query": "api documentation",
+      "resultCount": 31,
+      "ip": "::1",
+      "at": "2026-03-19T20:45:17.781Z"
+    },
+    {
+      "id": "s-1773953117810-1623",
+      "query": "api documentation",
+      "resultCount": 13,
+      "ip": "127.0.0.1",
+      "at": "2026-03-19T20:45:17Z"
+    },
+    {
+      "id": "s-1773953117854-75",
+      "query": "ultimele stiri ai azi",
+      "resultCount": 62,
+      "ip": "::1",
+      "at": "2026-03-19T20:45:17.854Z"
+    },
+    {
+      "id": "s-1773953117958-5338",
+      "query": "ultimele stiri ai azi",
+      "resultCount": 31,
+      "ip": "127.0.0.1",
+      "at": "2026-03-19T20:45:17Z"
+    },
+    {
+      "id": "s-1773953118000-7305",
+      "query": "machine learning",
+      "resultCount": 38,
+      "ip": "::1",
+      "at": "2026-03-19T20:45:18.000Z"
+    },
+    {
+      "id": "s-1773953118042-2724",
+      "query": "machine learning",
+      "resultCount": 18,
+      "ip": "127.0.0.1",
+      "at": "2026-03-19T20:45:18Z"
+    },
+    {
+      "id": "s-1773953118068-8071",
+      "query": "intitle:documentation api",
+      "resultCount": 3,
+      "ip": "::1",
+      "at": "2026-03-19T20:45:18.068Z"
+    },
+    {
+      "id": "s-1773953118117-5308",
+      "query": "intitle:documentation api",
+      "resultCount": 14,
+      "ip": "127.0.0.1",
+      "at": "2026-03-19T20:45:18Z"
+    },
+    {
+      "id": "s-1773953118149-47",
+      "query": "inurl:api documentation",
+      "resultCount": 2,
+      "ip": "::1",
+      "at": "2026-03-19T20:45:18.149Z"
+    },
+    {
+      "id": "s-1773953118194-3162",
+      "query": "inurl:api documentation",
+      "resultCount": 13,
+      "ip": "127.0.0.1",
+      "at": "2026-03-19T20:45:18Z"
+    },
+    {
+      "id": "s-1773953118221-9176",
+      "query": "api documentation",
+      "resultCount": 31,
+      "ip": "::1",
+      "at": "2026-03-19T20:45:18.221Z"
+    },
+    {
+      "id": "s-1773953118256-9705",
+      "query": "api documentation",
+      "resultCount": 13,
+      "ip": "127.0.0.1",
+      "at": "2026-03-19T20:45:18Z"
+    },
+    {
+      "id": "s-1773953118281-7801",
+      "query": "python",
+      "resultCount": 8,
+      "ip": "::1",
+      "at": "2026-03-19T20:45:18.281Z"
+    },
+    {
+      "id": "s-1773953118291-5276",
+      "query": "python",
+      "resultCount": 3,
+      "ip": "127.0.0.1",
+      "at": "2026-03-19T20:45:18Z"
+    },
+    {
+      "id": "s-1773953118314-3406",
+      "query": "python",
+      "resultCount": 1,
+      "ip": "::1",
+      "at": "2026-03-19T20:45:18.314Z"
+    },
+    {
+      "id": "s-1773953118316-9583",
+      "query": "python",
+      "resultCount": 1,
+      "ip": "127.0.0.1",
+      "at": "2026-03-19T20:45:18Z"
+    },
+    {
+      "id": "s-1773953118340-4913",
+      "query": "python",
+      "resultCount": 31,
+      "ip": "::1",
+      "at": "2026-03-19T20:45:18.340Z"
+    },
+    {
+      "id": "s-1773953118367-6580",
+      "query": "python",
+      "resultCount": 11,
+      "ip": "127.0.0.1",
+      "at": "2026-03-19T20:45:18Z"
+    },
+    {
+      "id": "s-1773953118393-6921",
+      "query": "news",
+      "resultCount": 39,
+      "ip": "::1",
+      "at": "2026-03-19T20:45:18.393Z"
+    },
+    {
+      "id": "s-1773953118425-1858",
+      "query": "news",
+      "resultCount": 13,
+      "ip": "127.0.0.1",
+      "at": "2026-03-19T20:45:18Z"
+    },
+    {
+      "id": "s-1773953118451-6655",
+      "query": "api documentation",
+      "resultCount": 31,
+      "ip": "::1",
+      "at": "2026-03-19T20:45:18.452Z"
+    },
+    {
+      "id": "s-1773953118485-4001",
+      "query": "api documentation",
+      "resultCount": 13,
+      "ip": "127.0.0.1",
+      "at": "2026-03-19T20:45:18Z"
+    },
+    {
+      "id": "s-1773953118508-1885",
+      "query": "python",
+      "resultCount": 1,
+      "ip": "127.0.0.1",
+      "at": "2026-03-19T20:45:18Z"
+    },
+    {
+      "id": "s-1773953118509-7058",
+      "query": "python",
+      "resultCount": 1,
+      "ip": "::1",
+      "at": "2026-03-19T20:45:18.509Z"
+    },
+    {
+      "id": "s-1773953118531-8962",
+      "query": "python",
+      "resultCount": 1,
+      "ip": "127.0.0.1",
+      "at": "2026-03-19T20:45:18Z"
+    },
+    {
+      "id": "s-1773953118534-3141",
+      "query": "python",
+      "resultCount": 1,
+      "ip": "::1",
+      "at": "2026-03-19T20:45:18.534Z"
     }
   ],
   "pageViews": [
@@ -344,6 +736,48 @@
       "ip": "::1",
       "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
       "at": "2026-03-19T19:31:41.756Z"
+    },
+    {
+      "id": "p-1773952654273-9565",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-19T20:37:34Z"
+    },
+    {
+      "id": "p-1773952664634-3098",
+      "page": "index.html",
+      "ip": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+      "at": "2026-03-19T20:37:44.634Z"
+    },
+    {
+      "id": "p-1773952668905-792",
+      "page": "index.html",
+      "ip": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+      "at": "2026-03-19T20:37:48.905Z"
+    },
+    {
+      "id": "p-1773952726756-4107",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-19T20:38:46Z"
+    },
+    {
+      "id": "p-1773953040346-7386",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-19T20:44:00Z"
+    },
+    {
+      "id": "p-1773953117506-9222",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-19T20:45:17Z"
     }
   ]
 }

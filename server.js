@@ -5673,8 +5673,7 @@ app.get("/api/search/trending", async (req, res) => {
 
 app.get("/api/analytics/popular-searches", (_req, res) => {
   try {
-    const analyticsFile = Path.join(DATA_DIR, "analytics.json");
-    const analyticsContent = fs.readFileSync(analyticsFile, "utf-8");
+    const analyticsContent = fs.readFileSync(analyticsPath, "utf-8");
     const analytics = JSON.parse(analyticsContent);
 
     const searches = Array.isArray(analytics.searches)
