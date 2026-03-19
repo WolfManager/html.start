@@ -24,6 +24,8 @@ const assistantLaunchBtn = document.getElementById("assistantLaunchBtn");
 const assistantModal = document.getElementById("assistantModal");
 const assistantModalHeader = document.getElementById("assistantModalHeader");
 const assistantCloseBtn = document.getElementById("assistantCloseBtn");
+const assistantMinimizeBtn = document.getElementById("assistantMinimizeBtn");
+const assistantMaximizeBtn = document.getElementById("assistantMaximizeBtn");
 const assistantStatusMessage = document.getElementById(
   "assistantStatusMessage",
 );
@@ -356,6 +358,7 @@ const FLAG_ROTATION_MAX_MS = 600000;
 const FLAG_ROTATION_INDEX_KEY = "MAGNETO_FLAG_INDEX";
 let flagRotationTimerId = null;
 let currentFlagRotationIndex = 0;
+const API_FETCH_TIMEOUT_MS = 12000;
 
 function getFlagRotationIntervalMs() {
   return FLAG_ROTATION_DEFAULT_MS;
@@ -549,7 +552,49 @@ function buildApiUrl(path) {
 }
 
 function apiFetch(path, options) {
-  return fetch(buildApiUrl(path), options);
+  const requestOptions =
+    options && typeof options === "object" ? { ...options } : {};
+  const timeoutRaw = Number(requestOptions.timeoutMs);
+  const timeoutMs =
+    Number.isFinite(timeoutRaw) && timeoutRaw > 0
+      ? timeoutRaw
+      : API_FETCH_TIMEOUT_MS;
+  delete requestOptions.timeoutMs;
+
+  const controller = new AbortController();
+  const originalSignal = requestOptions.signal;
+  let removeAbortForwarder = null;
+
+  if (originalSignal) {
+    if (originalSignal.aborted) {
+      controller.abort();
+    } else {
+      const forwardAbort = () => controller.abort();
+      originalSignal.addEventListener("abort", forwardAbort, { once: true });
+      removeAbortForwarder = () => {
+        originalSignal.removeEventListener("abort", forwardAbort);
+      };
+    }
+  }
+
+  requestOptions.signal = controller.signal;
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+  return fetch(buildApiUrl(path), requestOptions)
+    .catch((error) => {
+      if (error?.name === "AbortError") {
+        throw new Error(
+          `Request timed out after ${timeoutMs}ms. Check API server and API base.`,
+        );
+      }
+      throw error;
+    })
+    .finally(() => {
+      window.clearTimeout(timeoutId);
+      if (removeAbortForwarder) {
+        removeAbortForwarder();
+      }
+    });
 }
 
 function syncSidePanelHeights() {
@@ -837,6 +882,98 @@ function initAssistantChat() {
   let isDraggingAssistant = false;
   let dragOffsetX = 0;
   let dragOffsetY = 0;
+  let isAssistantFullscreen = false;
+  let assistantPreMinimizePosition = null;
+
+  const setAssistantFullscreen = (enabled) => {
+    if (!assistantModal) {
+      return;
+    }
+
+    isAssistantFullscreen = Boolean(enabled);
+    assistantModal.classList.toggle("assistant-modal-fullscreen", enabled);
+
+    if (enabled) {
+      assistantModal.dataset.prevLeft = assistantModal.style.left || "";
+      assistantModal.dataset.prevTop = assistantModal.style.top || "";
+      assistantModal.dataset.prevRight = assistantModal.style.right || "";
+      assistantModal.style.left = "";
+      assistantModal.style.top = "";
+      assistantModal.style.right = "";
+      if (assistantMaximizeBtn) {
+        assistantMaximizeBtn.textContent = "<>";
+        assistantMaximizeBtn.setAttribute("title", "Restore");
+        assistantMaximizeBtn.setAttribute("aria-label", "Restore assistant");
+      }
+      return;
+    }
+
+    assistantModal.style.left = assistantModal.dataset.prevLeft || "";
+    assistantModal.style.top = assistantModal.dataset.prevTop || "";
+    assistantModal.style.right = assistantModal.dataset.prevRight || "";
+    if (!assistantModal.style.left || !assistantModal.style.top) {
+      const modalWidth = assistantModal.offsetWidth || 440;
+      applyAssistantPosition(window.innerWidth - modalWidth - 18, 108);
+    }
+
+    if (assistantMaximizeBtn) {
+      assistantMaximizeBtn.textContent = "[]";
+      assistantMaximizeBtn.setAttribute("title", "Maximize");
+      assistantMaximizeBtn.setAttribute("aria-label", "Maximize assistant");
+    }
+  };
+
+  const setAssistantMinimized = (enabled) => {
+    if (!assistantModal) {
+      return;
+    }
+
+    if (enabled) {
+      if (isAssistantFullscreen) {
+        setAssistantFullscreen(false);
+      }
+
+      assistantPreMinimizePosition = {
+        left: assistantModal.style.left || "",
+        top: assistantModal.style.top || "",
+        right: assistantModal.style.right || "",
+      };
+
+      assistantModal.style.left = "";
+      assistantModal.style.top = "";
+      assistantModal.style.right = "";
+    }
+
+    assistantModal.classList.toggle(
+      "assistant-modal-minimized",
+      Boolean(enabled),
+    );
+
+    if (!enabled) {
+      if (assistantPreMinimizePosition) {
+        assistantModal.style.left = assistantPreMinimizePosition.left;
+        assistantModal.style.top = assistantPreMinimizePosition.top;
+        assistantModal.style.right = assistantPreMinimizePosition.right;
+      }
+
+      if (!assistantModal.style.left || !assistantModal.style.top) {
+        const modalWidth = assistantModal.offsetWidth || 440;
+        applyAssistantPosition(window.innerWidth - modalWidth - 18, 108);
+      }
+    }
+
+    if (assistantMinimizeBtn) {
+      assistantMinimizeBtn.textContent = enabled ? "+" : "_";
+      assistantMinimizeBtn.setAttribute(
+        "title",
+        enabled ? "Expand" : "Minimize",
+      );
+      assistantMinimizeBtn.setAttribute(
+        "aria-label",
+        enabled ? "Expand assistant" : "Minimize assistant",
+      );
+    }
+  };
 
   const clampAssistantPosition = (left, top) => {
     if (!assistantModal) {
@@ -865,6 +1002,7 @@ function initAssistantChat() {
       return;
     }
     assistantModal.hidden = false;
+    setAssistantMinimized(false);
 
     if (!assistantModal.dataset.positioned) {
       requestAnimationFrame(() => {
@@ -897,6 +1035,24 @@ function initAssistantChat() {
     assistantCloseBtn.addEventListener("click", closeAssistantModal);
   }
 
+  if (assistantMinimizeBtn) {
+    assistantMinimizeBtn.addEventListener("click", () => {
+      if (!assistantModal) {
+        return;
+      }
+      const willMinimize = !assistantModal.classList.contains(
+        "assistant-modal-minimized",
+      );
+      setAssistantMinimized(willMinimize);
+    });
+  }
+
+  if (assistantMaximizeBtn) {
+    assistantMaximizeBtn.addEventListener("click", () => {
+      setAssistantFullscreen(!isAssistantFullscreen);
+    });
+  }
+
   if (assistantModal) {
     window.addEventListener("keydown", (event) => {
       if (event.key === "Escape" && !assistantModal.hidden) {
@@ -905,7 +1061,11 @@ function initAssistantChat() {
     });
 
     window.addEventListener("resize", () => {
-      if (assistantModal.hidden) {
+      if (
+        assistantModal.hidden ||
+        isAssistantFullscreen ||
+        assistantModal.classList.contains("assistant-modal-minimized")
+      ) {
         return;
       }
       const rect = assistantModal.getBoundingClientRect();
@@ -915,6 +1075,12 @@ function initAssistantChat() {
 
   if (assistantModalHeader && assistantModal) {
     assistantModalHeader.addEventListener("mousedown", (event) => {
+      if (
+        isAssistantFullscreen ||
+        assistantModal.classList.contains("assistant-modal-minimized")
+      ) {
+        return;
+      }
       const target = event.target;
       if (
         target instanceof HTMLElement &&
@@ -2286,7 +2452,9 @@ async function initResultsPage() {
         resultsList.appendChild(li);
       }
     } catch (error) {
-      resultsMeta.textContent = error.message || "Could not load results.";
+      const apiBaseLabel = API_BASE_URL || "(relative /api)";
+      const baseMessage = error.message || "Could not load results.";
+      resultsMeta.textContent = `${baseMessage} API base: ${apiBaseLabel}`;
       if (resultsAssist) {
         resultsAssist.hidden = true;
       }

@@ -6,9 +6,19 @@ async function runTests() {
   const { spawn } = require("child_process");
   const DEFAULT_TIMEOUT_MS = 90000;
 
-  function runScript(script, label, timeoutMs = DEFAULT_TIMEOUT_MS) {
+  function runScript(
+    script,
+    label,
+    timeoutMs = DEFAULT_TIMEOUT_MS,
+    envOverrides = {},
+  ) {
     return new Promise((resolve) => {
-      const proc = spawn("node", [script]);
+      const proc = spawn("node", [script], {
+        env: {
+          ...process.env,
+          ...envOverrides,
+        },
+      });
       let output = "";
       let stderr = "";
       let timedOut = false;
@@ -85,6 +95,9 @@ async function runTests() {
       "scripts/search-parity-check.js",
       "Search Parity (strict)",
       60000,
+      {
+        PARITY_MODE: "strict",
+      },
     ),
   );
 

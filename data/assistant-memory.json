@@ -1895,6 +1895,1206 @@
       "helper": "general",
       "model": "gpt-4o-mini",
       "at": "2026-03-18T18:28:36.738Z"
+    },
+    {
+      "id": "a-1773943270911-1248",
+      "ip": "::1",
+      "message": "health check",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "local-hybrid",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-19T18:01:10.911Z"
+    },
+    {
+      "id": "a-1773943271680-6765",
+      "ip": "::1",
+      "message": "weather now in Bucharest",
+      "reply": "Current weather in Bucharest, Romania: 5.7C, partly cloudy, wind 3 km/h.",
+      "provider": "weather-live",
+      "helper": "weather",
+      "model": "weather-live",
+      "at": "2026-03-19T18:01:11.680Z"
+    },
+    {
+      "id": "a-1773943277892-7018",
+      "ip": "::1",
+      "message": "write a short follow-up email after a project meeting",
+      "reply": "Here's a clean, professional follow-up email you can adapt:\n\n---\n\n**Subject:** Follow-Up – [Project Name] Meeting\n\nHi [Name/Team],\n\nThank you for joining today's meeting. Here's a quick recap of what we covered:\n\n**Key Decisions Made:**\n- [Decision 1]\n- [Decision 2]\n\n**Action Items:**\n| Task | Owner | Due Date |\n|------|-------|----------|\n| [Task 1] | [Name] | [Date] |\n| [Task 2] | [Name] | [Date] |\n\n**Next Steps:**\nOur next meeting is scheduled for **[Date/Time]**. Please come prepared with [any relevant updates or materials].\n\nFeel free to reach out if you have any questions or if I missed ",
+      "provider": "anthropic",
+      "helper": "writing",
+      "model": "claude-sonnet-4-6",
+      "at": "2026-03-19T18:01:17.892Z"
+    },
+    {
+      "id": "a-1773943283038-349",
+      "ip": "::1",
+      "message": "Explain quantum computing simply and compare it with classical computing in 3 short bullets.",
+      "reply": "- **Basic Concept**: Quantum computing uses quantum bits (qubits) that can represent both 0 and 1 simultaneously due to superposition, while classical computing relies on bits that can only be either 0 or 1.\n\n- **Processing Power**: Quantum computers can perform many calculations at once, making them potentially much faster for specific tasks (like factoring large numbers) compared to classical computers, which process one calculation at a time.\n\n- **Problem-Solving**: Quantum computing excels in solving complex problems involving large datasets and optimization, while classical computing is m",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T18:01:23.038Z"
+    },
+    {
+      "id": "a-1773943294078-2817",
+      "ip": "::1",
+      "message": "health check",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-19T18:01:34.078Z"
+    },
+    {
+      "id": "a-1773943294928-8069",
+      "ip": "::1",
+      "message": "weather now in Bucharest",
+      "reply": "Current weather in Bucharest, Romania: 5.7C, partly cloudy, wind 3 km/h.",
+      "provider": "weather-live",
+      "helper": "weather",
+      "model": "weather-live",
+      "at": "2026-03-19T18:01:34.928Z"
+    },
+    {
+      "id": "a-1773943294943-65",
+      "ip": "::1",
+      "message": "write a short follow-up email after a project meeting",
+      "reply": "Here's a clean, professional follow-up email you can adapt:\n\n---\n\n**Subject:** Follow-Up – [Project Name] Meeting\n\nHi [Name/Team],\n\nThank you for joining today's meeting. Here's a quick recap of what we covered:\n\n**Key Decisions Made:**\n- [Decision 1]\n- [Decision 2]\n\n**Action Items:**\n| Task | Owner | Due Date |\n|------|-------|----------|\n| [Task 1] | [Name] | [Date] |\n| [Task 2] | [Name] | [Date] |\n\n**Next Steps:**\nOur next meeting is scheduled for **[Date/Time]**. Please come prepared with [any relevant updates or materials].\n\nFeel free to reach out if you have any questions or if I missed ",
+      "provider": "cache",
+      "helper": "writing",
+      "model": "claude-sonnet-4-6",
+      "at": "2026-03-19T18:01:34.943Z"
+    },
+    {
+      "id": "a-1773943294956-8405",
+      "ip": "::1",
+      "message": "Explain quantum computing simply and compare it with classical computing in 3 short bullets.",
+      "reply": "- **Basic Concept**: Quantum computing uses quantum bits (qubits) that can represent both 0 and 1 simultaneously due to superposition, while classical computing relies on bits that can only be either 0 or 1.\n\n- **Processing Power**: Quantum computers can perform many calculations at once, making them potentially much faster for specific tasks (like factoring large numbers) compared to classical computers, which process one calculation at a time.\n\n- **Problem-Solving**: Quantum computing excels in solving complex problems involving large datasets and optimization, while classical computing is m",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T18:01:34.956Z"
+    },
+    {
+      "id": "a-1773943371737-2614",
+      "ip": "::1",
+      "message": "health check",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-19T18:02:51.737Z"
+    },
+    {
+      "id": "a-1773943372846-1118",
+      "ip": "::1",
+      "message": "weather now in Bucharest",
+      "reply": "Current weather in Bucharest, Romania: 5.7C, partly cloudy, wind 3 km/h.",
+      "provider": "weather-live",
+      "helper": "weather",
+      "model": "weather-live",
+      "at": "2026-03-19T18:02:52.846Z"
+    },
+    {
+      "id": "a-1773943372867-2475",
+      "ip": "::1",
+      "message": "write a short follow-up email after a project meeting",
+      "reply": "Here's a clean, professional follow-up email you can adapt:\n\n---\n\n**Subject:** Follow-Up – [Project Name] Meeting\n\nHi [Name/Team],\n\nThank you for joining today's meeting. Here's a quick recap of what we covered:\n\n**Key Decisions Made:**\n- [Decision 1]\n- [Decision 2]\n\n**Action Items:**\n| Task | Owner | Due Date |\n|------|-------|----------|\n| [Task 1] | [Name] | [Date] |\n| [Task 2] | [Name] | [Date] |\n\n**Next Steps:**\nOur next meeting is scheduled for **[Date/Time]**. Please come prepared with [any relevant updates or materials].\n\nFeel free to reach out if you have any questions or if I missed ",
+      "provider": "cache",
+      "helper": "writing",
+      "model": "claude-sonnet-4-6",
+      "at": "2026-03-19T18:02:52.867Z"
+    },
+    {
+      "id": "a-1773943372883-1504",
+      "ip": "::1",
+      "message": "Explain quantum computing simply and compare it with classical computing in 3 short bullets.",
+      "reply": "- **Basic Concept**: Quantum computing uses quantum bits (qubits) that can represent both 0 and 1 simultaneously due to superposition, while classical computing relies on bits that can only be either 0 or 1.\n\n- **Processing Power**: Quantum computers can perform many calculations at once, making them potentially much faster for specific tasks (like factoring large numbers) compared to classical computers, which process one calculation at a time.\n\n- **Problem-Solving**: Quantum computing excels in solving complex problems involving large datasets and optimization, while classical computing is m",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T18:02:52.883Z"
+    },
+    {
+      "id": "a-1773943752619-4564",
+      "ip": "::1",
+      "message": "health check",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-19T18:09:12.619Z"
+    },
+    {
+      "id": "a-1773943753867-8618",
+      "ip": "::1",
+      "message": "weather now in Bucharest",
+      "reply": "Current weather in Bucharest, Romania: 5.7C, partly cloudy, wind 3 km/h.",
+      "provider": "weather-live",
+      "helper": "weather",
+      "model": "weather-live",
+      "at": "2026-03-19T18:09:13.867Z"
+    },
+    {
+      "id": "a-1773943753874-1424",
+      "ip": "::1",
+      "message": "write a short follow-up email after a project meeting",
+      "reply": "Here's a clean, professional follow-up email you can adapt:\n\n---\n\n**Subject:** Follow-Up – [Project Name] Meeting\n\nHi [Name/Team],\n\nThank you for joining today's meeting. Here's a quick recap of what we covered:\n\n**Key Decisions Made:**\n- [Decision 1]\n- [Decision 2]\n\n**Action Items:**\n| Task | Owner | Due Date |\n|------|-------|----------|\n| [Task 1] | [Name] | [Date] |\n| [Task 2] | [Name] | [Date] |\n\n**Next Steps:**\nOur next meeting is scheduled for **[Date/Time]**. Please come prepared with [any relevant updates or materials].\n\nFeel free to reach out if you have any questions or if I missed ",
+      "provider": "cache",
+      "helper": "writing",
+      "model": "claude-sonnet-4-6",
+      "at": "2026-03-19T18:09:13.874Z"
+    },
+    {
+      "id": "a-1773943753880-4643",
+      "ip": "::1",
+      "message": "Explain quantum computing simply and compare it with classical computing in 3 short bullets.",
+      "reply": "- **Basic Concept**: Quantum computing uses quantum bits (qubits) that can represent both 0 and 1 simultaneously due to superposition, while classical computing relies on bits that can only be either 0 or 1.\n\n- **Processing Power**: Quantum computers can perform many calculations at once, making them potentially much faster for specific tasks (like factoring large numbers) compared to classical computers, which process one calculation at a time.\n\n- **Problem-Solving**: Quantum computing excels in solving complex problems involving large datasets and optimization, while classical computing is m",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T18:09:13.880Z"
+    },
+    {
+      "id": "a-1773944200299-6118",
+      "ip": "::1",
+      "message": "health check",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "local-hybrid",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-19T18:16:40.299Z"
+    },
+    {
+      "id": "a-1773944201170-4118",
+      "ip": "::1",
+      "message": "weather now in Bucharest",
+      "reply": "Current weather in Bucharest, Romania: 5.5C, partly cloudy, wind 3 km/h.",
+      "provider": "weather-live",
+      "helper": "weather",
+      "model": "weather-live",
+      "at": "2026-03-19T18:16:41.170Z"
+    },
+    {
+      "id": "a-1773944208062-2897",
+      "ip": "::1",
+      "message": "write a short follow-up email after a project meeting",
+      "reply": "Here's a clean, professional follow-up email you can adapt:\n\n---\n\n**Subject:** Follow-Up – [Project Name] Meeting | [Date]\n\nHi [Name/Team],\n\nThank you for joining today's meeting. Here's a quick recap of what we covered:\n\n**Key Decisions Made:**\n- [Decision 1]\n- [Decision 2]\n\n**Action Items:**\n| Task | Owner | Deadline |\n|------|-------|----------|\n| [Task 1] | [Name] | [Date] |\n| [Task 2] | [Name] | [Date] |\n\n**Next Steps:**\nOur next meeting is scheduled for **[Date/Time]**. Please come prepared with [any specific deliverables].\n\nDon't hesitate to reach out if you have any questions or need c",
+      "provider": "anthropic",
+      "helper": "writing",
+      "model": "claude-sonnet-4-6",
+      "at": "2026-03-19T18:16:48.062Z"
+    },
+    {
+      "id": "a-1773944213525-835",
+      "ip": "::1",
+      "message": "Explain quantum computing simply and compare it with classical computing in 3 short bullets.",
+      "reply": "- **Basic Concept**: Quantum computing uses quantum bits (qubits) that can represent both 0 and 1 simultaneously due to superposition, while classical computing relies on bits that are either 0 or 1.\n\n- **Processing Power**: Quantum computers can perform complex calculations much faster than classical computers by leveraging quantum phenomena like entanglement, enabling them to solve certain problems exponentially quicker.\n\n- **Applications**: Quantum computing is particularly suited for tasks like cryptography, optimization, and simulating quantum systems, whereas classical computing excels i",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T18:16:53.525Z"
+    },
+    {
+      "id": "a-1773944222382-9597",
+      "ip": "::1",
+      "message": "health check",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-19T18:17:02.382Z"
+    },
+    {
+      "id": "a-1773944223919-7713",
+      "ip": "::1",
+      "message": "weather now in Bucharest",
+      "reply": "Current weather in Bucharest, Romania: 5.5C, partly cloudy, wind 3 km/h.",
+      "provider": "weather-live",
+      "helper": "weather",
+      "model": "weather-live",
+      "at": "2026-03-19T18:17:03.919Z"
+    },
+    {
+      "id": "a-1773944223932-3410",
+      "ip": "::1",
+      "message": "write a short follow-up email after a project meeting",
+      "reply": "Here's a clean, professional follow-up email you can adapt:\n\n---\n\n**Subject:** Follow-Up – [Project Name] Meeting | [Date]\n\nHi [Name/Team],\n\nThank you for joining today's meeting. Here's a quick recap of what we covered:\n\n**Key Decisions Made:**\n- [Decision 1]\n- [Decision 2]\n\n**Action Items:**\n| Task | Owner | Deadline |\n|------|-------|----------|\n| [Task 1] | [Name] | [Date] |\n| [Task 2] | [Name] | [Date] |\n\n**Next Steps:**\nOur next meeting is scheduled for **[Date/Time]**. Please come prepared with [any specific deliverables].\n\nDon't hesitate to reach out if you have any questions or need c",
+      "provider": "cache",
+      "helper": "writing",
+      "model": "claude-sonnet-4-6",
+      "at": "2026-03-19T18:17:03.932Z"
+    },
+    {
+      "id": "a-1773944223938-792",
+      "ip": "::1",
+      "message": "Explain quantum computing simply and compare it with classical computing in 3 short bullets.",
+      "reply": "- **Basic Concept**: Quantum computing uses quantum bits (qubits) that can represent both 0 and 1 simultaneously due to superposition, while classical computing relies on bits that are either 0 or 1.\n\n- **Processing Power**: Quantum computers can perform complex calculations much faster than classical computers by leveraging quantum phenomena like entanglement, enabling them to solve certain problems exponentially quicker.\n\n- **Applications**: Quantum computing is particularly suited for tasks like cryptography, optimization, and simulating quantum systems, whereas classical computing excels i",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T18:17:03.938Z"
+    },
+    {
+      "id": "a-1773944492217-5938",
+      "ip": "::1",
+      "message": "health check",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-19T18:21:32.217Z"
+    },
+    {
+      "id": "a-1773944492780-1717",
+      "ip": "::1",
+      "message": "weather now in Bucharest",
+      "reply": "Current weather in Bucharest, Romania: 5.5C, partly cloudy, wind 3 km/h.",
+      "provider": "weather-live",
+      "helper": "weather",
+      "model": "weather-live",
+      "at": "2026-03-19T18:21:32.780Z"
+    },
+    {
+      "id": "a-1773944492788-2485",
+      "ip": "::1",
+      "message": "write a short follow-up email after a project meeting",
+      "reply": "Here's a clean, professional follow-up email you can adapt:\n\n---\n\n**Subject:** Follow-Up – [Project Name] Meeting | [Date]\n\nHi [Name/Team],\n\nThank you for joining today's meeting. Here's a quick recap of what we covered:\n\n**Key Decisions Made:**\n- [Decision 1]\n- [Decision 2]\n\n**Action Items:**\n| Task | Owner | Deadline |\n|------|-------|----------|\n| [Task 1] | [Name] | [Date] |\n| [Task 2] | [Name] | [Date] |\n\n**Next Steps:**\nOur next meeting is scheduled for **[Date/Time]**. Please come prepared with [any specific deliverables].\n\nDon't hesitate to reach out if you have any questions or need c",
+      "provider": "cache",
+      "helper": "writing",
+      "model": "claude-sonnet-4-6",
+      "at": "2026-03-19T18:21:32.788Z"
+    },
+    {
+      "id": "a-1773944492793-512",
+      "ip": "::1",
+      "message": "Explain quantum computing simply and compare it with classical computing in 3 short bullets.",
+      "reply": "- **Basic Concept**: Quantum computing uses quantum bits (qubits) that can represent both 0 and 1 simultaneously due to superposition, while classical computing relies on bits that are either 0 or 1.\n\n- **Processing Power**: Quantum computers can perform complex calculations much faster than classical computers by leveraging quantum phenomena like entanglement, enabling them to solve certain problems exponentially quicker.\n\n- **Applications**: Quantum computing is particularly suited for tasks like cryptography, optimization, and simulating quantum systems, whereas classical computing excels i",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T18:21:32.793Z"
+    },
+    {
+      "id": "a-1773944651088-9075",
+      "ip": "::1",
+      "message": "health check",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-19T18:24:11.088Z"
+    },
+    {
+      "id": "a-1773944652942-7373",
+      "ip": "::1",
+      "message": "weather now in Bucharest",
+      "reply": "Current weather in Bucharest, Romania: 5.5C, partly cloudy, wind 3 km/h.",
+      "provider": "weather-live",
+      "helper": "weather",
+      "model": "weather-live",
+      "at": "2026-03-19T18:24:12.942Z"
+    },
+    {
+      "id": "a-1773944652949-8139",
+      "ip": "::1",
+      "message": "write a short follow-up email after a project meeting",
+      "reply": "Here's a clean, professional follow-up email you can adapt:\n\n---\n\n**Subject:** Follow-Up – [Project Name] Meeting | [Date]\n\nHi [Name/Team],\n\nThank you for joining today's meeting. Here's a quick recap of what we covered:\n\n**Key Decisions Made:**\n- [Decision 1]\n- [Decision 2]\n\n**Action Items:**\n| Task | Owner | Deadline |\n|------|-------|----------|\n| [Task 1] | [Name] | [Date] |\n| [Task 2] | [Name] | [Date] |\n\n**Next Steps:**\nOur next meeting is scheduled for **[Date/Time]**. Please come prepared with [any specific deliverables].\n\nDon't hesitate to reach out if you have any questions or need c",
+      "provider": "cache",
+      "helper": "writing",
+      "model": "claude-sonnet-4-6",
+      "at": "2026-03-19T18:24:12.949Z"
+    },
+    {
+      "id": "a-1773944652976-9366",
+      "ip": "::1",
+      "message": "Explain quantum computing simply and compare it with classical computing in 3 short bullets.",
+      "reply": "- **Basic Concept**: Quantum computing uses quantum bits (qubits) that can represent both 0 and 1 simultaneously due to superposition, while classical computing relies on bits that are either 0 or 1.\n\n- **Processing Power**: Quantum computers can perform complex calculations much faster than classical computers by leveraging quantum phenomena like entanglement, enabling them to solve certain problems exponentially quicker.\n\n- **Applications**: Quantum computing is particularly suited for tasks like cryptography, optimization, and simulating quantum systems, whereas classical computing excels i",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T18:24:12.976Z"
+    },
+    {
+      "id": "a-1773945077582-4302",
+      "ip": "::1",
+      "message": "health check",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-19T18:31:17.582Z"
+    },
+    {
+      "id": "a-1773945079631-6956",
+      "ip": "::1",
+      "message": "weather now in Bucharest",
+      "reply": "Current weather in Bucharest, Romania: 5.4C, partly cloudy, wind 3 km/h.",
+      "provider": "weather-live",
+      "helper": "weather",
+      "model": "weather-live",
+      "at": "2026-03-19T18:31:19.631Z"
+    },
+    {
+      "id": "a-1773945079641-1758",
+      "ip": "::1",
+      "message": "write a short follow-up email after a project meeting",
+      "reply": "Here's a clean, professional follow-up email you can adapt:\n\n---\n\n**Subject:** Follow-Up – [Project Name] Meeting | [Date]\n\nHi [Name/Team],\n\nThank you for joining today's meeting. Here's a quick recap of what we covered:\n\n**Key Decisions Made:**\n- [Decision 1]\n- [Decision 2]\n\n**Action Items:**\n| Task | Owner | Deadline |\n|------|-------|----------|\n| [Task 1] | [Name] | [Date] |\n| [Task 2] | [Name] | [Date] |\n\n**Next Steps:**\nOur next meeting is scheduled for **[Date/Time]**. Please come prepared with [any specific deliverables].\n\nDon't hesitate to reach out if you have any questions or need c",
+      "provider": "cache",
+      "helper": "writing",
+      "model": "claude-sonnet-4-6",
+      "at": "2026-03-19T18:31:19.641Z"
+    },
+    {
+      "id": "a-1773945079650-1190",
+      "ip": "::1",
+      "message": "Explain quantum computing simply and compare it with classical computing in 3 short bullets.",
+      "reply": "- **Basic Concept**: Quantum computing uses quantum bits (qubits) that can represent both 0 and 1 simultaneously due to superposition, while classical computing relies on bits that are either 0 or 1.\n\n- **Processing Power**: Quantum computers can perform complex calculations much faster than classical computers by leveraging quantum phenomena like entanglement, enabling them to solve certain problems exponentially quicker.\n\n- **Applications**: Quantum computing is particularly suited for tasks like cryptography, optimization, and simulating quantum systems, whereas classical computing excels i",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T18:31:19.650Z"
+    },
+    {
+      "id": "a-1773945142477-6246",
+      "ip": "::1",
+      "message": "health check",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "local-hybrid",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-19T18:32:22.477Z"
+    },
+    {
+      "id": "a-1773945143998-6943",
+      "ip": "::1",
+      "message": "weather now in Bucharest",
+      "reply": "Current weather in Bucharest, Romania: 5.4C, partly cloudy, wind 3 km/h.",
+      "provider": "weather-live",
+      "helper": "weather",
+      "model": "weather-live",
+      "at": "2026-03-19T18:32:23.998Z"
+    },
+    {
+      "id": "a-1773945151371-2238",
+      "ip": "::1",
+      "message": "write a short follow-up email after a project meeting",
+      "reply": "Here's a clean, professional follow-up email you can adapt:\n\n---\n\n**Subject:** Follow-Up – [Project Name] Meeting | [Date]\n\nHi [Name/Team],\n\nThank you for joining today's meeting. Here's a quick recap of what we covered:\n\n**Key Decisions Made:**\n- [Decision 1]\n- [Decision 2]\n\n**Action Items:**\n| Task | Owner | Due Date |\n|------|-------|----------|\n| [Task 1] | [Name] | [Date] |\n| [Task 2] | [Name] | [Date] |\n\n**Next Steps:**\nOur next meeting is scheduled for **[Date & Time]**. Please come prepared with updates on your assigned tasks.\n\nFeel free to reach out if you have any questions or need c",
+      "provider": "anthropic",
+      "helper": "writing",
+      "model": "claude-sonnet-4-6",
+      "at": "2026-03-19T18:32:31.371Z"
+    },
+    {
+      "id": "a-1773945157058-1293",
+      "ip": "::1",
+      "message": "Explain quantum computing simply and compare it with classical computing in 3 short bullets.",
+      "reply": "- **Basic Concept**: Quantum computing uses quantum bits (qubits) that can represent both 0 and 1 simultaneously due to superposition, while classical computing relies on bits that are either 0 or 1.\n\n- **Processing Power**: Quantum computers can perform complex calculations much faster than classical computers by leveraging quantum phenomena like entanglement, which allows them to process vast amounts of data simultaneously.\n\n- **Applications**: Quantum computing is particularly suited for tasks involving large-scale optimization, cryptography, and simulations of quantum systems, whereas clas",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T18:32:37.058Z"
+    },
+    {
+      "id": "a-1773945173472-3855",
+      "ip": "::1",
+      "message": "health check",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-19T18:32:53.472Z"
+    },
+    {
+      "id": "a-1773945178404-3521",
+      "ip": "::1",
+      "message": "weather now in Bucharest",
+      "reply": "Current weather in Bucharest, Romania: 5.4C, partly cloudy, wind 3 km/h.",
+      "provider": "weather-live",
+      "helper": "weather",
+      "model": "weather-live",
+      "at": "2026-03-19T18:32:58.404Z"
+    },
+    {
+      "id": "a-1773945178427-1685",
+      "ip": "::1",
+      "message": "write a short follow-up email after a project meeting",
+      "reply": "Here's a clean, professional follow-up email you can adapt:\n\n---\n\n**Subject:** Follow-Up – [Project Name] Meeting | [Date]\n\nHi [Name/Team],\n\nThank you for joining today's meeting. Here's a quick recap of what we covered:\n\n**Key Decisions Made:**\n- [Decision 1]\n- [Decision 2]\n\n**Action Items:**\n| Task | Owner | Due Date |\n|------|-------|----------|\n| [Task 1] | [Name] | [Date] |\n| [Task 2] | [Name] | [Date] |\n\n**Next Steps:**\nOur next meeting is scheduled for **[Date & Time]**. Please come prepared with updates on your assigned tasks.\n\nFeel free to reach out if you have any questions or need c",
+      "provider": "cache",
+      "helper": "writing",
+      "model": "claude-sonnet-4-6",
+      "at": "2026-03-19T18:32:58.427Z"
+    },
+    {
+      "id": "a-1773945178447-8072",
+      "ip": "::1",
+      "message": "Explain quantum computing simply and compare it with classical computing in 3 short bullets.",
+      "reply": "- **Basic Concept**: Quantum computing uses quantum bits (qubits) that can represent both 0 and 1 simultaneously due to superposition, while classical computing relies on bits that are either 0 or 1.\n\n- **Processing Power**: Quantum computers can perform complex calculations much faster than classical computers by leveraging quantum phenomena like entanglement, which allows them to process vast amounts of data simultaneously.\n\n- **Applications**: Quantum computing is particularly suited for tasks involving large-scale optimization, cryptography, and simulations of quantum systems, whereas clas",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T18:32:58.447Z"
+    },
+    {
+      "id": "a-1773945322233-7285",
+      "ip": "::1",
+      "message": "health check",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-19T18:35:22.233Z"
+    },
+    {
+      "id": "a-1773945332847-953",
+      "ip": "::1",
+      "message": "weather now in Bucharest",
+      "reply": "Current weather in Bucharest, Romania: 5.4C, partly cloudy, wind 3 km/h.",
+      "provider": "cache",
+      "helper": "weather",
+      "model": "weather-live",
+      "at": "2026-03-19T18:35:32.847Z"
+    },
+    {
+      "id": "a-1773945332869-3675",
+      "ip": "::1",
+      "message": "write a short follow-up email after a project meeting",
+      "reply": "Here's a clean, professional follow-up email you can adapt:\n\n---\n\n**Subject:** Follow-Up – [Project Name] Meeting | [Date]\n\nHi [Name/Team],\n\nThank you for joining today's meeting. Here's a quick recap of what we covered:\n\n**Key Decisions Made:**\n- [Decision 1]\n- [Decision 2]\n\n**Action Items:**\n| Task | Owner | Due Date |\n|------|-------|----------|\n| [Task 1] | [Name] | [Date] |\n| [Task 2] | [Name] | [Date] |\n\n**Next Steps:**\nOur next meeting is scheduled for **[Date & Time]**. Please come prepared with updates on your assigned tasks.\n\nFeel free to reach out if you have any questions or need c",
+      "provider": "cache",
+      "helper": "writing",
+      "model": "claude-sonnet-4-6",
+      "at": "2026-03-19T18:35:32.869Z"
+    },
+    {
+      "id": "a-1773945332883-2107",
+      "ip": "::1",
+      "message": "Explain quantum computing simply and compare it with classical computing in 3 short bullets.",
+      "reply": "- **Basic Concept**: Quantum computing uses quantum bits (qubits) that can represent both 0 and 1 simultaneously due to superposition, while classical computing relies on bits that are either 0 or 1.\n\n- **Processing Power**: Quantum computers can perform complex calculations much faster than classical computers by leveraging quantum phenomena like entanglement, which allows them to process vast amounts of data simultaneously.\n\n- **Applications**: Quantum computing is particularly suited for tasks involving large-scale optimization, cryptography, and simulations of quantum systems, whereas clas",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T18:35:32.883Z"
+    },
+    {
+      "id": "a-1773945355883-9293",
+      "ip": "::1",
+      "message": "health check",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-19T18:35:55.883Z"
+    },
+    {
+      "id": "a-1773945356670-2297",
+      "ip": "::1",
+      "message": "weather now in Bucharest",
+      "reply": "Current weather in Bucharest, Romania: 5.4C, partly cloudy, wind 3 km/h.",
+      "provider": "weather-live",
+      "helper": "weather",
+      "model": "weather-live",
+      "at": "2026-03-19T18:35:56.670Z"
+    },
+    {
+      "id": "a-1773945356685-9642",
+      "ip": "::1",
+      "message": "write a short follow-up email after a project meeting",
+      "reply": "Here's a clean, professional follow-up email you can adapt:\n\n---\n\n**Subject:** Follow-Up – [Project Name] Meeting | [Date]\n\nHi [Name/Team],\n\nThank you for joining today's meeting. Here's a quick recap of what we covered:\n\n**Key Decisions Made:**\n- [Decision 1]\n- [Decision 2]\n\n**Action Items:**\n| Task | Owner | Due Date |\n|------|-------|----------|\n| [Task 1] | [Name] | [Date] |\n| [Task 2] | [Name] | [Date] |\n\n**Next Steps:**\nOur next meeting is scheduled for **[Date & Time]**. Please come prepared with updates on your assigned tasks.\n\nFeel free to reach out if you have any questions or need c",
+      "provider": "cache",
+      "helper": "writing",
+      "model": "claude-sonnet-4-6",
+      "at": "2026-03-19T18:35:56.685Z"
+    },
+    {
+      "id": "a-1773945356700-2190",
+      "ip": "::1",
+      "message": "Explain quantum computing simply and compare it with classical computing in 3 short bullets.",
+      "reply": "- **Basic Concept**: Quantum computing uses quantum bits (qubits) that can represent both 0 and 1 simultaneously due to superposition, while classical computing relies on bits that are either 0 or 1.\n\n- **Processing Power**: Quantum computers can perform complex calculations much faster than classical computers by leveraging quantum phenomena like entanglement, which allows them to process vast amounts of data simultaneously.\n\n- **Applications**: Quantum computing is particularly suited for tasks involving large-scale optimization, cryptography, and simulations of quantum systems, whereas clas",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T18:35:56.700Z"
+    },
+    {
+      "id": "a-1773945360893-4118",
+      "ip": "::1",
+      "message": "health check",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-19T18:36:00.893Z"
+    },
+    {
+      "id": "a-1773945363412-3090",
+      "ip": "::1",
+      "message": "weather now in Bucharest",
+      "reply": "Current weather in Bucharest, Romania: 5.4C, partly cloudy, wind 3 km/h.",
+      "provider": "weather-live",
+      "helper": "weather",
+      "model": "weather-live",
+      "at": "2026-03-19T18:36:03.412Z"
+    },
+    {
+      "id": "a-1773945363417-6468",
+      "ip": "::1",
+      "message": "write a short follow-up email after a project meeting",
+      "reply": "Here's a clean, professional follow-up email you can adapt:\n\n---\n\n**Subject:** Follow-Up – [Project Name] Meeting | [Date]\n\nHi [Name/Team],\n\nThank you for joining today's meeting. Here's a quick recap of what we covered:\n\n**Key Decisions Made:**\n- [Decision 1]\n- [Decision 2]\n\n**Action Items:**\n| Task | Owner | Due Date |\n|------|-------|----------|\n| [Task 1] | [Name] | [Date] |\n| [Task 2] | [Name] | [Date] |\n\n**Next Steps:**\nOur next meeting is scheduled for **[Date & Time]**. Please come prepared with updates on your assigned tasks.\n\nFeel free to reach out if you have any questions or need c",
+      "provider": "cache",
+      "helper": "writing",
+      "model": "claude-sonnet-4-6",
+      "at": "2026-03-19T18:36:03.417Z"
+    },
+    {
+      "id": "a-1773945363422-8949",
+      "ip": "::1",
+      "message": "Explain quantum computing simply and compare it with classical computing in 3 short bullets.",
+      "reply": "- **Basic Concept**: Quantum computing uses quantum bits (qubits) that can represent both 0 and 1 simultaneously due to superposition, while classical computing relies on bits that are either 0 or 1.\n\n- **Processing Power**: Quantum computers can perform complex calculations much faster than classical computers by leveraging quantum phenomena like entanglement, which allows them to process vast amounts of data simultaneously.\n\n- **Applications**: Quantum computing is particularly suited for tasks involving large-scale optimization, cryptography, and simulations of quantum systems, whereas clas",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T18:36:03.423Z"
+    },
+    {
+      "id": "a-1773945610168-7319",
+      "ip": "::1",
+      "message": "health check",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-19T18:40:10.168Z"
+    },
+    {
+      "id": "a-1773945611462-2641",
+      "ip": "::1",
+      "message": "weather now in Bucharest",
+      "reply": "Current weather in Bucharest, Romania: 5.4C, partly cloudy, wind 3 km/h.",
+      "provider": "weather-live",
+      "helper": "weather",
+      "model": "weather-live",
+      "at": "2026-03-19T18:40:11.462Z"
+    },
+    {
+      "id": "a-1773945611478-9201",
+      "ip": "::1",
+      "message": "write a short follow-up email after a project meeting",
+      "reply": "Here's a clean, professional follow-up email you can adapt:\n\n---\n\n**Subject:** Follow-Up – [Project Name] Meeting | [Date]\n\nHi [Name/Team],\n\nThank you for joining today's meeting. Here's a quick recap of what we covered:\n\n**Key Decisions Made:**\n- [Decision 1]\n- [Decision 2]\n\n**Action Items:**\n| Task | Owner | Due Date |\n|------|-------|----------|\n| [Task 1] | [Name] | [Date] |\n| [Task 2] | [Name] | [Date] |\n\n**Next Steps:**\nOur next meeting is scheduled for **[Date & Time]**. Please come prepared with updates on your assigned tasks.\n\nFeel free to reach out if you have any questions or need c",
+      "provider": "cache",
+      "helper": "writing",
+      "model": "claude-sonnet-4-6",
+      "at": "2026-03-19T18:40:11.478Z"
+    },
+    {
+      "id": "a-1773945611492-1221",
+      "ip": "::1",
+      "message": "Explain quantum computing simply and compare it with classical computing in 3 short bullets.",
+      "reply": "- **Basic Concept**: Quantum computing uses quantum bits (qubits) that can represent both 0 and 1 simultaneously due to superposition, while classical computing relies on bits that are either 0 or 1.\n\n- **Processing Power**: Quantum computers can perform complex calculations much faster than classical computers by leveraging quantum phenomena like entanglement, which allows them to process vast amounts of data simultaneously.\n\n- **Applications**: Quantum computing is particularly suited for tasks involving large-scale optimization, cryptography, and simulations of quantum systems, whereas clas",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T18:40:11.492Z"
+    },
+    {
+      "id": "a-1773945718492-6669",
+      "ip": "::1",
+      "message": "health check",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-19T18:41:58.492Z"
+    },
+    {
+      "id": "a-1773945719568-3027",
+      "ip": "::1",
+      "message": "weather now in Bucharest",
+      "reply": "Current weather in Bucharest, Romania: 5.4C, partly cloudy, wind 3 km/h.",
+      "provider": "weather-live",
+      "helper": "weather",
+      "model": "weather-live",
+      "at": "2026-03-19T18:41:59.568Z"
+    },
+    {
+      "id": "a-1773945719583-9774",
+      "ip": "::1",
+      "message": "write a short follow-up email after a project meeting",
+      "reply": "Here's a clean, professional follow-up email you can adapt:\n\n---\n\n**Subject:** Follow-Up – [Project Name] Meeting | [Date]\n\nHi [Name/Team],\n\nThank you for joining today's meeting. Here's a quick recap of what we covered:\n\n**Key Decisions Made:**\n- [Decision 1]\n- [Decision 2]\n\n**Action Items:**\n| Task | Owner | Due Date |\n|------|-------|----------|\n| [Task 1] | [Name] | [Date] |\n| [Task 2] | [Name] | [Date] |\n\n**Next Steps:**\nOur next meeting is scheduled for **[Date & Time]**. Please come prepared with updates on your assigned tasks.\n\nFeel free to reach out if you have any questions or need c",
+      "provider": "cache",
+      "helper": "writing",
+      "model": "claude-sonnet-4-6",
+      "at": "2026-03-19T18:41:59.583Z"
+    },
+    {
+      "id": "a-1773945719597-5520",
+      "ip": "::1",
+      "message": "Explain quantum computing simply and compare it with classical computing in 3 short bullets.",
+      "reply": "- **Basic Concept**: Quantum computing uses quantum bits (qubits) that can represent both 0 and 1 simultaneously due to superposition, while classical computing relies on bits that are either 0 or 1.\n\n- **Processing Power**: Quantum computers can perform complex calculations much faster than classical computers by leveraging quantum phenomena like entanglement, which allows them to process vast amounts of data simultaneously.\n\n- **Applications**: Quantum computing is particularly suited for tasks involving large-scale optimization, cryptography, and simulations of quantum systems, whereas clas",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T18:41:59.597Z"
+    },
+    {
+      "id": "a-1773945773637-5047",
+      "ip": "::1",
+      "message": "health check",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-19T18:42:53.637Z"
+    },
+    {
+      "id": "a-1773945774130-8306",
+      "ip": "::1",
+      "message": "weather now in Bucharest",
+      "reply": "Current weather in Bucharest, Romania: 5.4C, partly cloudy, wind 3 km/h.",
+      "provider": "weather-live",
+      "helper": "weather",
+      "model": "weather-live",
+      "at": "2026-03-19T18:42:54.130Z"
+    },
+    {
+      "id": "a-1773945774136-9273",
+      "ip": "::1",
+      "message": "write a short follow-up email after a project meeting",
+      "reply": "Here's a clean, professional follow-up email you can adapt:\n\n---\n\n**Subject:** Follow-Up – [Project Name] Meeting | [Date]\n\nHi [Name/Team],\n\nThank you for joining today's meeting. Here's a quick recap of what we covered:\n\n**Key Decisions Made:**\n- [Decision 1]\n- [Decision 2]\n\n**Action Items:**\n| Task | Owner | Due Date |\n|------|-------|----------|\n| [Task 1] | [Name] | [Date] |\n| [Task 2] | [Name] | [Date] |\n\n**Next Steps:**\nOur next meeting is scheduled for **[Date & Time]**. Please come prepared with updates on your assigned tasks.\n\nFeel free to reach out if you have any questions or need c",
+      "provider": "cache",
+      "helper": "writing",
+      "model": "claude-sonnet-4-6",
+      "at": "2026-03-19T18:42:54.136Z"
+    },
+    {
+      "id": "a-1773945774143-4211",
+      "ip": "::1",
+      "message": "Explain quantum computing simply and compare it with classical computing in 3 short bullets.",
+      "reply": "- **Basic Concept**: Quantum computing uses quantum bits (qubits) that can represent both 0 and 1 simultaneously due to superposition, while classical computing relies on bits that are either 0 or 1.\n\n- **Processing Power**: Quantum computers can perform complex calculations much faster than classical computers by leveraging quantum phenomena like entanglement, which allows them to process vast amounts of data simultaneously.\n\n- **Applications**: Quantum computing is particularly suited for tasks involving large-scale optimization, cryptography, and simulations of quantum systems, whereas clas",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T18:42:54.143Z"
+    },
+    {
+      "id": "a-1773945896726-5851",
+      "ip": "::1",
+      "message": "health check",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-19T18:44:56.726Z"
+    },
+    {
+      "id": "a-1773945897285-5452",
+      "ip": "::1",
+      "message": "weather now in Bucharest",
+      "reply": "Current weather in Bucharest, Romania: 5.4C, partly cloudy, wind 3 km/h.",
+      "provider": "weather-live",
+      "helper": "weather",
+      "model": "weather-live",
+      "at": "2026-03-19T18:44:57.285Z"
+    },
+    {
+      "id": "a-1773945897293-9782",
+      "ip": "::1",
+      "message": "write a short follow-up email after a project meeting",
+      "reply": "Here's a clean, professional follow-up email you can adapt:\n\n---\n\n**Subject:** Follow-Up – [Project Name] Meeting | [Date]\n\nHi [Name/Team],\n\nThank you for joining today's meeting. Here's a quick recap of what we covered:\n\n**Key Decisions Made:**\n- [Decision 1]\n- [Decision 2]\n\n**Action Items:**\n| Task | Owner | Due Date |\n|------|-------|----------|\n| [Task 1] | [Name] | [Date] |\n| [Task 2] | [Name] | [Date] |\n\n**Next Steps:**\nOur next meeting is scheduled for **[Date & Time]**. Please come prepared with updates on your assigned tasks.\n\nFeel free to reach out if you have any questions or need c",
+      "provider": "cache",
+      "helper": "writing",
+      "model": "claude-sonnet-4-6",
+      "at": "2026-03-19T18:44:57.293Z"
+    },
+    {
+      "id": "a-1773945897300-2677",
+      "ip": "::1",
+      "message": "Explain quantum computing simply and compare it with classical computing in 3 short bullets.",
+      "reply": "- **Basic Concept**: Quantum computing uses quantum bits (qubits) that can represent both 0 and 1 simultaneously due to superposition, while classical computing relies on bits that are either 0 or 1.\n\n- **Processing Power**: Quantum computers can perform complex calculations much faster than classical computers by leveraging quantum phenomena like entanglement, which allows them to process vast amounts of data simultaneously.\n\n- **Applications**: Quantum computing is particularly suited for tasks involving large-scale optimization, cryptography, and simulations of quantum systems, whereas clas",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T18:44:57.300Z"
+    },
+    {
+      "id": "a-1773945998179-3805",
+      "ip": "::1",
+      "message": "health check",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-19T18:46:38.179Z"
+    },
+    {
+      "id": "a-1773945999032-4886",
+      "ip": "::1",
+      "message": "weather now in Bucharest",
+      "reply": "Current weather in Bucharest, Romania: 5.3C, partly cloudy, wind 3 km/h.",
+      "provider": "weather-live",
+      "helper": "weather",
+      "model": "weather-live",
+      "at": "2026-03-19T18:46:39.032Z"
+    },
+    {
+      "id": "a-1773945999045-9329",
+      "ip": "::1",
+      "message": "write a short follow-up email after a project meeting",
+      "reply": "Here's a clean, professional follow-up email you can adapt:\n\n---\n\n**Subject:** Follow-Up – [Project Name] Meeting | [Date]\n\nHi [Name/Team],\n\nThank you for joining today's meeting. Here's a quick recap of what we covered:\n\n**Key Decisions Made:**\n- [Decision 1]\n- [Decision 2]\n\n**Action Items:**\n| Task | Owner | Due Date |\n|------|-------|----------|\n| [Task 1] | [Name] | [Date] |\n| [Task 2] | [Name] | [Date] |\n\n**Next Steps:**\nOur next meeting is scheduled for **[Date & Time]**. Please come prepared with updates on your assigned tasks.\n\nFeel free to reach out if you have any questions or need c",
+      "provider": "cache",
+      "helper": "writing",
+      "model": "claude-sonnet-4-6",
+      "at": "2026-03-19T18:46:39.045Z"
+    },
+    {
+      "id": "a-1773945999057-5105",
+      "ip": "::1",
+      "message": "Explain quantum computing simply and compare it with classical computing in 3 short bullets.",
+      "reply": "- **Basic Concept**: Quantum computing uses quantum bits (qubits) that can represent both 0 and 1 simultaneously due to superposition, while classical computing relies on bits that are either 0 or 1.\n\n- **Processing Power**: Quantum computers can perform complex calculations much faster than classical computers by leveraging quantum phenomena like entanglement, which allows them to process vast amounts of data simultaneously.\n\n- **Applications**: Quantum computing is particularly suited for tasks involving large-scale optimization, cryptography, and simulations of quantum systems, whereas clas",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T18:46:39.057Z"
+    },
+    {
+      "id": "a-1773946071659-8714",
+      "ip": "::1",
+      "message": "health check",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "local-hybrid",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-19T18:47:51.659Z"
+    },
+    {
+      "id": "a-1773946072480-6683",
+      "ip": "::1",
+      "message": "weather now in Bucharest",
+      "reply": "Current weather in Bucharest, Romania: 5.3C, partly cloudy, wind 3 km/h.",
+      "provider": "weather-live",
+      "helper": "weather",
+      "model": "weather-live",
+      "at": "2026-03-19T18:47:52.480Z"
+    },
+    {
+      "id": "a-1773946079576-8753",
+      "ip": "::1",
+      "message": "write a short follow-up email after a project meeting",
+      "reply": "Here's a clean, professional follow-up email you can adapt:\n\n---\n\n**Subject:** Follow-Up – [Project Name] Meeting | [Date]\n\nHi [Name/Team],\n\nThank you for joining today's meeting. Here's a quick recap to keep us aligned:\n\n**Key Decisions Made:**\n- [Decision 1]\n- [Decision 2]\n\n**Action Items:**\n| Task | Owner | Due Date |\n|------|-------|----------|\n| [Task 1] | [Name] | [Date] |\n| [Task 2] | [Name] | [Date] |\n\n**Next Steps:**\nOur next meeting is scheduled for **[Date & Time]**. Please come prepared with [any specific deliverables].\n\nFeel free to reach out if you have any questions or need clar",
+      "provider": "anthropic",
+      "helper": "writing",
+      "model": "claude-sonnet-4-6",
+      "at": "2026-03-19T18:47:59.576Z"
+    },
+    {
+      "id": "a-1773946084886-2031",
+      "ip": "::1",
+      "message": "Explain quantum computing simply and compare it with classical computing in 3 short bullets.",
+      "reply": "- **Basic Unit of Information**: Classical computing uses bits as the smallest unit of information, which can be either 0 or 1. Quantum computing uses qubits, which can represent 0, 1, or both simultaneously due to superposition, allowing for more complex calculations.\n\n- **Processing Power**: Classical computers process information sequentially, meaning they handle one operation at a time. Quantum computers can perform many calculations at once through quantum parallelism, potentially solving certain problems much faster.\n\n- **Applications**: Classical computers excel in everyday tasks like w",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T18:48:04.886Z"
+    },
+    {
+      "id": "a-1773946093894-1955",
+      "ip": "::1",
+      "message": "health check",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-19T18:48:13.894Z"
+    },
+    {
+      "id": "a-1773946094684-2804",
+      "ip": "::1",
+      "message": "weather now in Bucharest",
+      "reply": "Current weather in Bucharest, Romania: 5.3C, partly cloudy, wind 3 km/h.",
+      "provider": "weather-live",
+      "helper": "weather",
+      "model": "weather-live",
+      "at": "2026-03-19T18:48:14.684Z"
+    },
+    {
+      "id": "a-1773946094698-3847",
+      "ip": "::1",
+      "message": "write a short follow-up email after a project meeting",
+      "reply": "Here's a clean, professional follow-up email you can adapt:\n\n---\n\n**Subject:** Follow-Up – [Project Name] Meeting | [Date]\n\nHi [Name/Team],\n\nThank you for joining today's meeting. Here's a quick recap to keep us aligned:\n\n**Key Decisions Made:**\n- [Decision 1]\n- [Decision 2]\n\n**Action Items:**\n| Task | Owner | Due Date |\n|------|-------|----------|\n| [Task 1] | [Name] | [Date] |\n| [Task 2] | [Name] | [Date] |\n\n**Next Steps:**\nOur next meeting is scheduled for **[Date & Time]**. Please come prepared with [any specific deliverables].\n\nFeel free to reach out if you have any questions or need clar",
+      "provider": "cache",
+      "helper": "writing",
+      "model": "claude-sonnet-4-6",
+      "at": "2026-03-19T18:48:14.698Z"
+    },
+    {
+      "id": "a-1773946094710-9413",
+      "ip": "::1",
+      "message": "Explain quantum computing simply and compare it with classical computing in 3 short bullets.",
+      "reply": "- **Basic Unit of Information**: Classical computing uses bits as the smallest unit of information, which can be either 0 or 1. Quantum computing uses qubits, which can represent 0, 1, or both simultaneously due to superposition, allowing for more complex calculations.\n\n- **Processing Power**: Classical computers process information sequentially, meaning they handle one operation at a time. Quantum computers can perform many calculations at once through quantum parallelism, potentially solving certain problems much faster.\n\n- **Applications**: Classical computers excel in everyday tasks like w",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T18:48:14.710Z"
+    },
+    {
+      "id": "a-1773946200052-7963",
+      "ip": "::1",
+      "message": "health check",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-19T18:50:00.052Z"
+    },
+    {
+      "id": "a-1773946204422-7309",
+      "ip": "::1",
+      "message": "weather now in Bucharest",
+      "reply": "Current weather in Bucharest, Romania: 5.3C, partly cloudy, wind 3 km/h.",
+      "provider": "weather-live",
+      "helper": "weather",
+      "model": "weather-live",
+      "at": "2026-03-19T18:50:04.422Z"
+    },
+    {
+      "id": "a-1773946204429-7756",
+      "ip": "::1",
+      "message": "write a short follow-up email after a project meeting",
+      "reply": "Here's a clean, professional follow-up email you can adapt:\n\n---\n\n**Subject:** Follow-Up – [Project Name] Meeting | [Date]\n\nHi [Name/Team],\n\nThank you for joining today's meeting. Here's a quick recap to keep us aligned:\n\n**Key Decisions Made:**\n- [Decision 1]\n- [Decision 2]\n\n**Action Items:**\n| Task | Owner | Due Date |\n|------|-------|----------|\n| [Task 1] | [Name] | [Date] |\n| [Task 2] | [Name] | [Date] |\n\n**Next Steps:**\nOur next meeting is scheduled for **[Date & Time]**. Please come prepared with [any specific deliverables].\n\nFeel free to reach out if you have any questions or need clar",
+      "provider": "cache",
+      "helper": "writing",
+      "model": "claude-sonnet-4-6",
+      "at": "2026-03-19T18:50:04.429Z"
+    },
+    {
+      "id": "a-1773946204434-842",
+      "ip": "::1",
+      "message": "Explain quantum computing simply and compare it with classical computing in 3 short bullets.",
+      "reply": "- **Basic Unit of Information**: Classical computing uses bits as the smallest unit of information, which can be either 0 or 1. Quantum computing uses qubits, which can represent 0, 1, or both simultaneously due to superposition, allowing for more complex calculations.\n\n- **Processing Power**: Classical computers process information sequentially, meaning they handle one operation at a time. Quantum computers can perform many calculations at once through quantum parallelism, potentially solving certain problems much faster.\n\n- **Applications**: Classical computers excel in everyday tasks like w",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T18:50:04.434Z"
+    },
+    {
+      "id": "a-1773946321275-4312",
+      "ip": "::1",
+      "message": "health check",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-19T18:52:01.275Z"
+    },
+    {
+      "id": "a-1773946324040-613",
+      "ip": "::1",
+      "message": "weather now in Bucharest",
+      "reply": "Current weather in Bucharest, Romania: 5.3C, partly cloudy, wind 3 km/h.",
+      "provider": "weather-live",
+      "helper": "weather",
+      "model": "weather-live",
+      "at": "2026-03-19T18:52:04.040Z"
+    },
+    {
+      "id": "a-1773946324056-9649",
+      "ip": "::1",
+      "message": "write a short follow-up email after a project meeting",
+      "reply": "Here's a clean, professional follow-up email you can adapt:\n\n---\n\n**Subject:** Follow-Up – [Project Name] Meeting | [Date]\n\nHi [Name/Team],\n\nThank you for joining today's meeting. Here's a quick recap to keep us aligned:\n\n**Key Decisions Made:**\n- [Decision 1]\n- [Decision 2]\n\n**Action Items:**\n| Task | Owner | Due Date |\n|------|-------|----------|\n| [Task 1] | [Name] | [Date] |\n| [Task 2] | [Name] | [Date] |\n\n**Next Steps:**\nOur next meeting is scheduled for **[Date & Time]**. Please come prepared with [any specific deliverables].\n\nFeel free to reach out if you have any questions or need clar",
+      "provider": "cache",
+      "helper": "writing",
+      "model": "claude-sonnet-4-6",
+      "at": "2026-03-19T18:52:04.056Z"
+    },
+    {
+      "id": "a-1773946324069-7258",
+      "ip": "::1",
+      "message": "Explain quantum computing simply and compare it with classical computing in 3 short bullets.",
+      "reply": "- **Basic Unit of Information**: Classical computing uses bits as the smallest unit of information, which can be either 0 or 1. Quantum computing uses qubits, which can represent 0, 1, or both simultaneously due to superposition, allowing for more complex calculations.\n\n- **Processing Power**: Classical computers process information sequentially, meaning they handle one operation at a time. Quantum computers can perform many calculations at once through quantum parallelism, potentially solving certain problems much faster.\n\n- **Applications**: Classical computers excel in everyday tasks like w",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T18:52:04.069Z"
+    },
+    {
+      "id": "a-1773946433946-9213",
+      "ip": "::1",
+      "message": "health check",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-19T18:53:53.946Z"
+    },
+    {
+      "id": "a-1773946435268-6920",
+      "ip": "::1",
+      "message": "weather now in Bucharest",
+      "reply": "Current weather in Bucharest, Romania: 5.3C, partly cloudy, wind 3 km/h.",
+      "provider": "weather-live",
+      "helper": "weather",
+      "model": "weather-live",
+      "at": "2026-03-19T18:53:55.268Z"
+    },
+    {
+      "id": "a-1773946435280-8590",
+      "ip": "::1",
+      "message": "write a short follow-up email after a project meeting",
+      "reply": "Here's a clean, professional follow-up email you can adapt:\n\n---\n\n**Subject:** Follow-Up – [Project Name] Meeting | [Date]\n\nHi [Name/Team],\n\nThank you for joining today's meeting. Here's a quick recap to keep us aligned:\n\n**Key Decisions Made:**\n- [Decision 1]\n- [Decision 2]\n\n**Action Items:**\n| Task | Owner | Due Date |\n|------|-------|----------|\n| [Task 1] | [Name] | [Date] |\n| [Task 2] | [Name] | [Date] |\n\n**Next Steps:**\nOur next meeting is scheduled for **[Date & Time]**. Please come prepared with [any specific deliverables].\n\nFeel free to reach out if you have any questions or need clar",
+      "provider": "cache",
+      "helper": "writing",
+      "model": "claude-sonnet-4-6",
+      "at": "2026-03-19T18:53:55.280Z"
+    },
+    {
+      "id": "a-1773946435291-2544",
+      "ip": "::1",
+      "message": "Explain quantum computing simply and compare it with classical computing in 3 short bullets.",
+      "reply": "- **Basic Unit of Information**: Classical computing uses bits as the smallest unit of information, which can be either 0 or 1. Quantum computing uses qubits, which can represent 0, 1, or both simultaneously due to superposition, allowing for more complex calculations.\n\n- **Processing Power**: Classical computers process information sequentially, meaning they handle one operation at a time. Quantum computers can perform many calculations at once through quantum parallelism, potentially solving certain problems much faster.\n\n- **Applications**: Classical computers excel in everyday tasks like w",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T18:53:55.291Z"
+    },
+    {
+      "id": "a-1773946509702-586",
+      "ip": "::1",
+      "message": "health check",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-19T18:55:09.702Z"
+    },
+    {
+      "id": "a-1773946510452-8167",
+      "ip": "::1",
+      "message": "weather now in Bucharest",
+      "reply": "Current weather in Bucharest, Romania: 5.3C, partly cloudy, wind 3 km/h.",
+      "provider": "weather-live",
+      "helper": "weather",
+      "model": "weather-live",
+      "at": "2026-03-19T18:55:10.452Z"
+    },
+    {
+      "id": "a-1773946510462-73",
+      "ip": "::1",
+      "message": "write a short follow-up email after a project meeting",
+      "reply": "Here's a clean, professional follow-up email you can adapt:\n\n---\n\n**Subject:** Follow-Up – [Project Name] Meeting | [Date]\n\nHi [Name/Team],\n\nThank you for joining today's meeting. Here's a quick recap to keep us aligned:\n\n**Key Decisions Made:**\n- [Decision 1]\n- [Decision 2]\n\n**Action Items:**\n| Task | Owner | Due Date |\n|------|-------|----------|\n| [Task 1] | [Name] | [Date] |\n| [Task 2] | [Name] | [Date] |\n\n**Next Steps:**\nOur next meeting is scheduled for **[Date & Time]**. Please come prepared with [any specific deliverables].\n\nFeel free to reach out if you have any questions or need clar",
+      "provider": "cache",
+      "helper": "writing",
+      "model": "claude-sonnet-4-6",
+      "at": "2026-03-19T18:55:10.462Z"
+    },
+    {
+      "id": "a-1773946510468-7937",
+      "ip": "::1",
+      "message": "Explain quantum computing simply and compare it with classical computing in 3 short bullets.",
+      "reply": "- **Basic Unit of Information**: Classical computing uses bits as the smallest unit of information, which can be either 0 or 1. Quantum computing uses qubits, which can represent 0, 1, or both simultaneously due to superposition, allowing for more complex calculations.\n\n- **Processing Power**: Classical computers process information sequentially, meaning they handle one operation at a time. Quantum computers can perform many calculations at once through quantum parallelism, potentially solving certain problems much faster.\n\n- **Applications**: Classical computers excel in everyday tasks like w",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T18:55:10.468Z"
+    },
+    {
+      "id": "a-1773946699160-4203",
+      "ip": "::1",
+      "message": "health check",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-19T18:58:19.160Z"
+    },
+    {
+      "id": "a-1773946702263-5386",
+      "ip": "::1",
+      "message": "weather now in Bucharest",
+      "reply": "Current weather in Bucharest, Romania: 5.3C, partly cloudy, wind 3 km/h.",
+      "provider": "weather-live",
+      "helper": "weather",
+      "model": "weather-live",
+      "at": "2026-03-19T18:58:22.263Z"
+    },
+    {
+      "id": "a-1773946702279-9542",
+      "ip": "::1",
+      "message": "write a short follow-up email after a project meeting",
+      "reply": "Here's a clean, professional follow-up email you can adapt:\n\n---\n\n**Subject:** Follow-Up – [Project Name] Meeting | [Date]\n\nHi [Name/Team],\n\nThank you for joining today's meeting. Here's a quick recap to keep us aligned:\n\n**Key Decisions Made:**\n- [Decision 1]\n- [Decision 2]\n\n**Action Items:**\n| Task | Owner | Due Date |\n|------|-------|----------|\n| [Task 1] | [Name] | [Date] |\n| [Task 2] | [Name] | [Date] |\n\n**Next Steps:**\nOur next meeting is scheduled for **[Date & Time]**. Please come prepared with [any specific deliverables].\n\nFeel free to reach out if you have any questions or need clar",
+      "provider": "cache",
+      "helper": "writing",
+      "model": "claude-sonnet-4-6",
+      "at": "2026-03-19T18:58:22.279Z"
+    },
+    {
+      "id": "a-1773946702292-5643",
+      "ip": "::1",
+      "message": "Explain quantum computing simply and compare it with classical computing in 3 short bullets.",
+      "reply": "- **Basic Unit of Information**: Classical computing uses bits as the smallest unit of information, which can be either 0 or 1. Quantum computing uses qubits, which can represent 0, 1, or both simultaneously due to superposition, allowing for more complex calculations.\n\n- **Processing Power**: Classical computers process information sequentially, meaning they handle one operation at a time. Quantum computers can perform many calculations at once through quantum parallelism, potentially solving certain problems much faster.\n\n- **Applications**: Classical computers excel in everyday tasks like w",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T18:58:22.292Z"
+    },
+    {
+      "id": "a-1773946834620-7291",
+      "ip": "::1",
+      "message": "health check",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-19T19:00:34.620Z"
+    },
+    {
+      "id": "a-1773946836108-9164",
+      "ip": "::1",
+      "message": "weather now in Bucharest",
+      "reply": "Current weather in Bucharest, Romania: 5.3C, partly cloudy, wind 2 km/h.",
+      "provider": "weather-live",
+      "helper": "weather",
+      "model": "weather-live",
+      "at": "2026-03-19T19:00:36.108Z"
+    },
+    {
+      "id": "a-1773946836121-1489",
+      "ip": "::1",
+      "message": "write a short follow-up email after a project meeting",
+      "reply": "Here's a clean, professional follow-up email you can adapt:\n\n---\n\n**Subject:** Follow-Up – [Project Name] Meeting | [Date]\n\nHi [Name/Team],\n\nThank you for joining today's meeting. Here's a quick recap to keep us aligned:\n\n**Key Decisions Made:**\n- [Decision 1]\n- [Decision 2]\n\n**Action Items:**\n| Task | Owner | Due Date |\n|------|-------|----------|\n| [Task 1] | [Name] | [Date] |\n| [Task 2] | [Name] | [Date] |\n\n**Next Steps:**\nOur next meeting is scheduled for **[Date & Time]**. Please come prepared with [any specific deliverables].\n\nFeel free to reach out if you have any questions or need clar",
+      "provider": "cache",
+      "helper": "writing",
+      "model": "claude-sonnet-4-6",
+      "at": "2026-03-19T19:00:36.121Z"
+    },
+    {
+      "id": "a-1773946836130-4445",
+      "ip": "::1",
+      "message": "Explain quantum computing simply and compare it with classical computing in 3 short bullets.",
+      "reply": "- **Basic Unit of Information**: Classical computing uses bits as the smallest unit of information, which can be either 0 or 1. Quantum computing uses qubits, which can represent 0, 1, or both simultaneously due to superposition, allowing for more complex calculations.\n\n- **Processing Power**: Classical computers process information sequentially, meaning they handle one operation at a time. Quantum computers can perform many calculations at once through quantum parallelism, potentially solving certain problems much faster.\n\n- **Applications**: Classical computers excel in everyday tasks like w",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T19:00:36.130Z"
+    },
+    {
+      "id": "a-1773946900717-1680",
+      "ip": "::1",
+      "message": "ce faci prietene ?",
+      "reply": "Salut! Eu sunt aici să te ajut. Ce pot face pentru tine astăzi?",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T19:01:40.717Z"
+    },
+    {
+      "id": "a-1773946924141-7947",
+      "ip": "::1",
+      "message": "vreau sa te intreb ceva",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "local-hybrid",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-19T19:02:04.141Z"
+    },
+    {
+      "id": "a-1773946934949-8702",
+      "ip": "::1",
+      "message": "ce faci ?",
+      "reply": "Sunt aici să te ajut! Ce ai dori să discutăm sau ce întrebare ai?",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T19:02:14.949Z"
+    },
+    {
+      "id": "a-1773946944573-6453",
+      "ip": "::1",
+      "message": "vreau sa te intreb ceva",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-19T19:02:24.573Z"
+    },
+    {
+      "id": "a-1773946954305-5725",
+      "ip": "::1",
+      "message": "nu vorbesti cu mine ?",
+      "reply": "Ba da, vorbesc cu tine! Îmi cer scuze dacă am dat impresia că nu. Cu ce te pot ajuta?",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T19:02:34.305Z"
+    },
+    {
+      "id": "a-1773946967444-718",
+      "ip": "::1",
+      "message": "vreau sa te intreb ceva !!",
+      "reply": "Sigur, te ascult! Ce vrei să mă întrebi?",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T19:02:47.444Z"
+    },
+    {
+      "id": "a-1773946977076-4277",
+      "ip": "::1",
+      "message": "health check",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "local-hybrid",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-19T19:02:57.076Z"
+    },
+    {
+      "id": "a-1773946977567-8408",
+      "ip": "::1",
+      "message": "weather now in Bucharest",
+      "reply": "Current weather in Bucharest, Romania: 5.3C, partly cloudy, wind 2 km/h.",
+      "provider": "weather-live",
+      "helper": "weather",
+      "model": "weather-live",
+      "at": "2026-03-19T19:02:57.567Z"
+    },
+    {
+      "id": "a-1773946977581-3050",
+      "ip": "::1",
+      "message": "write a short follow-up email after a project meeting",
+      "reply": "Here's a clean, professional follow-up email you can adapt:\n\n---\n\n**Subject:** Follow-Up – [Project Name] Meeting | [Date]\n\nHi [Name/Team],\n\nThank you for joining today's meeting. Here's a quick recap to keep us aligned:\n\n**Key Decisions Made:**\n- [Decision 1]\n- [Decision 2]\n\n**Action Items:**\n| Task | Owner | Due Date |\n|------|-------|----------|\n| [Task 1] | [Name] | [Date] |\n| [Task 2] | [Name] | [Date] |\n\n**Next Steps:**\nOur next meeting is scheduled for **[Date & Time]**. Please come prepared with [any specific deliverables].\n\nFeel free to reach out if you have any questions or need clar",
+      "provider": "cache",
+      "helper": "writing",
+      "model": "claude-sonnet-4-6",
+      "at": "2026-03-19T19:02:57.581Z"
+    },
+    {
+      "id": "a-1773946977616-1522",
+      "ip": "::1",
+      "message": "Explain quantum computing simply and compare it with classical computing in 3 short bullets.",
+      "reply": "- **Basic Unit of Information**: Classical computing uses bits as the smallest unit of information, which can be either 0 or 1. Quantum computing uses qubits, which can represent 0, 1, or both simultaneously due to superposition, allowing for more complex calculations.\n\n- **Processing Power**: Classical computers process information sequentially, meaning they handle one operation at a time. Quantum computers can perform many calculations at once through quantum parallelism, potentially solving certain problems much faster.\n\n- **Applications**: Classical computers excel in everyday tasks like w",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T19:02:57.616Z"
+    },
+    {
+      "id": "a-1773946993864-6920",
+      "ip": "::1",
+      "message": "ce imi propui daca vreau sa fac un Agent AI",
+      "reply": "Dacă vrei să dezvolți un Agent AI, iată câțiva pași pe care îi poți urma:\n\n1. **Definirea scopului**:\n   - Stabilește ce vrei să facă agentul tău AI. Poate fi un asistent virtual, un chatbot, un sistem de recomandare etc.\n\n2. **Cercetare**:\n   - Informează-te despre tehnologiile existente. Studiază diferite tipuri de agenți AI și cum funcționează (ex. machine learning, NLP - procesarea limbajului natural).\n\n3. **Alegerea limbajului de programare**:\n   - Alege un limbaj de programare potrivit pentru dezvoltarea AI, cum ar fi Python (foarte popular pentru AI) sau Java.\n\n4. **Selectarea bibliotec",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T19:03:13.864Z"
+    },
+    {
+      "id": "a-1773948725057-2181",
+      "ip": "::1",
+      "message": "ce faci ?",
+      "reply": "Sunt aici să te ajut! Cu ce pot să te asist astăzi?",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-19T19:32:05.057Z"
     }
   ]
 }

@@ -916,6 +916,14 @@ select:focus,
   z-index: 30;
   width: min(460px, calc(100vw - 18px));
   pointer-events: none;
+  transition:
+    top 220ms ease,
+    right 220ms ease,
+    bottom 220ms ease,
+    left 220ms ease,
+    width 220ms ease,
+    transform 220ms ease,
+    opacity 220ms ease;
 }
 
 .assistant-modal[hidden] {
@@ -942,22 +950,72 @@ select:focus,
   user-select: none;
 }
 
-.assistant-modal-close {
+.assistant-modal-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.assistant-modal-control {
   min-height: 34px;
+  min-width: 34px;
   border: 1px solid rgba(94, 166, 211, 0.42);
   border-radius: 10px;
-  padding: 0 12px;
+  padding: 0 10px;
   font: inherit;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 700;
   color: #1d4f70;
   background: transparent;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.assistant-modal-close:hover {
+.assistant-modal-control:hover {
   border-color: rgba(61, 156, 217, 0.62);
   background: rgba(236, 248, 255, 0.75);
+}
+
+.assistant-modal-control-close {
+  color: #8e2d23;
+}
+
+.assistant-modal-control-close:hover {
+  border-color: rgba(191, 85, 70, 0.62);
+  background: rgba(255, 234, 230, 0.85);
+}
+
+.assistant-modal-minimized .assistant-thread,
+.assistant-modal-minimized .assistant-suggestions,
+.assistant-modal-minimized .assistant-form {
+  display: none;
+}
+
+.assistant-modal-minimized .assistant-modal-panel {
+  height: auto;
+  min-height: 0;
+  grid-template-rows: auto;
+}
+
+.assistant-modal.assistant-modal-minimized {
+  left: auto !important;
+  right: 10px !important;
+  top: auto !important;
+  bottom: 6px;
+  width: min(300px, calc(100vw - 12px));
+  transform: translateY(0);
+}
+
+.assistant-modal-fullscreen {
+  inset: 10px;
+  width: auto;
+  max-width: none;
+}
+
+.assistant-modal-fullscreen .assistant-modal-panel {
+  height: calc(100vh - 20px);
 }
 
 .status.error {

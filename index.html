@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Syne:wght@500;700;800&family=Manrope:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=20260314g" />
+    <link rel="stylesheet" href="styles.css?v=20260319a" />
   </head>
   <body>
     <div class="aurora aurora-1" aria-hidden="true"></div>
@@ -401,13 +401,38 @@
         >
           <div id="assistantModalHeader" class="assistant-modal-header">
             <p class="badge">MAGNETO Assistant</p>
-            <button
-              id="assistantCloseBtn"
-              type="button"
-              class="assistant-modal-close"
+            <div
+              class="assistant-modal-controls"
+              aria-label="Assistant window controls"
             >
-              Close
-            </button>
+              <button
+                id="assistantMinimizeBtn"
+                type="button"
+                class="assistant-modal-control"
+                aria-label="Minimize assistant"
+                title="Minimize"
+              >
+                _
+              </button>
+              <button
+                id="assistantMaximizeBtn"
+                type="button"
+                class="assistant-modal-control"
+                aria-label="Maximize assistant"
+                title="Maximize"
+              >
+                []
+              </button>
+              <button
+                id="assistantCloseBtn"
+                type="button"
+                class="assistant-modal-control assistant-modal-control-close"
+                aria-label="Close assistant"
+                title="Close"
+              >
+                X
+              </button>
+            </div>
           </div>
 
           <div
@@ -439,7 +464,7 @@
       </div>
     </main>
 
-    <script src="config.js?v=20260310a"></script>
-    <script src="script.js?v=20260314o"></script>
+    <script src="config.js?v=20260319b"></script>
+    <script src="script.js?v=20260319b"></script>
   </body>
 </html>
