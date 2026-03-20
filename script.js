@@ -190,6 +190,9 @@ const adminRewriteRulesAddBtn = document.getElementById(
 const adminRewriteRulesSuggestBtn = document.getElementById(
   "adminRewriteRulesSuggestBtn",
 );
+const adminRewriteMinConfidence = document.getElementById(
+  "adminRewriteMinConfidence",
+);
 const adminRewriteRulesSaveBtn = document.getElementById(
   "adminRewriteRulesSaveBtn",
 );
@@ -4381,9 +4384,8 @@ function createAdminRewriteRuleRow(rule = {}) {
   reasonInput.value = String(rule.reason || "configured-rewrite");
   reasonInput.dataset.field = "reason";
 
-  const signals = rule?.signals && typeof rule.signals === "object"
-    ? rule.signals
-    : null;
+  const signals =
+    rule?.signals && typeof rule.signals === "object" ? rule.signals : null;
   const confidence = Number(signals?.confidence || 0);
   const reformulations = Number(signals?.reformulations || 0);
   const maxImprovement = Number(signals?.maxImprovement || 0);
@@ -6363,16 +6365,24 @@ function initAdminPage() {
         return;
       }
 
+      const minConfidenceRaw = Number(adminRewriteMinConfidence?.value || 0.6);
+      const minConfidence = Number.isFinite(minConfidenceRaw)
+        ? Math.max(0, Math.min(0.99, minConfidenceRaw))
+        : 0.6;
+
       adminRewriteRulesSuggestBtn.disabled = true;
       try {
         const payload = await fetchAdminRewriteRuleSuggestions(12);
-        const suggestions = Array.isArray(payload?.suggestions)
-          ? payload.suggestions
-          : [];
+        const suggestions = (
+          Array.isArray(payload?.suggestions) ? payload.suggestions : []
+        ).filter((item) => {
+          const confidence = Number(item?.signals?.confidence || 0);
+          return Number.isFinite(confidence) && confidence >= minConfidence;
+        });
 
         if (suggestions.length === 0) {
           setAdminStatus(
-            "No telemetry-based rewrite suggestions available yet.",
+            `No rewrite suggestions matched min confidence ${minConfidence.toFixed(2)}.`,
           );
           return;
         }
@@ -6398,7 +6408,7 @@ function initAdminPage() {
               ).toFixed(2)
             : "n/a";
           setAdminStatus(
-            `${added} telemetry suggestion${added !== 1 ? "s" : ""} added (avg confidence ${avgConfidence}). Save rules to apply them.`,
+            `${added} telemetry suggestion${added !== 1 ? "s" : ""} added (avg confidence ${avgConfidence}, min ${minConfidence.toFixed(2)}). Save rules to apply them.`,
           );
         }
       } catch (error) {

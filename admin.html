@@ -468,6 +468,24 @@
               Use exact for typo fixes and contains for broader substitutions
               driven by zero-result or reformulation telemetry.
             </p>
+            <div class="admin-rewrite-suggest-controls">
+              <label class="sr-only" for="adminRewriteMinConfidence"
+                >Minimum confidence</label
+              >
+              <input
+                id="adminRewriteMinConfidence"
+                type="number"
+                min="0"
+                max="0.99"
+                step="0.01"
+                value="0.60"
+                placeholder="Min confidence"
+              />
+              <p class="admin-assistant-meta">
+                Import only suggestions with confidence greater or equal to this
+                threshold.
+              </p>
+            </div>
             <div id="adminRewriteRulesList" class="admin-rewrite-rules-list">
               <p class="admin-chart-empty">Loading rewrite rules...</p>
             </div>
