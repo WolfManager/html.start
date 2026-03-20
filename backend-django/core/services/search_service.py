@@ -1,9 +1,12 @@
 import json
+import math
 import re
+import time
 from math import ceil
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 from django.utils import timezone
 from django.db.models import Count
@@ -13,6 +16,24 @@ from .analytics_service import read_analytics
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 SEARCH_INDEX_PATH = BASE_DIR.parent / "data" / "search-index.json"
+SEARCH_REWRITE_RULES_PATH = BASE_DIR.parent / "data" / "query-rewrite-rules.json"
+QUERY_REWRITE_MATCH_TYPES = {"exact", "contains"}
+DEFAULT_QUERY_REWRITE_RULES = [
+    {
+        "enabled": True,
+        "matchType": "exact",
+        "from": "pythn",
+        "to": "python",
+        "reason": "common-typo",
+    },
+    {
+        "enabled": True,
+        "matchType": "exact",
+        "from": "opnai",
+        "to": "openai",
+        "reason": "common-typo",
+    },
+]
 STOPWORDS = {
     "a",
     "an",
@@ -50,6 +71,28 @@ QUERY_SYNONYMS = {
     "go": ["golang"],
     "db": ["database"],
 }
+CLICK_SIGNAL_WINDOW_DAYS = 30
+CLICK_SIGNAL_CACHE_TTL_SECONDS = 30
+CLICK_SIGNAL_MAX_BOOST = 10.0
+CLICK_SIGNAL_CTR_MAX_BOOST = 3.0
+CLICK_SIGNAL_GUARDRAIL_MIN_BASE_SCORE = 12.0
+CLICK_SIGNAL_GUARDRAIL_MAX_SHARE = 0.3
+CLICK_SIGNAL_DECAY_HALFLIFE_DAYS = 14
+CLICK_SIGNAL_DECAY_MIN_WEIGHT = 0.2
+
+_click_signal_cache: dict[str, Any] = {
+    "expiresAt": 0.0,
+    "queryUrlCounts": {},
+    "queryCounts": {},
+    "urlCounts": {},
+}
+
+
+def invalidate_click_signal_cache() -> None:
+    _click_signal_cache["expiresAt"] = 0.0
+    _click_signal_cache["queryUrlCounts"] = {}
+    _click_signal_cache["queryCounts"] = {}
+    _click_signal_cache["urlCounts"] = {}
 
 
 def _normalize_text(value: str) -> str:
@@ -89,6 +132,354 @@ def _normalize_filter_value(value: str | None) -> str:
     return _normalize_text(str(value or "")).strip()
 
 
+def _normalize_index_url(url: str) -> str:
+    raw = str(url or "").strip()
+    if not raw:
+        return ""
+    try:
+        parsed = urlparse(raw)
+    except Exception:
+        return _normalize_filter_value(raw).rstrip("/")
+
+    host = _normalize_filter_value(parsed.hostname or "")
+    path = _normalize_filter_value(parsed.path or "")
+    if not host:
+        return _normalize_filter_value(raw).rstrip("/")
+    return f"{host}{path}".rstrip("/")
+
+
+def _build_click_signal_artifacts() -> dict[str, Any]:
+    analytics = read_analytics()
+    result_clicks = list(analytics.get("resultClicks") or [])
+
+    now = time.time()
+    oldest = now - CLICK_SIGNAL_WINDOW_DAYS * 24 * 60 * 60
+    half_life = CLICK_SIGNAL_DECAY_HALFLIFE_DAYS * 24 * 60 * 60
+
+    query_url_counts: dict[str, float] = {}
+    query_counts: dict[str, float] = {}
+    url_counts: dict[str, float] = {}
+
+    for item in result_clicks:
+        clicked_at = str(item.get("at") or "")
+        try:
+            clicked_ts = datetime.fromisoformat(clicked_at.replace("Z", "+00:00")).timestamp()
+        except Exception:
+            continue
+
+        if clicked_ts < oldest:
+            continue
+
+        normalized_url = _normalize_index_url(str(item.get("url") or ""))
+        normalized_query = _normalize_filter_value(str(item.get("query") or ""))
+        if not normalized_url or not normalized_query:
+            continue
+
+        age_seconds = max(0.0, now - clicked_ts)
+        decay_weight = max(
+            CLICK_SIGNAL_DECAY_MIN_WEIGHT,
+            math.pow(0.5, age_seconds / max(1.0, half_life)),
+        )
+
+        query_url_key = f"{normalized_query}||{normalized_url}"
+        query_url_counts[query_url_key] = query_url_counts.get(query_url_key, 0.0) + decay_weight
+        query_counts[normalized_query] = query_counts.get(normalized_query, 0.0) + decay_weight
+        url_counts[normalized_url] = url_counts.get(normalized_url, 0.0) + decay_weight
+
+    return {
+        "queryUrlCounts": query_url_counts,
+        "queryCounts": query_counts,
+        "urlCounts": url_counts,
+    }
+
+
+def _get_click_signal_artifacts() -> dict[str, Any]:
+    now = time.time()
+    if now < float(_click_signal_cache.get("expiresAt") or 0):
+        return _click_signal_cache
+
+    built = _build_click_signal_artifacts()
+    _click_signal_cache["queryUrlCounts"] = built["queryUrlCounts"]
+    _click_signal_cache["queryCounts"] = built["queryCounts"]
+    _click_signal_cache["urlCounts"] = built["urlCounts"]
+    _click_signal_cache["expiresAt"] = now + CLICK_SIGNAL_CACHE_TTL_SECONDS
+    return _click_signal_cache
+
+
+def _get_result_click_boost(*, url: str, query: str, base_score: float) -> float:
+    normalized_url = _normalize_index_url(url)
+    normalized_query = _normalize_filter_value(query)
+    if not normalized_url or not normalized_query:
+        return 0.0
+
+    safe_base_score = float(base_score or 0)
+    if safe_base_score < CLICK_SIGNAL_GUARDRAIL_MIN_BASE_SCORE:
+        return 0.0
+
+    artifacts = _get_click_signal_artifacts()
+    query_url_key = f"{normalized_query}||{normalized_url}"
+
+    exact_pair_clicks = float((artifacts.get("queryUrlCounts") or {}).get(query_url_key, 0.0) or 0.0)
+    query_clicks = float((artifacts.get("queryCounts") or {}).get(normalized_query, 0.0) or 0.0)
+    url_clicks = float((artifacts.get("urlCounts") or {}).get(normalized_url, 0.0) or 0.0)
+    if exact_pair_clicks <= 0 and query_clicks <= 0 and url_clicks <= 0:
+        return 0.0
+
+    pair_boost = math.log2(1 + exact_pair_clicks) * 2.5
+    url_boost = math.log2(1 + url_clicks) * 0.8
+    ctr = exact_pair_clicks / query_clicks if query_clicks > 0 else 0.0
+    ctr_boost = min(CLICK_SIGNAL_CTR_MAX_BOOST, ctr * CLICK_SIGNAL_CTR_MAX_BOOST)
+    uncapped_boost = pair_boost + url_boost + ctr_boost
+    max_by_base = safe_base_score * CLICK_SIGNAL_GUARDRAIL_MAX_SHARE
+
+    return max(0.0, min(CLICK_SIGNAL_MAX_BOOST, uncapped_boost, max_by_base))
+
+
+def _normalize_domain_token(value: str) -> str:
+    token = _normalize_filter_value(value)
+    token = token.replace("http://", "").replace("https://", "")
+    return token.strip("/ ")
+
+
+def _copy_query_rewrite_rules(rules: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [dict(rule) for rule in rules]
+
+
+def normalize_query_rewrite_rules(value: Any) -> list[dict[str, Any]]:
+    rules = value.get("rules") if isinstance(value, dict) else value
+    if not isinstance(rules, list):
+        raise ValueError("Rewrite rules payload must be a list or an object with a rules list.")
+
+    normalized_rules: list[dict[str, Any]] = []
+    for index, item in enumerate(rules, start=1):
+        if not isinstance(item, dict):
+            raise ValueError(f"Rule {index} must be an object.")
+
+        match_type = _normalize_filter_value(str(item.get("matchType") or "exact")) or "exact"
+        if match_type not in QUERY_REWRITE_MATCH_TYPES:
+            raise ValueError(f"Rule {index} has invalid matchType. Use exact or contains.")
+
+        source = str(item.get("from") or "").strip()
+        target = str(item.get("to") or "").strip()
+        reason = str(item.get("reason") or "configured-rewrite").strip() or "configured-rewrite"
+        if not source:
+            raise ValueError(f"Rule {index} is missing a from value.")
+        if not target:
+            raise ValueError(f"Rule {index} is missing a to value.")
+        if len(source) > 160 or len(target) > 160:
+            raise ValueError(f"Rule {index} from/to values must be 160 characters or fewer.")
+        if len(reason) > 120:
+            raise ValueError(f"Rule {index} reason must be 120 characters or fewer.")
+        if _normalize_filter_value(source) == _normalize_filter_value(target):
+            raise ValueError(f"Rule {index} must change the query.")
+
+        normalized_rules.append(
+            {
+                "enabled": bool(item.get("enabled", True)),
+                "matchType": match_type,
+                "from": source,
+                "to": target,
+                "reason": reason,
+            }
+        )
+
+    return normalized_rules
+
+
+def get_default_query_rewrite_rules() -> list[dict[str, Any]]:
+    return _copy_query_rewrite_rules(DEFAULT_QUERY_REWRITE_RULES)
+
+
+def get_query_rewrite_rules() -> list[dict[str, Any]]:
+    try:
+        content = SEARCH_REWRITE_RULES_PATH.read_text(encoding="utf-8")
+        parsed = json.loads(content)
+        return normalize_query_rewrite_rules(parsed)
+    except FileNotFoundError:
+        return []
+    except ValueError:
+        return []
+    except Exception:
+        return []
+
+
+def write_query_rewrite_rules(value: Any) -> list[dict[str, Any]]:
+    normalized_rules = normalize_query_rewrite_rules(value)
+    SEARCH_REWRITE_RULES_PATH.parent.mkdir(parents=True, exist_ok=True)
+    payload = {"rules": normalized_rules}
+    temp_path = SEARCH_REWRITE_RULES_PATH.with_suffix(".json.tmp")
+    temp_path.write_text(f"{json.dumps(payload, indent=2)}\n", encoding="utf-8")
+    temp_path.replace(SEARCH_REWRITE_RULES_PATH)
+    return _copy_query_rewrite_rules(normalized_rules)
+
+
+def reset_query_rewrite_rules() -> list[dict[str, Any]]:
+    return write_query_rewrite_rules(get_default_query_rewrite_rules())
+
+
+def _read_query_rewrite_rules() -> list[dict[str, Any]]:
+    return get_query_rewrite_rules()
+
+
+def _apply_query_rewrite_rules(query: str) -> tuple[str, dict[str, Any] | None]:
+    original_query = str(query or "").strip()
+    if not original_query:
+        return "", None
+
+    normalized_query = _normalize_filter_value(original_query)
+    for rule in _read_query_rewrite_rules():
+        if rule.get("enabled", True) is False:
+            continue
+
+        match_type = _normalize_filter_value(str(rule.get("matchType") or "exact")) or "exact"
+        source = str(rule.get("from") or "").strip()
+        target = str(rule.get("to") or "").strip()
+        if not source or not target:
+            continue
+
+        normalized_source = _normalize_filter_value(source)
+        rewritten_query = None
+
+        if match_type == "exact":
+            if normalized_query == normalized_source:
+                rewritten_query = target
+        elif match_type == "contains":
+            if normalized_source and normalized_source in normalized_query:
+                rewritten_query = re.sub(
+                    re.escape(source),
+                    target,
+                    original_query,
+                    flags=re.IGNORECASE,
+                )
+
+        if rewritten_query and rewritten_query.strip() and rewritten_query.strip() != original_query:
+            return rewritten_query.strip(), {
+                "matchType": match_type,
+                "from": source,
+                "to": target,
+                "reason": str(rule.get("reason") or "configured-rewrite").strip() or "configured-rewrite",
+            }
+
+    return original_query, None
+
+
+def _parse_search_operators(query: str) -> tuple[str, dict[str, list[str]]]:
+    raw = str(query or "")
+    operators: dict[str, list[str]] = {
+        "sites": [],
+        "excluded_sites": [],
+        "filetypes": [],
+        "inurl": [],
+        "intitle": [],
+    }
+
+    def _capture(pattern: str, key: str, normalizer=None) -> None:
+        nonlocal raw
+        regex = re.compile(pattern, re.IGNORECASE)
+
+        def _replace(match: re.Match[str]) -> str:
+            value = str(match.group(1) or "").strip()
+            if normalizer:
+                value = normalizer(value)
+            else:
+                value = _normalize_filter_value(value)
+            if value:
+                operators[key].append(value)
+            return " "
+
+        raw = regex.sub(_replace, raw)
+
+    _capture(r"(?:^|\s)site:([^\s\"']+)", "sites", _normalize_domain_token)
+    _capture(r"(?:^|\s)-site:([^\s\"']+)", "excluded_sites", _normalize_domain_token)
+    _capture(
+        r"(?:^|\s)filetype:([^\s\"']+)",
+        "filetypes",
+        lambda value: _normalize_filter_value(value).lstrip("."),
+    )
+    _capture(r"\binurl:([^\s\"']+)", "inurl", _normalize_filter_value)
+    _capture(r"\bintitle:([^\s\"']+)", "intitle", _normalize_filter_value)
+
+    cleaned = " ".join(raw.split()).strip()
+    return cleaned, operators
+
+
+def _has_operator_constraints(operators: dict[str, list[str]]) -> bool:
+    return any(bool(values) for values in operators.values())
+
+
+def _doc_matches_site_operator(url: str, operators: dict[str, list[str]]) -> bool:
+    required_sites = operators.get("sites") or []
+    if not required_sites:
+        return True
+    try:
+        hostname = _normalize_domain_token(urlparse(url).hostname or "")
+    except Exception:
+        hostname = ""
+    if not hostname:
+        return False
+    for site in required_sites:
+        if hostname == site or hostname.endswith(f".{site}"):
+            return True
+    return False
+
+
+def _doc_matches_excluded_site_operator(url: str, operators: dict[str, list[str]]) -> bool:
+    excluded_sites = operators.get("excluded_sites") or []
+    if not excluded_sites:
+        return True
+    try:
+        hostname = _normalize_domain_token(urlparse(url).hostname or "")
+    except Exception:
+        hostname = ""
+    if not hostname:
+        return True
+    for site in excluded_sites:
+        if hostname == site or hostname.endswith(f".{site}"):
+            return False
+    return True
+
+
+def _doc_matches_filetype_operator(url: str, operators: dict[str, list[str]]) -> bool:
+    filetypes = operators.get("filetypes") or []
+    if not filetypes:
+        return True
+    try:
+        path = _normalize_filter_value(urlparse(url).path or "")
+    except Exception:
+        path = ""
+    if not path:
+        return False
+    return any(path.endswith(f".{filetype}") for filetype in filetypes)
+
+
+def _doc_matches_inurl_operator(url: str, operators: dict[str, list[str]]) -> bool:
+    inurl_terms = operators.get("inurl") or []
+    if not inurl_terms:
+        return True
+    normalized_url = _normalize_filter_value(url)
+    return all(term in normalized_url for term in inurl_terms)
+
+
+def _doc_matches_intitle_operator(title: str, operators: dict[str, list[str]]) -> bool:
+    intitle_terms = operators.get("intitle") or []
+    if not intitle_terms:
+        return True
+    normalized_title = _normalize_filter_value(title)
+    return all(term in normalized_title for term in intitle_terms)
+
+
+def _doc_matches_query_operators(doc: dict[str, Any], operators: dict[str, list[str]]) -> bool:
+    url = str(doc.get("url") or "")
+    title = str(doc.get("title") or "")
+    return (
+        _doc_matches_site_operator(url, operators)
+        and _doc_matches_excluded_site_operator(url, operators)
+        and _doc_matches_filetype_operator(url, operators)
+        and _doc_matches_inurl_operator(url, operators)
+        and _doc_matches_intitle_operator(title, operators)
+    )
+
+
 def _document_freshness_bonus(document: SearchDocument) -> int:
     now = timezone.now()
     fetched_at = document.fetched_at or document.indexed_at
@@ -101,6 +492,16 @@ def _document_freshness_bonus(document: SearchDocument) -> int:
     if fetched_at >= now - timedelta(days=45):
         return 1
     return 0
+
+
+def _source_authority_bonus(document: SearchDocument) -> float:
+    source = document.source
+    if not source:
+        return 0.0
+    quality_score = float(getattr(source, "quality_score", 0) or 0)
+    normalized = max(0.0, min(100.0, quality_score)) / 100.0
+    # Keep authority influence meaningful but bounded so lexical relevance remains primary.
+    return round(normalized * 3.0, 3)
 
 
 def _read_search_index() -> list[dict[str, Any]]:
@@ -343,13 +744,15 @@ def _run_db_search(
     sort: str = "relevance",
     limit: int = 20,
 ) -> list[dict[str, Any]]:
-    tokens = tokenize(query)
-    if not tokens:
+    parsed_query, operators = _parse_search_operators(query)
+    tokens = tokenize(parsed_query)
+    if not tokens and not _has_operator_constraints(operators):
         return []
 
     normalized_language = _normalize_filter_value(language)
     normalized_category = _normalize_filter_value(category)
     normalized_source = _normalize_filter_value(source)
+    normalized_sort = _normalize_filter_value(sort) or "relevance"
     query_language = detect_query_language(query)
 
     documents = (
@@ -384,15 +787,36 @@ def _run_db_search(
             "summary": document.summary,
             "category": document.category,
             "tags": document.tags,
+            "url": document.url,
         }
-        score = compute_score(payload, tokens, query)
-        if score <= 0:
+        if not _doc_matches_query_operators(payload, operators):
+            continue
+
+        score = compute_score(payload, tokens, parsed_query) if tokens else 1
+        if tokens and score <= 0:
             continue
 
         quality_bonus = int(document.quality_score // 10)
         freshness_bonus = _document_freshness_bonus(document)
         language_bonus = 3 if doc_language and doc_language == query_language else 0
-        total_score = score + quality_bonus + freshness_bonus + language_bonus
+        authority_bonus = _source_authority_bonus(document)
+        click_boost = (
+            _get_result_click_boost(
+                url=document.url,
+                query=parsed_query,
+                base_score=score,
+            )
+            if normalized_sort == "relevance"
+            else 0.0
+        )
+        total_score = (
+            score
+            + quality_bonus
+            + freshness_bonus
+            + language_bonus
+            + authority_bonus
+            + click_boost
+        )
         fetched_at = document.fetched_at or document.indexed_at
         ranked_with_score.append(
             {
@@ -414,12 +838,11 @@ def _run_db_search(
             }
         )
 
-    normalized_sort = _normalize_filter_value(sort) or "relevance"
     if normalized_sort == "newest":
         ranked_with_score.sort(
             key=lambda item: (
                 str(item.get("fetchedAt") or ""),
-                int(item.get("score", 0)),
+                float(item.get("score", 0)),
             ),
             reverse=True,
         )
@@ -427,13 +850,13 @@ def _run_db_search(
         ranked_with_score.sort(
             key=lambda item: (
                 float(item.get("qualityScore", 0)),
-                int(item.get("score", 0)),
+                float(item.get("score", 0)),
             ),
             reverse=True,
         )
     else:
         ranked_with_score.sort(
-            key=lambda item: int(item.get("score", 0)),
+            key=lambda item: float(item.get("score", 0)),
             reverse=True,
         )
 
@@ -455,32 +878,46 @@ def _run_local_index_search(
     limit: int = 20,
 ) -> list[dict[str, Any]]:
     index = _read_search_index()
-    tokens = tokenize(query)
+    parsed_query, operators = _parse_search_operators(query)
+    tokens = tokenize(parsed_query)
+    if not tokens and not _has_operator_constraints(operators):
+        return []
+
     normalized_language = _normalize_filter_value(language)
     normalized_category = _normalize_filter_value(category)
     normalized_source = _normalize_filter_value(source)
+    normalized_sort = _normalize_filter_value(sort) or "relevance"
     ranked_with_score: list[dict[str, Any]] = []
     for doc in index:
         doc_category = _normalize_filter_value(str(doc.get("category") or ""))
         doc_language = _normalize_filter_value(str(doc.get("language") or ""))
         doc_source = _normalize_filter_value(str(doc.get("sourceName") or ""))
+        doc_source_slug = _normalize_filter_value(str(doc.get("sourceSlug") or ""))
         if normalized_category and doc_category != normalized_category:
             continue
         if normalized_language and doc_language and doc_language != normalized_language:
             continue
-        if normalized_source and normalized_source != doc_source:
+        if normalized_source and normalized_source not in {doc_source, doc_source_slug}:
             continue
 
-        score = compute_score(doc, tokens, query)
+        if not _doc_matches_query_operators(doc, operators):
+            continue
+
+        score = compute_score(doc, tokens, parsed_query) if tokens else 1
+        if normalized_sort == "relevance":
+            score += _get_result_click_boost(
+                url=str(doc.get("url") or ""),
+                query=parsed_query,
+                base_score=score,
+            )
         if score > 0:
             ranked_with_score.append({**doc, "score": score})
 
-    normalized_sort = _normalize_filter_value(sort) or "relevance"
     if normalized_sort == "newest":
         ranked_with_score.sort(
             key=lambda item: (
                 str(item.get("fetchedAt") or ""),
-                int(item.get("score", 0)),
+                float(item.get("score", 0)),
             ),
             reverse=True,
         )
@@ -488,12 +925,12 @@ def _run_local_index_search(
         ranked_with_score.sort(
             key=lambda item: (
                 float(item.get("qualityScore", 0)),
-                int(item.get("score", 0)),
+                float(item.get("score", 0)),
             ),
             reverse=True,
         )
     else:
-        ranked_with_score.sort(key=lambda item: int(item.get("score", 0)), reverse=True)
+        ranked_with_score.sort(key=lambda item: float(item.get("score", 0)), reverse=True)
     if not ranked_with_score:
         return []
 
@@ -545,8 +982,11 @@ def run_search_page(
     limit: int = 20,
     offset: int = 0,
 ) -> dict[str, Any]:
+    original_query = str(query or "").strip()
+    query_used, query_rewrite = _apply_query_rewrite_rules(original_query)
+
     all_results = _run_search_all(
-        query,
+        query_used,
         language=language,
         category=category,
         source=source,
@@ -555,7 +995,7 @@ def run_search_page(
     )
 
     contextual_languages = _run_search_all(
-        query,
+        query_used,
         language="",
         category=category,
         source=source,
@@ -563,7 +1003,7 @@ def run_search_page(
         limit=limit,
     )
     contextual_categories = _run_search_all(
-        query,
+        query_used,
         language=language,
         category="",
         source=source,
@@ -571,7 +1011,7 @@ def run_search_page(
         limit=limit,
     )
     contextual_sources = _run_search_all(
-        query,
+        query_used,
         language=language,
         category=category,
         source="",
@@ -591,6 +1031,8 @@ def run_search_page(
     current_page = (safe_offset // safe_limit) + 1 if total else 1
 
     return {
+        "queryUsed": query_used,
+        "queryRewrite": query_rewrite,
         "results": paged_results,
         "total": total,
         "limit": safe_limit,

@@ -2073,6 +2073,56 @@ select:focus,
   outline-offset: 1px;
 }
 
+.admin-rewrite-rules-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.admin-rewrite-rule-row {
+  display: grid;
+  grid-template-columns: auto 150px minmax(0, 1fr) minmax(0, 1fr) minmax(
+      0,
+      0.9fr
+    ) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid rgba(132, 213, 255, 0.16);
+  border-radius: 12px;
+  background: rgba(6, 23, 35, 0.72);
+}
+
+.admin-rewrite-rule-row input,
+.admin-rewrite-rule-row select {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(6, 23, 35, 0.88);
+  color: var(--ink);
+  min-height: 42px;
+  padding: 0 12px;
+  font: inherit;
+  min-width: 0;
+}
+
+.admin-rewrite-rule-row .admin-search-force-label {
+  justify-content: center;
+}
+
+.admin-rewrite-rule-remove {
+  min-height: 42px;
+}
+
+.admin-rewrite-rules-empty {
+  margin: 0;
+  padding: 14px;
+  border: 1px dashed rgba(132, 213, 255, 0.24);
+  border-radius: 12px;
+  color: var(--ink-soft);
+  background: rgba(6, 23, 35, 0.5);
+}
+
 .admin-index-form input[type="text"],
 .admin-index-form select {
   border: 1px solid var(--line);
@@ -2122,6 +2172,18 @@ select:focus,
 
 .admin-search-force-label input {
   accent-color: #6bc8ff;
+}
+
+@media (max-width: 1180px) {
+  .admin-rewrite-rule-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .admin-rewrite-rule-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 .admin-search-runs-wrap {

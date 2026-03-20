@@ -73,12 +73,18 @@ const kpiTotalSearches = document.getElementById("kpiTotalSearches");
 const kpiTotalViews = document.getElementById("kpiTotalViews");
 const kpiUniqueQueries = document.getElementById("kpiUniqueQueries");
 const kpiTotalClicks = document.getElementById("kpiTotalClicks");
+const kpiZeroResults = document.getElementById("kpiZeroResults");
+const kpiZeroRate = document.getElementById("kpiZeroRate");
+const kpiReformulations = document.getElementById("kpiReformulations");
+const kpiReformulationsMeta = document.getElementById("kpiReformulationsMeta");
 const kpiSearchesDelta = document.getElementById("kpiSearchesDelta");
 const kpiViewsDelta = document.getElementById("kpiViewsDelta");
 const kpiUniqueDelta = document.getElementById("kpiUniqueDelta");
 const kpiClicksDelta = document.getElementById("kpiClicksDelta");
 const kpiSafetyRate = document.getElementById("kpiSafetyRate");
 const kpiSafetyMeta = document.getElementById("kpiSafetyMeta");
+const zeroResultsList = document.getElementById("zeroResultsList");
+const reformulationsList = document.getElementById("reformulationsList");
 const topQueriesList = document.getElementById("topQueriesList");
 const trafficList = document.getElementById("trafficList");
 const latestSearchesList = document.getElementById("latestSearchesList");
@@ -172,6 +178,23 @@ const adminRankingConfigSaveBtn = document.getElementById(
 );
 const adminRankingConfigResetBtn = document.getElementById(
   "adminRankingConfigResetBtn",
+);
+const adminRewriteRulesList = document.getElementById("adminRewriteRulesList");
+const adminRewriteRulesMeta = document.getElementById("adminRewriteRulesMeta");
+const adminRewriteRulesRefreshBtn = document.getElementById(
+  "adminRewriteRulesRefreshBtn",
+);
+const adminRewriteRulesAddBtn = document.getElementById(
+  "adminRewriteRulesAddBtn",
+);
+const adminRewriteRulesSuggestBtn = document.getElementById(
+  "adminRewriteRulesSuggestBtn",
+);
+const adminRewriteRulesSaveBtn = document.getElementById(
+  "adminRewriteRulesSaveBtn",
+);
+const adminRewriteRulesResetBtn = document.getElementById(
+  "adminRewriteRulesResetBtn",
 );
 const adminSearchRunsBody = document.getElementById("adminSearchRunsBody");
 const adminSearchRunsStatusFilter = document.getElementById(
@@ -3192,6 +3215,66 @@ async function postAdminRankingConfig({ rankingConfig = null, reset = false }) {
   return payload;
 }
 
+async function fetchAdminRewriteRules() {
+  const token = getAdminToken();
+  const response = await apiFetch("/api/admin/search/rewrite-rules", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || "Could not load rewrite rules.");
+  }
+
+  return payload;
+}
+
+async function postAdminRewriteRules({ rewriteRules = null, reset = false }) {
+  const token = getAdminToken();
+  const response = await apiFetch("/api/admin/search/rewrite-rules/update", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      reset: Boolean(reset),
+      rewriteRules: Array.isArray(rewriteRules) ? rewriteRules : undefined,
+    }),
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || "Could not update rewrite rules.");
+  }
+
+  return payload;
+}
+
+async function fetchAdminRewriteRuleSuggestions(limit = 10) {
+  const token = getAdminToken();
+  const query = new URLSearchParams({ limit: String(limit) });
+  const response = await apiFetch(
+    `/api/admin/search/rewrite-rules/suggestions?${query.toString()}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(
+      payload.error || "Could not load rewrite rule suggestions.",
+    );
+  }
+
+  return payload;
+}
+
 async function postAdminSearchSeed(force = false) {
   const token = getAdminToken();
   const response = await apiFetch("/api/admin/search/seed", {
@@ -4185,6 +4268,7 @@ function renderAdminSearchStatus(payload) {
   const search = payload?.search || payload || {};
   const sources = search.sources || {};
   const docs = search.documents || {};
+  const rewriteRules = search.rewriteRules || {};
   const latestRun = search.latestRun || {};
   adminSearchRecentRuns = Array.isArray(search.recentRuns)
     ? [...search.recentRuns]
@@ -4206,6 +4290,10 @@ function renderAdminSearchStatus(payload) {
     ["Blocked Docs", String(Number(docs.blocked || 0))],
     ["Errored Docs", String(Number(docs.errors || 0))],
     ["Block Rules", String(Number(search.blockRules || 0))],
+    [
+      "Rewrite Rules",
+      `${Number(rewriteRules.enabled || 0)} enabled / ${Number(rewriteRules.total || 0)} total`,
+    ],
     ["Latest Run Status", String(latestRun.status || "idle")],
     ["Latest Run Started", formatAssistantDate(latestRun.startedAt)],
     ["Latest Run Finished", formatAssistantDate(latestRun.finishedAt)],
@@ -4235,6 +4323,214 @@ function renderAdminRankingConfig(payload) {
 
   if (adminRankingConfigMeta) {
     adminRankingConfigMeta.textContent = `Updated: ${formatAssistantDate(payload?.generatedAt)}`;
+  }
+}
+
+function renderAdminRewriteRulesEmpty() {
+  if (!adminRewriteRulesList) {
+    return;
+  }
+
+  adminRewriteRulesList.innerHTML = "";
+  const empty = document.createElement("p");
+  empty.className = "admin-rewrite-rules-empty";
+  empty.textContent =
+    "No rewrite rules configured. Add a rule to catch typos or recurring failed queries.";
+  adminRewriteRulesList.appendChild(empty);
+}
+
+function createAdminRewriteRuleRow(rule = {}) {
+  const row = document.createElement("div");
+  row.className = "admin-rewrite-rule-row";
+
+  const enabledLabel = document.createElement("label");
+  enabledLabel.className = "admin-search-force-label";
+  const enabledInput = document.createElement("input");
+  enabledInput.type = "checkbox";
+  enabledInput.checked = rule.enabled !== false;
+  enabledInput.dataset.field = "enabled";
+  enabledLabel.append(enabledInput, document.createTextNode("Enabled"));
+
+  const matchTypeSelect = document.createElement("select");
+  matchTypeSelect.dataset.field = "matchType";
+  ["exact", "contains"].forEach((value) => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value;
+    if (String(rule.matchType || "exact").toLowerCase() === value) {
+      option.selected = true;
+    }
+    matchTypeSelect.appendChild(option);
+  });
+
+  const fromInput = document.createElement("input");
+  fromInput.type = "text";
+  fromInput.placeholder = "From query";
+  fromInput.value = String(rule.from || "");
+  fromInput.dataset.field = "from";
+
+  const toInput = document.createElement("input");
+  toInput.type = "text";
+  toInput.placeholder = "To query";
+  toInput.value = String(rule.to || "");
+  toInput.dataset.field = "to";
+
+  const reasonInput = document.createElement("input");
+  reasonInput.type = "text";
+  reasonInput.placeholder = "Reason";
+  reasonInput.value = String(rule.reason || "configured-rewrite");
+  reasonInput.dataset.field = "reason";
+
+  const removeBtn = document.createElement("button");
+  removeBtn.type = "button";
+  removeBtn.className = "results-back-link admin-rewrite-rule-remove";
+  removeBtn.textContent = "Remove";
+  removeBtn.addEventListener("click", () => {
+    row.remove();
+    if (
+      adminRewriteRulesList &&
+      adminRewriteRulesList.querySelectorAll(".admin-rewrite-rule-row")
+        .length === 0
+    ) {
+      renderAdminRewriteRulesEmpty();
+    }
+  });
+
+  row.append(
+    enabledLabel,
+    matchTypeSelect,
+    fromInput,
+    toInput,
+    reasonInput,
+    removeBtn,
+  );
+  return row;
+}
+
+function appendAdminRewriteRule(rule = {}, shouldFocus = false) {
+  if (!adminRewriteRulesList) {
+    return;
+  }
+
+  const emptyState = adminRewriteRulesList.querySelector(
+    ".admin-rewrite-rules-empty",
+  );
+  if (emptyState) {
+    emptyState.remove();
+  }
+
+  const row = createAdminRewriteRuleRow(rule);
+  adminRewriteRulesList.appendChild(row);
+
+  if (shouldFocus) {
+    row.querySelector('[data-field="from"]')?.focus();
+  }
+}
+
+function collectAdminRewriteRules() {
+  if (!adminRewriteRulesList) {
+    return [];
+  }
+
+  const rows = [
+    ...adminRewriteRulesList.querySelectorAll(".admin-rewrite-rule-row"),
+  ];
+  return rows.map((row, index) => {
+    const matchType = String(
+      row.querySelector('[data-field="matchType"]')?.value || "exact",
+    )
+      .trim()
+      .toLowerCase();
+    const from = String(
+      row.querySelector('[data-field="from"]')?.value || "",
+    ).trim();
+    const to = String(
+      row.querySelector('[data-field="to"]')?.value || "",
+    ).trim();
+    const reason = String(
+      row.querySelector('[data-field="reason"]')?.value || "configured-rewrite",
+    ).trim();
+    const enabled = Boolean(
+      row.querySelector('[data-field="enabled"]')?.checked,
+    );
+
+    if (!from || !to) {
+      throw new Error(`Rule ${index + 1} requires both From and To values.`);
+    }
+    if (!["exact", "contains"].includes(matchType)) {
+      throw new Error(`Rule ${index + 1} has an invalid match type.`);
+    }
+
+    return {
+      enabled,
+      matchType,
+      from,
+      to,
+      reason: reason || "configured-rewrite",
+    };
+  });
+}
+
+function hasAdminRewriteRule(rule) {
+  if (!adminRewriteRulesList) {
+    return false;
+  }
+
+  const fromNorm = String(rule?.from || "")
+    .trim()
+    .toLowerCase();
+  const toNorm = String(rule?.to || "")
+    .trim()
+    .toLowerCase();
+  const matchTypeNorm = String(rule?.matchType || "exact")
+    .trim()
+    .toLowerCase();
+  if (!fromNorm || !toNorm) {
+    return false;
+  }
+
+  const rows = [
+    ...adminRewriteRulesList.querySelectorAll(".admin-rewrite-rule-row"),
+  ];
+  return rows.some((row) => {
+    const rowFrom = String(
+      row.querySelector('[data-field="from"]')?.value || "",
+    )
+      .trim()
+      .toLowerCase();
+    const rowTo = String(row.querySelector('[data-field="to"]')?.value || "")
+      .trim()
+      .toLowerCase();
+    const rowMatch = String(
+      row.querySelector('[data-field="matchType"]')?.value || "exact",
+    )
+      .trim()
+      .toLowerCase();
+    return (
+      rowFrom === fromNorm && rowTo === toNorm && rowMatch === matchTypeNorm
+    );
+  });
+}
+
+function renderAdminRewriteRules(payload) {
+  if (!adminRewriteRulesList) {
+    return;
+  }
+
+  const rules = Array.isArray(payload?.rewriteRules)
+    ? payload.rewriteRules
+    : [];
+  adminRewriteRulesList.innerHTML = "";
+
+  if (rules.length === 0) {
+    renderAdminRewriteRulesEmpty();
+  } else {
+    rules.forEach((rule) => appendAdminRewriteRule(rule, false));
+  }
+
+  if (adminRewriteRulesMeta) {
+    const enabledCount = rules.filter((rule) => rule?.enabled !== false).length;
+    adminRewriteRulesMeta.textContent = `Updated: ${formatAssistantDate(payload?.generatedAt)} | ${enabledCount} enabled / ${rules.length} total`;
   }
 }
 
@@ -4585,6 +4881,28 @@ async function refreshRankingConfigWithMessage(okMessage = "") {
   }
 }
 
+async function refreshRewriteRulesWithMessage(okMessage = "") {
+  if (!adminRewriteRulesList) {
+    return;
+  }
+
+  try {
+    const payload = await fetchAdminRewriteRules();
+    renderAdminRewriteRules(payload);
+    if (okMessage) {
+      setAdminStatus(okMessage);
+    }
+  } catch (error) {
+    renderAdminRewriteRulesEmpty();
+    if (adminRewriteRulesMeta) {
+      adminRewriteRulesMeta.textContent = "Could not load rewrite rules.";
+    }
+    if (okMessage) {
+      setAdminStatus(error.message || "Could not load rewrite rules.", true);
+    }
+  }
+}
+
 async function trackResultClick(url, title, query) {
   try {
     const normalizedUrl = String(url || "").trim();
@@ -4768,6 +5086,14 @@ function renderAdminDashboard(data) {
     kpiTotalClicks.textContent = String(data.totals?.totalResultClicks || 0);
   }
 
+  if (kpiZeroResults) {
+    kpiZeroResults.textContent = String(data.totals?.zeroResultSearches || 0);
+  }
+
+  if (kpiReformulations) {
+    kpiReformulations.textContent = String(data.totals?.reformulations || 0);
+  }
+
   applyDeltaState(
     kpiSearchesDelta,
     data.comparison?.deltaPercent?.totalSearches,
@@ -4778,6 +5104,26 @@ function renderAdminDashboard(data) {
     kpiClicksDelta,
     data.comparison?.deltaPercent?.totalResultClicks,
   );
+
+  if (kpiZeroRate) {
+    const totalSearches = Number(data.totals?.totalSearches || 0);
+    const zeroResults = Number(data.totals?.zeroResultSearches || 0);
+    const zeroRate =
+      totalSearches > 0
+        ? Number(((zeroResults / totalSearches) * 100).toFixed(1))
+        : 0;
+    kpiZeroRate.textContent = `${zeroRate}% of searches returned zero results`;
+  }
+
+  if (kpiReformulationsMeta) {
+    const reformulations = Number(data.totals?.reformulations || 0);
+    const totalSearches = Number(data.totals?.totalSearches || 0);
+    const reformulationRate =
+      totalSearches > 0
+        ? Number(((reformulations / totalSearches) * 100).toFixed(1))
+        : 0;
+    kpiReformulationsMeta.textContent = `${reformulationRate}% of searches were refinements`;
+  }
 
   if (kpiSafetyRate || kpiSafetyMeta) {
     const telemetry = data.clickSignalTelemetry || {};
@@ -4815,6 +5161,20 @@ function renderAdminDashboard(data) {
     data.latestSearches || [],
     (item) =>
       `${new Date(item.at).toLocaleString()} | ${item.query} (${item.resultCount} results)`,
+  );
+
+  renderListItems(
+    zeroResultsList,
+    data.zeroResultQueries || [],
+    (item) =>
+      `${item.query} - ${item.count} zero-result searches (${item.percent}%)`,
+  );
+
+  renderListItems(
+    reformulationsList,
+    data.reformulationSummary || [],
+    (item) =>
+      `${item.type} - ${item.count}${Array.isArray(item.examples) && item.examples.length > 0 ? ` | examples: ${item.examples.join(", ")}` : ""}`,
   );
 
   renderListItems(
@@ -5444,6 +5804,7 @@ async function tryAutoLogin() {
     await refreshAssistantStatusWithStatus("");
     await refreshRoutingStatus("");
     await refreshSearchStatusWithMessage("");
+    await refreshRewriteRulesWithMessage("");
     await refreshAdminIndexPanelWithMessage("");
     ensureRuntimeAutoRefresh();
     ensureSearchAutoRefresh();
@@ -5535,6 +5896,7 @@ function initAdminPage() {
       await refreshAssistantStatusWithStatus("");
       await refreshRoutingStatus("");
       await refreshSearchStatusWithMessage("");
+      await refreshRewriteRulesWithMessage("");
       await refreshAdminIndexPanelWithMessage("");
       ensureRuntimeAutoRefresh();
       ensureSearchAutoRefresh();
@@ -5583,6 +5945,7 @@ function initAdminPage() {
         await refreshRuntimeMetricsWithStatus("");
         await refreshAssistantStatusWithStatus("");
         await refreshSearchStatusWithMessage("");
+        await refreshRewriteRulesWithMessage("");
         await refreshAdminIndexPanelWithMessage("");
         ensureRuntimeAutoRefresh();
         ensureSearchAutoRefresh();
@@ -5951,6 +6314,125 @@ function initAdminPage() {
         );
       } finally {
         adminRankingConfigResetBtn.disabled = false;
+      }
+    });
+  }
+
+  if (adminRewriteRulesRefreshBtn) {
+    adminRewriteRulesRefreshBtn.addEventListener("click", async () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+
+      await refreshRewriteRulesWithMessage("Rewrite rules refreshed.");
+    });
+  }
+
+  if (adminRewriteRulesAddBtn) {
+    adminRewriteRulesAddBtn.addEventListener("click", () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+
+      appendAdminRewriteRule({}, true);
+      setAdminStatus("New rewrite rule added locally. Save to apply it.");
+    });
+  }
+
+  if (adminRewriteRulesSuggestBtn) {
+    adminRewriteRulesSuggestBtn.addEventListener("click", async () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+
+      adminRewriteRulesSuggestBtn.disabled = true;
+      try {
+        const payload = await fetchAdminRewriteRuleSuggestions(12);
+        const suggestions = Array.isArray(payload?.suggestions)
+          ? payload.suggestions
+          : [];
+
+        if (suggestions.length === 0) {
+          setAdminStatus(
+            "No telemetry-based rewrite suggestions available yet.",
+          );
+          return;
+        }
+
+        let added = 0;
+        suggestions.forEach((suggestion) => {
+          if (!hasAdminRewriteRule(suggestion)) {
+            appendAdminRewriteRule(suggestion, false);
+            added += 1;
+          }
+        });
+
+        if (added === 0) {
+          setAdminStatus("All suggested rewrite rules are already present.");
+        } else {
+          setAdminStatus(
+            `${added} telemetry suggestion${added !== 1 ? "s" : ""} added. Save rules to apply them.`,
+          );
+        }
+      } catch (error) {
+        setAdminStatus(
+          error.message || "Could not fetch rewrite suggestions.",
+          true,
+        );
+      } finally {
+        adminRewriteRulesSuggestBtn.disabled = false;
+      }
+    });
+  }
+
+  if (adminRewriteRulesSaveBtn) {
+    adminRewriteRulesSaveBtn.addEventListener("click", async () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+
+      let rewriteRules = [];
+      try {
+        rewriteRules = collectAdminRewriteRules();
+      } catch (error) {
+        setAdminStatus(error.message || "Rewrite rules are invalid.", true);
+        return;
+      }
+
+      adminRewriteRulesSaveBtn.disabled = true;
+      try {
+        const payload = await postAdminRewriteRules({ rewriteRules });
+        renderAdminRewriteRules(payload);
+        await refreshSearchStatusWithMessage("");
+        setAdminStatus("Rewrite rules saved.");
+      } catch (error) {
+        setAdminStatus(error.message || "Could not save rewrite rules.", true);
+      } finally {
+        adminRewriteRulesSaveBtn.disabled = false;
+      }
+    });
+  }
+
+  if (adminRewriteRulesResetBtn) {
+    adminRewriteRulesResetBtn.addEventListener("click", async () => {
+      if (adminDashboard.hidden) {
+        return;
+      }
+
+      if (!window.confirm("Reset query rewrite rules to defaults?")) {
+        return;
+      }
+
+      adminRewriteRulesResetBtn.disabled = true;
+      try {
+        const payload = await postAdminRewriteRules({ reset: true });
+        renderAdminRewriteRules(payload);
+        await refreshSearchStatusWithMessage("");
+        setAdminStatus("Rewrite rules reset to defaults.");
+      } catch (error) {
+        setAdminStatus(error.message || "Could not reset rewrite rules.", true);
+      } finally {
+        adminRewriteRulesResetBtn.disabled = false;
       }
     });
   }

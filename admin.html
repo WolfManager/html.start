@@ -130,6 +130,18 @@
             <p id="kpiClicksDelta" class="admin-kpi-delta">No comparison</p>
           </article>
           <article class="result-card">
+            <p class="admin-kpi-label">Zero-Result Searches</p>
+            <p id="kpiZeroResults" class="admin-kpi-value">0</p>
+            <p id="kpiZeroRate" class="admin-kpi-delta">No telemetry yet</p>
+          </article>
+          <article class="result-card">
+            <p class="admin-kpi-label">Reformulations</p>
+            <p id="kpiReformulations" class="admin-kpi-value">0</p>
+            <p id="kpiReformulationsMeta" class="admin-kpi-delta">
+              No telemetry yet
+            </p>
+          </article>
+          <article class="result-card">
             <p class="admin-kpi-label">Ranking Safety</p>
             <p id="kpiSafetyRate" class="admin-kpi-value">0%</p>
             <p id="kpiSafetyMeta" class="admin-kpi-delta">No telemetry yet</p>
@@ -409,6 +421,57 @@
               placeholder='{"coverageThresholdByIntent": {...}, "sourceAuthorityBoosts": {...}, "optionalQueryTokens": [...]}'
             ></textarea>
             <p id="adminRankingConfigMeta" class="admin-assistant-meta"></p>
+          </div>
+
+          <div class="admin-index-sync-wrap" aria-label="Query rewrite rules">
+            <div class="admin-header-row admin-index-sync-header">
+              <p class="admin-search-runs-title">Query Rewrite Rules</p>
+              <div class="admin-actions">
+                <button
+                  id="adminRewriteRulesRefreshBtn"
+                  type="button"
+                  class="results-back-link"
+                >
+                  Refresh Rules
+                </button>
+                <button
+                  id="adminRewriteRulesAddBtn"
+                  type="button"
+                  class="results-back-link"
+                >
+                  Add Rule
+                </button>
+                <button
+                  id="adminRewriteRulesSuggestBtn"
+                  type="button"
+                  class="results-back-link"
+                >
+                  Suggest Rules
+                </button>
+                <button
+                  id="adminRewriteRulesSaveBtn"
+                  type="button"
+                  class="results-back-link"
+                >
+                  Save Rules
+                </button>
+                <button
+                  id="adminRewriteRulesResetBtn"
+                  type="button"
+                  class="results-back-link"
+                >
+                  Reset Defaults
+                </button>
+              </div>
+            </div>
+            <p class="admin-assistant-meta">
+              Use exact for typo fixes and contains for broader substitutions
+              driven by zero-result or reformulation telemetry.
+            </p>
+            <div id="adminRewriteRulesList" class="admin-rewrite-rules-list">
+              <p class="admin-chart-empty">Loading rewrite rules...</p>
+            </div>
+            <p id="adminRewriteRulesMeta" class="admin-assistant-meta"></p>
           </div>
 
           <div class="admin-index-sync-wrap" aria-label="Django index sync">
@@ -941,6 +1004,13 @@
             </div>
           </div>
           <p id="adminSearchStatusMeta" class="admin-assistant-meta"></p>
+
+          <p class="admin-search-runs-title">Zero-Result Queries</p>
+          <ul id="zeroResultsList" class="admin-list admin-list-scroll"></ul>
+
+          <p class="admin-search-runs-title">Reformulations</p>
+          <ul id="reformulationsList" class="admin-list admin-list-scroll"></ul>
+
           <ul id="latestSearchesList" class="admin-list admin-list-scroll"></ul>
 
           <p class="admin-search-runs-title">Top Clicked Results</p>

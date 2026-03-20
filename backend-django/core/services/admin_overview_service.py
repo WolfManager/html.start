@@ -118,11 +118,17 @@ def _totals_for_items(searches: list[dict[str, Any]], page_views: list[dict[str,
         for item in searches
         if str(item.get("query") or "").strip()
     }
+    zero_result_searches = sum(1 for item in searches if bool(item.get("zeroResults")))
+    reformulations = sum(
+        1 for item in searches if str(item.get("reformulationType") or "").strip()
+    )
 
     return {
         "totalSearches": len(searches),
         "totalPageViews": len(page_views),
         "uniqueQueries": len(unique_queries),
+        "zeroResultSearches": zero_result_searches,
+        "reformulations": reformulations,
     }
 
 
@@ -175,11 +181,30 @@ def get_period_comparison(all_searches: list[dict[str, Any]], all_page_views: li
 
 def build_overview(searches: list[dict[str, Any]], page_views: list[dict[str, Any]]) -> dict[str, Any]:
     query_counts: dict[str, int] = {}
+    zero_result_counts: dict[str, int] = {}
+    reformulation_counts: dict[str, dict[str, Any]] = {}
     for item in searches:
         key = str(item.get("query") or "").strip().lower()
         if not key:
             continue
         query_counts[key] = query_counts.get(key, 0) + 1
+        if bool(item.get("zeroResults")):
+            zero_result_counts[key] = zero_result_counts.get(key, 0) + 1
+
+        reformulation_type = str(item.get("reformulationType") or "").strip()
+        if reformulation_type:
+            current = reformulation_counts.get(reformulation_type) or {
+                "type": reformulation_type,
+                "count": 0,
+                "examples": [],
+            }
+            current["count"] = int(current["count"]) + 1
+            examples = list(current.get("examples") or [])
+            query_text = str(item.get("query") or "").strip()
+            if query_text and query_text not in examples and len(examples) < 3:
+                examples.append(query_text)
+            current["examples"] = examples
+            reformulation_counts[reformulation_type] = current
 
     total_searches = len(searches)
     top_queries = [
@@ -190,6 +215,21 @@ def build_overview(searches: list[dict[str, Any]], page_views: list[dict[str, An
         }
         for query, count in sorted(query_counts.items(), key=lambda item: item[1], reverse=True)[:10]
     ]
+
+    zero_result_queries = [
+        {
+            "query": query,
+            "count": count,
+            "percent": round((count / total_searches) * 100, 2) if total_searches > 0 else 0,
+        }
+        for query, count in sorted(zero_result_counts.items(), key=lambda item: item[1], reverse=True)[:10]
+    ]
+
+    reformulation_summary = sorted(
+        reformulation_counts.values(),
+        key=lambda item: int(item["count"]),
+        reverse=True,
+    )[:10]
 
     page_counts: dict[str, int] = {}
     for item in page_views:
@@ -211,8 +251,14 @@ def build_overview(searches: list[dict[str, Any]], page_views: list[dict[str, An
             "totalSearches": total_searches,
             "totalPageViews": total_views,
             "uniqueQueries": len(query_counts.keys()),
+            "zeroResultSearches": sum(1 for item in searches if bool(item.get("zeroResults"))),
+            "reformulations": sum(
+                1 for item in searches if str(item.get("reformulationType") or "").strip()
+            ),
         },
         "topQueries": top_queries,
+        "zeroResultQueries": zero_result_queries,
+        "reformulationSummary": reformulation_summary,
         "trafficByPage": traffic_by_page,
         "latestSearches": list(reversed(searches[-20:])),
         "trends": {

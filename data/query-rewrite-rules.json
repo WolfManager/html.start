@@ -1,0 +1,18 @@
+{
+  "rules": [
+    {
+      "enabled": true,
+      "matchType": "exact",
+      "from": "pythn",
+      "to": "python",
+      "reason": "common-typo"
+    },
+    {
+      "enabled": true,
+      "matchType": "exact",
+      "from": "opnai",
+      "to": "openai",
+      "reason": "common-typo"
+    }
+  ]
+}

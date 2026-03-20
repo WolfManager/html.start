@@ -104,17 +104,31 @@ class CoreApiTests(TestCase):
         self.assertIn("error", payload)
 
     @patch(
-        "core.views.run_search",
-        return_value=[{"title": "A", "url": "https://example.com", "summary": "S"}],
+        "core.views.run_search_page",
+        return_value={
+            "queryUsed": "alpha",
+            "queryRewrite": None,
+            "results": [{"title": "A", "url": "https://example.com", "summary": "S"}],
+            "total": 1,
+            "limit": 20,
+            "offset": 0,
+            "page": 1,
+            "totalPages": 1,
+            "hasNextPage": False,
+            "hasPrevPage": False,
+            "facets": {"languages": [], "categories": [], "sources": []},
+        },
     )
     @patch("core.views.log_search")
-    def test_search_returns_ranked_results(self, mock_log_search, _mock_run_search) -> None:
+    def test_search_returns_ranked_results(self, mock_log_search, _mock_run_search_page) -> None:
         response = self.client.get("/api/search?q=alpha")
         payload = self._json(response)
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(payload.get("engine"), "MAGNETO Core")
         self.assertEqual(payload.get("query"), "alpha")
+        self.assertEqual(payload.get("queryUsed"), "alpha")
+        self.assertIsNone(payload.get("queryRewrite"))
         self.assertEqual(payload.get("total"), 1)
         self.assertEqual(len(payload.get("results") or []), 1)
         mock_log_search.assert_called_once()
@@ -131,6 +145,188 @@ class CoreApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(payload.get("ok"), True)
         mock_log_page_view.assert_called_once()
+
+    @patch("core.views.invalidate_click_signal_cache")
+    @patch("core.views.log_result_click")
+    def test_result_click_event_returns_ok(self, mock_log_result_click, mock_invalidate_click_signal_cache) -> None:
+        response = self.client.post(
+            "/api/events/result-click",
+            {
+                "url": "https://example.com/docs",
+                "title": "Example Docs",
+                "query": "example docs",
+            },
+            format="json",
+        )
+        payload = self._json(response)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(payload.get("ok"), True)
+        mock_log_result_click.assert_called_once()
+        mock_invalidate_click_signal_cache.assert_called_once()
+
+    def test_result_click_requires_url_and_query(self) -> None:
+        response = self.client.post(
+            "/api/events/result-click",
+            {"title": "Missing fields"},
+            format="json",
+        )
+        payload = self._json(response)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("error", payload)
+
+    def test_admin_search_rewrite_rules_requires_admin_auth(self) -> None:
+        response = self.client.get("/api/admin/search/rewrite-rules")
+        self.assertEqual(response.status_code, 401)
+
+    def test_admin_search_rewrite_rule_suggestions_requires_admin_auth(self) -> None:
+        response = self.client.get("/api/admin/search/rewrite-rules/suggestions")
+        self.assertEqual(response.status_code, 401)
+
+    @patch(
+        "core.views._build_rewrite_rule_suggestions",
+        return_value=[
+            {
+                "enabled": True,
+                "matchType": "exact",
+                "from": "opnai",
+                "to": "openai",
+                "reason": "telemetry-suggested",
+                "signals": {"reformulations": 3, "maxImprovement": 10, "confidence": 0.85},
+            }
+        ],
+    )
+    def test_admin_search_rewrite_rule_suggestions_returns_items_for_admin(
+        self,
+        mock_build_rewrite_rule_suggestions,
+    ) -> None:
+        token = self._admin_token()
+        response = self.client.get(
+            "/api/admin/search/rewrite-rules/suggestions?limit=5",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        payload = self._json(response)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(payload.get("total"), 1)
+        self.assertEqual(payload["suggestions"][0]["to"], "openai")
+        mock_build_rewrite_rule_suggestions.assert_called_once_with(limit=5)
+
+    @patch(
+        "core.views.get_query_rewrite_rules",
+        return_value=[
+            {
+                "enabled": True,
+                "matchType": "exact",
+                "from": "pythn",
+                "to": "python",
+                "reason": "common-typo",
+            }
+        ],
+    )
+    def test_admin_search_rewrite_rules_returns_rules_for_admin(
+        self,
+        _mock_get_query_rewrite_rules,
+    ) -> None:
+        token = self._admin_token()
+        response = self.client.get(
+            "/api/admin/search/rewrite-rules",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        payload = self._json(response)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(payload.get("rewriteRules") or []), 1)
+        self.assertEqual(payload["rewriteRules"][0]["to"], "python")
+
+    @patch(
+        "core.views.write_query_rewrite_rules",
+        return_value=[
+            {
+                "enabled": True,
+                "matchType": "contains",
+                "from": "opnai",
+                "to": "openai",
+                "reason": "common-typo",
+            }
+        ],
+    )
+    def test_admin_search_rewrite_rules_update_saves_rules(
+        self,
+        mock_write_query_rewrite_rules,
+    ) -> None:
+        token = self._admin_token()
+        response = self.client.post(
+            "/api/admin/search/rewrite-rules/update",
+            {
+                "rewriteRules": [
+                    {
+                        "enabled": True,
+                        "matchType": "contains",
+                        "from": "opnai",
+                        "to": "openai",
+                        "reason": "common-typo",
+                    }
+                ]
+            },
+            format="json",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        payload = self._json(response)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(payload["rewriteRules"][0]["matchType"], "contains")
+        mock_write_query_rewrite_rules.assert_called_once()
+
+    @patch(
+        "core.views.reset_query_rewrite_rules",
+        return_value=[
+            {
+                "enabled": True,
+                "matchType": "exact",
+                "from": "pythn",
+                "to": "python",
+                "reason": "common-typo",
+            }
+        ],
+    )
+    def test_admin_search_rewrite_rules_update_supports_reset(
+        self,
+        mock_reset_query_rewrite_rules,
+    ) -> None:
+        token = self._admin_token()
+        response = self.client.post(
+            "/api/admin/search/rewrite-rules/update",
+            {"reset": True},
+            format="json",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        payload = self._json(response)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(payload["rewriteRules"][0]["from"], "pythn")
+        mock_reset_query_rewrite_rules.assert_called_once()
+
+    @patch(
+        "core.views.write_query_rewrite_rules",
+        side_effect=ValueError("Rule 1 is missing a from value."),
+    )
+    def test_admin_search_rewrite_rules_update_returns_400_for_invalid_rules(
+        self,
+        _mock_write_query_rewrite_rules,
+    ) -> None:
+        token = self._admin_token()
+        response = self.client.post(
+            "/api/admin/search/rewrite-rules/update",
+            {"rewriteRules": [{"to": "python"}]},
+            format="json",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        payload = self._json(response)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("error", payload)
 
     @patch(
         "core.views.resolve_approx_location",
