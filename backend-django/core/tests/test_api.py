@@ -213,6 +213,49 @@ class CoreApiTests(TestCase):
         self.assertEqual(payload["suggestions"][0]["to"], "openai")
         mock_build_rewrite_rule_suggestions.assert_called_once_with(limit=5)
 
+    @patch("core.views.read_analytics")
+    @patch("core.views.get_query_rewrite_rules", return_value=[])
+    def test_admin_search_rewrite_rule_suggestions_derive_from_telemetry(
+        self,
+        _mock_get_query_rewrite_rules,
+        mock_read_analytics,
+    ) -> None:
+        mock_read_analytics.return_value = {
+            "searches": [
+                {
+                    "id": "s-1",
+                    "query": "opnai",
+                    "resultCount": 0,
+                    "reformulatesSearchId": None,
+                    "reformulationType": None,
+                },
+                {
+                    "id": "s-2",
+                    "query": "openai",
+                    "resultCount": 15,
+                    "reformulatesSearchId": "s-1",
+                    "reformulationType": "zero-results-refinement",
+                },
+            ],
+            "pageViews": [],
+            "resultClicks": [],
+        }
+
+        token = self._admin_token()
+        response = self.client.get(
+            "/api/admin/search/rewrite-rules/suggestions?limit=10",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        payload = self._json(response)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(payload.get("total"), 1)
+        suggestion = payload["suggestions"][0]
+        self.assertEqual(suggestion["from"], "opnai")
+        self.assertEqual(suggestion["to"], "openai")
+        self.assertEqual(suggestion["reason"], "telemetry-suggested")
+        self.assertEqual(suggestion["signals"]["reformulations"], 1)
+
     @patch(
         "core.views.get_query_rewrite_rules",
         return_value=[
