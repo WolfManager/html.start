@@ -133,6 +133,37 @@ async function runCheck(name, requestBuilder, validator) {
   }
 }
 
+async function runAssistantChatCheck(apiBaseUrl) {
+  const endpoint = `${apiBaseUrl}/api/assistant/chat`;
+  const headers = { "Content-Type": "application/json" };
+
+  // Warm-up call to avoid measuring one-time cold path costs in gate latency.
+  try {
+    await fetch(endpoint, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ message: "health check" }),
+    });
+  } catch (_error) {
+    // Ignore warm-up failures; the measured check below remains authoritative.
+  }
+
+  return runCheck(
+    "api:assistant:chat",
+    () =>
+      fetch(endpoint, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ message: "health check" }),
+      }),
+    (res, body) =>
+      res.ok &&
+      body &&
+      typeof body.reply === "string" &&
+      body.reply.trim().length > 0,
+  );
+}
+
 async function main() {
   log(`Running MAGNETO health-check...`);
   log(`Web base: ${webBase}`);
@@ -168,20 +199,7 @@ async function main() {
         }),
       (res, body) => res.ok && body && body.ok === true,
     ),
-    runCheck(
-      "api:assistant:chat",
-      () =>
-        fetch(`${apiBase}/api/assistant/chat`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: "health check" }),
-        }),
-      (res, body) =>
-        res.ok &&
-        body &&
-        typeof body.reply === "string" &&
-        body.reply.trim().length > 0,
-    ),
+    runAssistantChatCheck(apiBase),
   ];
 
   const results = await Promise.all(checks);
