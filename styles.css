@@ -2104,10 +2104,9 @@ select:focus,
 
 .admin-rewrite-rule-row {
   display: grid;
-  grid-template-columns: auto 150px minmax(0, 1fr) minmax(0, 1fr) minmax(
-      0,
-      0.9fr
-    ) 130px auto;
+  grid-template-columns:
+    auto 150px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.9fr)
+    130px auto;
   gap: 10px;
   align-items: center;
   padding: 10px;

@@ -10,5 +10,12 @@
     "javascript": "javascriptreact"
   },
   "python.analysis.typeCheckingMode": "basic",
-  "git.path": "C:\\Program Files\\Git\\cmd\\git.exe"
+  "git.path": "C:\\Program Files\\Git\\cmd\\git.exe",
+  "python-envs.pythonProjects": [
+    {
+      "path": ".",
+      "envManager": "ms-python.python:venv",
+      "packageManager": "ms-python.python:pip"
+    }
+  ]
 }
