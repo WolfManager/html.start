@@ -312,6 +312,14 @@ def _normalize_query_text(value: str) -> str:
     return " ".join(str(value or "").strip().lower().split())
 
 
+def _looks_like_operator_query(value: str) -> bool:
+    normalized = _normalize_query_text(value)
+    return any(
+        token in normalized
+        for token in ("site:", "-site:", "inurl:", "intitle:", "filetype:")
+    )
+
+
 def _build_rewrite_rule_suggestions(limit: int = 10) -> list[dict]:
     analytics = read_analytics()
     searches = list(analytics.get("searches") or [])
@@ -346,6 +354,10 @@ def _build_rewrite_rule_suggestions(limit: int = 10) -> list[dict]:
         current_norm = _normalize_query_text(current_query)
 
         if not previous_norm or not current_norm or previous_norm == current_norm:
+            continue
+        if len(previous_norm) < 3 or len(current_norm) < 3:
+            continue
+        if _looks_like_operator_query(previous_norm) or _looks_like_operator_query(current_norm):
             continue
 
         previous_count = int(previous.get("resultCount") or 0)
