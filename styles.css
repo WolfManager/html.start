@@ -2082,10 +2082,7 @@ select:focus,
 
 .admin-rewrite-rule-row {
   display: grid;
-  grid-template-columns: auto 150px minmax(0, 1fr) minmax(0, 1fr) minmax(
-      0,
-      0.9fr
-    ) auto;
+  grid-template-columns: auto 150px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.9fr) 130px auto;
   gap: 10px;
   align-items: center;
   padding: 10px;
@@ -2112,6 +2109,28 @@ select:focus,
 
 .admin-rewrite-rule-remove {
   min-height: 42px;
+}
+
+.admin-rewrite-rule-signal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(132, 213, 255, 0.25);
+  background: rgba(8, 42, 64, 0.55);
+  color: #ccecff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.admin-rewrite-rule-signal.manual {
+  border-color: rgba(183, 213, 102, 0.35);
+  background: rgba(48, 64, 19, 0.55);
+  color: #def2b0;
 }
 
 .admin-rewrite-rules-empty {

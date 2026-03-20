@@ -4381,6 +4381,23 @@ function createAdminRewriteRuleRow(rule = {}) {
   reasonInput.value = String(rule.reason || "configured-rewrite");
   reasonInput.dataset.field = "reason";
 
+  const signals = rule?.signals && typeof rule.signals === "object"
+    ? rule.signals
+    : null;
+  const confidence = Number(signals?.confidence || 0);
+  const reformulations = Number(signals?.reformulations || 0);
+  const maxImprovement = Number(signals?.maxImprovement || 0);
+  const signalBadge = document.createElement("span");
+  signalBadge.className = "admin-rewrite-rule-signal";
+  if (signals) {
+    signalBadge.textContent = `c=${confidence.toFixed(2)} | n=${reformulations}`;
+    signalBadge.title = `confidence=${confidence.toFixed(2)}, reformulations=${reformulations}, maxImprovement=${maxImprovement}`;
+  } else {
+    signalBadge.textContent = "manual";
+    signalBadge.classList.add("manual");
+    signalBadge.title = "Manual rule";
+  }
+
   const removeBtn = document.createElement("button");
   removeBtn.type = "button";
   removeBtn.className = "results-back-link admin-rewrite-rule-remove";
@@ -4402,6 +4419,7 @@ function createAdminRewriteRuleRow(rule = {}) {
     fromInput,
     toInput,
     reasonInput,
+    signalBadge,
     removeBtn,
   );
   return row;
@@ -6370,8 +6388,17 @@ function initAdminPage() {
         if (added === 0) {
           setAdminStatus("All suggested rewrite rules are already present.");
         } else {
+          const confidences = suggestions
+            .map((item) => Number(item?.signals?.confidence || 0))
+            .filter((value) => Number.isFinite(value) && value > 0);
+          const avgConfidence = confidences.length
+            ? (
+                confidences.reduce((sum, value) => sum + value, 0) /
+                confidences.length
+              ).toFixed(2)
+            : "n/a";
           setAdminStatus(
-            `${added} telemetry suggestion${added !== 1 ? "s" : ""} added. Save rules to apply them.`,
+            `${added} telemetry suggestion${added !== 1 ? "s" : ""} added (avg confidence ${avgConfidence}). Save rules to apply them.`,
           );
         }
       } catch (error) {
