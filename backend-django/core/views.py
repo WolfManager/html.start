@@ -320,7 +320,10 @@ def _looks_like_operator_query(value: str) -> bool:
     )
 
 
-def _build_rewrite_rule_suggestions(limit: int = 10) -> list[dict]:
+def _build_rewrite_rule_suggestions(
+    limit: int = 10,
+    min_confidence: float = 0.0,
+) -> list[dict]:
     analytics = read_analytics()
     searches = list(analytics.get("searches") or [])
     searches_by_id = {
@@ -412,6 +415,13 @@ def _build_rewrite_rule_suggestions(limit: int = 10) -> list[dict]:
                 },
             }
         )
+
+    threshold = max(0.0, min(0.99, float(min_confidence or 0.0)))
+    candidates = [
+        item
+        for item in candidates
+        if float((item.get("signals") or {}).get("confidence") or 0.0) >= threshold
+    ]
 
     candidates.sort(
         key=lambda entry: (
@@ -537,13 +547,32 @@ def admin_search_rewrite_rules_suggestions(request):
 
     limit_raw = str(request.query_params.get("limit") or "").strip()
     limit = int(limit_raw) if limit_raw.isdigit() else 10
-    suggestions = _build_rewrite_rule_suggestions(limit=limit)
+    min_confidence_raw = str(request.query_params.get("minConfidence") or "").strip()
+    try:
+        min_confidence = float(min_confidence_raw) if min_confidence_raw else 0.0
+    except ValueError:
+        return Response(
+            {"error": "Invalid minConfidence value."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if min_confidence < 0 or min_confidence > 0.99:
+        return Response(
+            {"error": "minConfidence must be between 0 and 0.99."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    suggestions = _build_rewrite_rule_suggestions(
+        limit=limit,
+        min_confidence=min_confidence,
+    )
     return Response(
         {
             "ok": True,
             "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             "suggestions": suggestions,
             "total": len(suggestions),
+            "minConfidence": min_confidence,
         }
     )
 

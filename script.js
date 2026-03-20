@@ -3256,9 +3256,12 @@ async function postAdminRewriteRules({ rewriteRules = null, reset = false }) {
   return payload;
 }
 
-async function fetchAdminRewriteRuleSuggestions(limit = 10) {
+async function fetchAdminRewriteRuleSuggestions(limit = 10, minConfidence = 0) {
   const token = getAdminToken();
-  const query = new URLSearchParams({ limit: String(limit) });
+  const query = new URLSearchParams({
+    limit: String(limit),
+    minConfidence: String(minConfidence),
+  });
   const response = await apiFetch(
     `/api/admin/search/rewrite-rules/suggestions?${query.toString()}`,
     {
@@ -6372,13 +6375,13 @@ function initAdminPage() {
 
       adminRewriteRulesSuggestBtn.disabled = true;
       try {
-        const payload = await fetchAdminRewriteRuleSuggestions(12);
-        const suggestions = (
-          Array.isArray(payload?.suggestions) ? payload.suggestions : []
-        ).filter((item) => {
-          const confidence = Number(item?.signals?.confidence || 0);
-          return Number.isFinite(confidence) && confidence >= minConfidence;
-        });
+        const payload = await fetchAdminRewriteRuleSuggestions(
+          12,
+          minConfidence.toFixed(2),
+        );
+        const suggestions = Array.isArray(payload?.suggestions)
+          ? payload.suggestions
+          : [];
 
         if (suggestions.length === 0) {
           setAdminStatus(

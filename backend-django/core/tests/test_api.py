@@ -203,7 +203,7 @@ class CoreApiTests(TestCase):
     ) -> None:
         token = self._admin_token()
         response = self.client.get(
-            "/api/admin/search/rewrite-rules/suggestions?limit=5",
+            "/api/admin/search/rewrite-rules/suggestions?limit=5&minConfidence=0.70",
             HTTP_AUTHORIZATION=f"Bearer {token}",
         )
         payload = self._json(response)
@@ -211,7 +211,22 @@ class CoreApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(payload.get("total"), 1)
         self.assertEqual(payload["suggestions"][0]["to"], "openai")
-        mock_build_rewrite_rule_suggestions.assert_called_once_with(limit=5)
+        self.assertEqual(payload.get("minConfidence"), 0.7)
+        mock_build_rewrite_rule_suggestions.assert_called_once_with(
+            limit=5,
+            min_confidence=0.7,
+        )
+
+    def test_admin_search_rewrite_rule_suggestions_reject_invalid_min_confidence(self) -> None:
+        token = self._admin_token()
+        response = self.client.get(
+            "/api/admin/search/rewrite-rules/suggestions?minConfidence=abc",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        payload = self._json(response)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("minConfidence", payload.get("error", ""))
 
     @patch("core.views.read_analytics")
     @patch("core.views.get_query_rewrite_rules", return_value=[])
