@@ -251,6 +251,20 @@ function validateRankingConfig(body) {
   );
 }
 
+function validateIndexSyncStatus(body) {
+  return Boolean(
+    body &&
+    body.ok === true &&
+    typeof body.running === "boolean" &&
+    body.config &&
+    typeof body.config === "object" &&
+    body.runtime &&
+    typeof body.runtime === "object" &&
+    body.state &&
+    typeof body.state === "object",
+  );
+}
+
 function buildParityDiffForSearch(nodeBody, djangoBody) {
   const nodeTop = uniqueNormalized(
     (nodeBody?.results || []).slice(0, 5).map((i) => i?.url),
@@ -717,6 +731,53 @@ async function runAdminChecks() {
       )
         ? djangoRankingConfig.body.rankingConfig.optionalQueryTokens.length
         : 0,
+    },
+  });
+
+  const nodeIndexSyncStatus = nodeToken
+    ? await fetchJson(`${nodeBase}/api/admin/index/sync-status`, {
+        headers: {
+          Authorization: `Bearer ${nodeToken}`,
+        },
+      })
+    : {
+        ok: false,
+        status: 0,
+        ms: 0,
+        body: null,
+        error: "Missing Node admin token.",
+      };
+
+  const djangoIndexSyncStatus = djangoToken
+    ? await fetchJson(`${djangoBase}/api/admin/index/sync-status`, {
+        headers: {
+          Authorization: `Bearer ${djangoToken}`,
+        },
+      })
+    : {
+        ok: false,
+        status: 0,
+        ms: 0,
+        body: null,
+        error: "Missing Django admin token.",
+      };
+
+  checks.push({
+    name: "admin:index:sync-status",
+    node: nodeIndexSyncStatus,
+    django: djangoIndexSyncStatus,
+    parityOk:
+      nodeIndexSyncStatus.ok &&
+      djangoIndexSyncStatus.ok &&
+      validateIndexSyncStatus(nodeIndexSyncStatus.body) &&
+      validateIndexSyncStatus(djangoIndexSyncStatus.body),
+    parityDetails: {
+      runningMatches:
+        Boolean(nodeIndexSyncStatus.body?.running) ===
+        Boolean(djangoIndexSyncStatus.body?.running),
+      watermarkMatches:
+        String(nodeIndexSyncStatus.body?.state?.updatedSince || "") ===
+        String(djangoIndexSyncStatus.body?.state?.updatedSince || ""),
     },
   });
 
