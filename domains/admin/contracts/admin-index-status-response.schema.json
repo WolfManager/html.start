@@ -14,7 +14,13 @@
     },
     "index": {
       "type": "object",
-      "required": ["totalDocs", "file", "topLanguages", "topCategories", "topSources"],
+      "required": [
+        "totalDocs",
+        "file",
+        "topLanguages",
+        "topCategories",
+        "topSources"
+      ],
       "properties": {
         "totalDocs": { "type": "integer", "minimum": 0 },
         "file": {
