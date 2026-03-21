@@ -85,8 +85,14 @@ function loadSchema(relPath) {
 }
 
 const SCHEMAS = {
+  "search-request": loadSchema(
+    "domains/search/contracts/search-request.schema.json",
+  ),
   "search-response": loadSchema(
     "domains/search/contracts/search-response.schema.json",
+  ),
+  "assistant-request": loadSchema(
+    "domains/assistant/contracts/assistant-request.schema.json",
   ),
   "assistant-response": loadSchema(
     "domains/assistant/contracts/assistant-response.schema.json",
@@ -158,6 +164,15 @@ function validateNode(value, schema, path) {
     value !== null &&
     !Array.isArray(value)
   ) {
+    if (schema.additionalProperties === false) {
+      const allowedKeys = new Set(Object.keys(schema.properties));
+      for (const key of Object.keys(value)) {
+        if (!allowedKeys.has(key)) {
+          violations.push(`${path}: unexpected field "${key}"`);
+        }
+      }
+    }
+
     for (const [key, propSchema] of Object.entries(schema.properties)) {
       if (key in value) {
         violations.push(
@@ -173,6 +188,34 @@ function validateNode(value, schema, path) {
     sample.forEach((item, i) => {
       violations.push(...validateNode(item, schema.items, `${path}[${i}]`));
     });
+  }
+
+  if (schema.enum && !schema.enum.includes(value)) {
+    violations.push(
+      `${path}: expected one of ${JSON.stringify(schema.enum)}, got ${JSON.stringify(value)}`,
+    );
+  }
+
+  if (typeof value === "string") {
+    if (Number.isFinite(schema.minLength) && value.length < schema.minLength) {
+      violations.push(
+        `${path}: expected minLength ${schema.minLength}, got ${value.length}`,
+      );
+    }
+    if (Number.isFinite(schema.maxLength) && value.length > schema.maxLength) {
+      violations.push(
+        `${path}: expected maxLength ${schema.maxLength}, got ${value.length}`,
+      );
+    }
+  }
+
+  if (typeof value === "number") {
+    if (Number.isFinite(schema.minimum) && value < schema.minimum) {
+      violations.push(`${path}: expected minimum ${schema.minimum}, got ${value}`);
+    }
+    if (Number.isFinite(schema.maximum) && value > schema.maximum) {
+      violations.push(`${path}: expected maximum ${schema.maximum}, got ${value}`);
+    }
   }
 
   return violations;
@@ -305,6 +348,14 @@ const PUBLIC_CHECKS = [
     schema: "assistant-response",
   },
   {
+    name: "POST /api/assistant/chat with empty message → error-response",
+    method: "POST",
+    path: "/api/assistant/chat",
+    body: JSON.stringify({ message: "" }),
+    schema: "error-response",
+    expectStatus: 400,
+  },
+  {
     name: "GET /api/search without q → error-response",
     method: "GET",
     path: "/api/search",
@@ -330,6 +381,33 @@ const ADMIN_CHECKS = [
   },
 ];
 
+const REQUEST_SCHEMA_CHECKS = [
+  {
+    name: "search-request valid fixture",
+    schema: "search-request",
+    payload: { q: "contract-test", page: 1, limit: 5 },
+    expectValid: true,
+  },
+  {
+    name: "search-request missing q",
+    schema: "search-request",
+    payload: { page: 1 },
+    expectValid: false,
+  },
+  {
+    name: "assistant-request valid fixture",
+    schema: "assistant-request",
+    payload: { message: "contract-test" },
+    expectValid: true,
+  },
+  {
+    name: "assistant-request empty message",
+    schema: "assistant-request",
+    payload: { message: "" },
+    expectValid: false,
+  },
+];
+
 // ---------------------------------------------------------------------------
 // Runner
 // ---------------------------------------------------------------------------
@@ -338,6 +416,29 @@ function targetLabel(port) {
   if (port === nodePort) return "node";
   if (port === djangoPort) return "django";
   return `port:${port}`;
+}
+
+function runRequestSchemaChecks() {
+  return REQUEST_SCHEMA_CHECKS.map((check) => {
+    const { ok, violations } = validate(
+      check.payload,
+      check.schema,
+      `request:${check.name}`,
+    );
+    const contractPassed = check.expectValid ? ok : !ok;
+
+    return {
+      name: check.name,
+      backend: "local",
+      status: contractPassed ? "pass" : "fail",
+      contractPassed,
+      violations,
+      latencyMs: 0,
+      httpStatus: null,
+      schema: check.schema,
+      expectation: check.expectValid ? "valid" : "invalid",
+    };
+  });
 }
 
 async function runChecksForTarget(port, authToken) {
@@ -438,6 +539,8 @@ async function main() {
       "Admin credentials missing while --require-admin is enabled.",
     );
   }
+
+  allResults.push(...runRequestSchemaChecks());
 
   for (const target of targets) {
     let authToken = null;
