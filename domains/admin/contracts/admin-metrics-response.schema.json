@@ -14,7 +14,7 @@
       "enum": ["all", "24h", "7d", "30d"]
     },
     "comparison": {
-      "type": "object"
+      "type": ["object", "null"]
     },
     "clickSignalConfig": {
       "type": "object"

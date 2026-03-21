@@ -9,7 +9,8 @@
  *
  * Options:
  *   --api-target=node|django|both   Which backend(s) to test (default: both)
- *   --with-admin                    Also validate admin-guarded endpoints
+ *   --with-admin                    Validate admin endpoints when credentials exist
+ *   --require-admin                 Require admin validation and credentials
  *   --json                          Output raw JSON
  *   --save-report                   Save JSON report to data/backups/contract/
  *   --out=<path>                    Override output file path
@@ -44,6 +45,7 @@ function hasFlag(name) {
 
 const apiTarget = getArg("api-target", "both");
 const withAdmin = hasFlag("with-admin");
+const requireAdmin = hasFlag("require-admin");
 const jsonMode = hasFlag("json");
 const saveReport = hasFlag("save-report");
 const outPath = getArg("out", null);
@@ -54,6 +56,17 @@ const timeoutMs = parseInt(getArg("timeout-ms", "8000"), 10);
 
 const includeNode = apiTarget === "node" || apiTarget === "both";
 const includeDjango = apiTarget === "django" || apiTarget === "both";
+
+const adminUser = String(
+  process.env.MAGNETO_ADMIN_USER || process.env.ADMIN_USER || "",
+).trim();
+const adminPassword = String(
+  process.env.MAGNETO_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || "",
+).trim();
+const hasAdminCredentials = Boolean(adminUser && adminPassword);
+const shouldRunAdminChecks = Boolean(
+  requireAdmin || (withAdmin && hasAdminCredentials),
+);
 
 // ---------------------------------------------------------------------------
 // Schema loader — reads JSON Schema files as structural contracts
@@ -246,9 +259,11 @@ function makeOptions(port, method, urlPath, extraHeaders = {}) {
 // ---------------------------------------------------------------------------
 
 async function getAdminToken(port) {
-  const password = process.env.ADMIN_PASSWORD || "admin";
-  const body = JSON.stringify({ password });
-  const opts = makeOptions(port, "POST", "/api/admin/login");
+  const body = JSON.stringify({
+    username: adminUser,
+    password: adminPassword,
+  });
+  const opts = makeOptions(port, "POST", "/api/auth/login");
   opts.headers["Content-Length"] = Buffer.byteLength(body);
   const res = await request(opts, body);
   if (res.error || res.status !== 200) return null;
@@ -312,7 +327,10 @@ function targetLabel(port) {
 }
 
 async function runChecksForTarget(port, authToken) {
-  const checks = [...PUBLIC_CHECKS, ...(withAdmin ? ADMIN_CHECKS : [])];
+  const checks = [
+    ...PUBLIC_CHECKS,
+    ...(shouldRunAdminChecks ? ADMIN_CHECKS : []),
+  ];
   const results = [];
 
   for (const check of checks) {
@@ -320,8 +338,8 @@ async function runChecksForTarget(port, authToken) {
       results.push({
         name: check.name,
         backend: targetLabel(port),
-        status: "skipped",
-        reason: "No admin token",
+        status: "error",
+        reason: "Admin login failed",
         contractPassed: false,
         violations: [],
         latencyMs: 0,
@@ -396,13 +414,20 @@ async function main() {
   if (includeDjango) targets.push({ port: djangoPort, label: "django" });
 
   const allResults = [];
+  const gateFindings = [];
   const schemaLoadErrors = Object.entries(SCHEMAS)
     .filter(([, s]) => s === null)
     .map(([k]) => `Schema "${k}" failed to load`);
 
+  if (requireAdmin && !hasAdminCredentials) {
+    gateFindings.push(
+      "Admin credentials missing while --require-admin is enabled.",
+    );
+  }
+
   for (const target of targets) {
     let authToken = null;
-    if (withAdmin) {
+    if (shouldRunAdminChecks) {
       authToken = await getAdminToken(target.port);
       if (!authToken && !jsonMode) {
         process.stderr.write(
@@ -419,7 +444,8 @@ async function main() {
   const passed = allResults.filter((r) => r.contractPassed).length;
   const failed = allResults.filter((r) => !r.contractPassed).length;
   const failures = allResults.filter((r) => !r.contractPassed);
-  const contractsPassed = failed === 0 && schemaLoadErrors.length === 0;
+  const contractsPassed =
+    failed === 0 && schemaLoadErrors.length === 0 && gateFindings.length === 0;
   const goNoGo = contractsPassed ? "GO" : "NO-GO";
 
   const report = {
@@ -427,6 +453,8 @@ async function main() {
     generatedAt: new Date().toISOString(),
     apiTarget,
     withAdmin,
+    requireAdmin,
+    adminChecksEnabled: shouldRunAdminChecks,
     goNoGo,
     contractsPassed,
     summary: {
@@ -434,8 +462,10 @@ async function main() {
       passed,
       failed,
       schemaLoadErrors: schemaLoadErrors.length,
+      gateFindings: gateFindings.length,
     },
     schemaLoadErrors,
+    gateFindings,
     failures: failures.map((f) => ({
       name: f.name,
       backend: f.backend,
