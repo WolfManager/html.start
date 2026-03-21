@@ -237,6 +237,20 @@ function validateRewriteRules(body) {
   return Boolean(body && body.ok === true && Array.isArray(body.rewriteRules));
 }
 
+function validateRankingConfig(body) {
+  return Boolean(
+    body &&
+      body.ok === true &&
+      body.rankingConfig &&
+      typeof body.rankingConfig === "object" &&
+      body.rankingConfig.coverageThresholdByIntent &&
+      typeof body.rankingConfig.coverageThresholdByIntent === "object" &&
+      body.rankingConfig.sourceAuthorityBoosts &&
+      typeof body.rankingConfig.sourceAuthorityBoosts === "object" &&
+      Array.isArray(body.rankingConfig.optionalQueryTokens),
+  );
+}
+
 function buildParityDiffForSearch(nodeBody, djangoBody) {
   const nodeTop = uniqueNormalized(
     (nodeBody?.results || []).slice(0, 5).map((i) => i?.url),
@@ -644,6 +658,63 @@ async function runAdminChecks() {
         : 0,
       djangoRuleCount: Array.isArray(djangoRewriteRules.body?.rewriteRules)
         ? djangoRewriteRules.body.rewriteRules.length
+        : 0,
+    },
+  });
+
+  const nodeRankingConfig = nodeToken
+    ? await fetchJson(`${nodeBase}/api/admin/search/ranking-config`, {
+        headers: {
+          Authorization: `Bearer ${nodeToken}`,
+        },
+      })
+    : {
+        ok: false,
+        status: 0,
+        ms: 0,
+        body: null,
+        error: "Missing Node admin token.",
+      };
+
+  const djangoRankingConfig = djangoToken
+    ? await fetchJson(`${djangoBase}/api/admin/search/ranking-config`, {
+        headers: {
+          Authorization: `Bearer ${djangoToken}`,
+        },
+      })
+    : {
+        ok: false,
+        status: 0,
+        ms: 0,
+        body: null,
+        error: "Missing Django admin token.",
+      };
+
+  checks.push({
+    name: "admin:search:ranking-config",
+    node: nodeRankingConfig,
+    django: djangoRankingConfig,
+    parityOk:
+      nodeRankingConfig.ok &&
+      djangoRankingConfig.ok &&
+      validateRankingConfig(nodeRankingConfig.body) &&
+      validateRankingConfig(djangoRankingConfig.body),
+    parityDetails: {
+      coverageIntentCountNode: Object.keys(
+        nodeRankingConfig.body?.rankingConfig?.coverageThresholdByIntent || {},
+      ).length,
+      coverageIntentCountDjango: Object.keys(
+        djangoRankingConfig.body?.rankingConfig?.coverageThresholdByIntent || {},
+      ).length,
+      optionalTokenCountNode: Array.isArray(
+        nodeRankingConfig.body?.rankingConfig?.optionalQueryTokens,
+      )
+        ? nodeRankingConfig.body.rankingConfig.optionalQueryTokens.length
+        : 0,
+      optionalTokenCountDjango: Array.isArray(
+        djangoRankingConfig.body?.rankingConfig?.optionalQueryTokens,
+      )
+        ? djangoRankingConfig.body.rankingConfig.optionalQueryTokens.length
         : 0,
     },
   });

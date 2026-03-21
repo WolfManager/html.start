@@ -45,6 +45,11 @@ from .services.location_service import resolve_approx_location
 from .services.runtime_metrics_service import get_runtime_metrics
 from .services.search_crawler_service import crawl_due_sources
 from .services.search_index_service import seed_default_sources
+from .services.search_ranking_config_service import (
+    get_search_ranking_config,
+    reset_search_ranking_config,
+    write_search_ranking_config,
+)
 from .services.search_service import (
     get_query_rewrite_rules,
     get_search_sources,
@@ -508,6 +513,42 @@ def admin_search_rewrite_rules(request):
             "ok": True,
             "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             "rewriteRules": get_query_rewrite_rules(),
+        }
+    )
+
+
+@api_view(["GET", "POST"])
+def admin_search_ranking_config(request):
+    auth_error = _admin_auth_error(request)
+    if auth_error is not None:
+        return auth_error
+
+    if request.method == "GET":
+        return Response(
+            {
+                "ok": True,
+                "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "rankingConfig": get_search_ranking_config(),
+            }
+        )
+
+    try:
+        ranking_config = (
+            reset_search_ranking_config()
+            if bool((request.data or {}).get("reset"))
+            else write_search_ranking_config((request.data or {}).get("rankingConfig") or {})
+        )
+    except ValueError as exc:
+        return Response(
+            {"error": str(exc)},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    return Response(
+        {
+            "ok": True,
+            "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "rankingConfig": ranking_config,
         }
     )
 
