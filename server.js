@@ -3,93 +3,179 @@ const fs = require("fs");
 const path = require("path");
 const jwt = require("jsonwebtoken");
 const { randomUUID } = require("crypto");
+const { env } = require("./apps/api-node/src/config/env");
+const {
+  analyticsPath,
+  assistantMemoryPath,
+  backupDir,
+  dataDir,
+  indexSyncStatePath,
+  queryRewriteRulesPath,
+  rankingConfigPath,
+  routingStatePath,
+  searchIndexPath,
+} = require("./apps/api-node/src/config/paths");
+const {
+  createLoginController,
+} = require("./apps/api-node/src/controllers/auth.controller");
+const {
+  createHealthController,
+} = require("./apps/api-node/src/controllers/health.controller");
+const {
+  createPageViewController,
+  createResultClickController,
+} = require("./apps/api-node/src/controllers/events.controller");
+const {
+  createSearchRelatedController,
+} = require("./apps/api-node/src/controllers/search-related.controller");
+const {
+  createPopularSearchesController,
+} = require("./apps/api-node/src/controllers/analytics.controller");
+const {
+  createSearchSourcesController,
+  createSearchSuggestController,
+  createSearchTrendingController,
+} = require("./apps/api-node/src/controllers/search-public.controller");
+const {
+  createAssistantChatController,
+} = require("./apps/api-node/src/controllers/assistant.controller");
+const {
+  createSearchController,
+} = require("./apps/api-node/src/controllers/search.controller");
+const {
+  createLocationAutoController,
+} = require("./apps/api-node/src/controllers/location.controller");
+const {
+  createAssistantStatusController,
+  createRuntimeMetricsController,
+  createSearchStatusController,
+} = require("./apps/api-node/src/controllers/admin-status.controller");
+const {
+  createRankingConfigGetController,
+  createRankingConfigPostController,
+  createRewriteRulesGetController,
+  createRewriteRulesPostController,
+  createRewriteRuleSuggestionsController,
+  createSearchSeedController,
+  createSearchCrawlController,
+} = require("./apps/api-node/src/controllers/admin-search-management.controller");
+const {
+  createIndexStatusController,
+  createIndexRefreshController,
+  createIndexBackupsController,
+  createIndexRestoreController,
+} = require("./apps/api-node/src/controllers/admin-index-management.controller");
+const {
+  createIndexSyncController,
+  createIndexSyncResetWatermarkController,
+  createIndexSyncStatusController,
+} = require("./apps/api-node/src/controllers/admin-index-sync.controller");
+const {
+  createAdminOverviewController,
+  createClickSignalResetController,
+  createClickSignalSnapshotResetController,
+} = require("./apps/api-node/src/controllers/admin-overview.controller");
+const {
+  createAdminBackupsListController,
+  createAdminBackupsDownloadController,
+  createAdminBackupsCreateController,
+  createAdminBackupsRestoreController,
+} = require("./apps/api-node/src/controllers/admin-backups.controller");
+const {
+  createRoutingGetController,
+  createRoutingUpdateController,
+  createRoutingVerifyController,
+} = require("./apps/api-node/src/controllers/admin-routing.controller");
+const {
+  createAdminExportCsvController,
+} = require("./apps/api-node/src/controllers/admin-export.controller");
+const {
+  createAdminAuthMiddleware,
+} = require("./apps/api-node/src/middleware/admin-auth");
+const {
+  createAdminRateLimitMiddleware,
+} = require("./apps/api-node/src/middleware/admin-rate-limit");
+const {
+  createRequestObservabilityMiddleware,
+} = require("./apps/api-node/src/middleware/request-observability");
+const { createAuthRoutes } = require("./apps/api-node/src/routes/auth.routes");
+const {
+  createHealthRoutes,
+} = require("./apps/api-node/src/routes/health.routes");
+const {
+  createEventsRoutes,
+} = require("./apps/api-node/src/routes/events.routes");
+const {
+  createSearchRelatedRoutes,
+} = require("./apps/api-node/src/routes/search-related.routes");
+const {
+  createAnalyticsRoutes,
+} = require("./apps/api-node/src/routes/analytics.routes");
+const {
+  createSearchPublicRoutes,
+} = require("./apps/api-node/src/routes/search-public.routes");
+const {
+  createSearchRoutes,
+} = require("./apps/api-node/src/routes/search.routes");
+const {
+  createAssistantRoutes,
+} = require("./apps/api-node/src/routes/assistant.routes");
+const {
+  createLocationRoutes,
+} = require("./apps/api-node/src/routes/location.routes");
+const {
+  createAdminStatusRoutes,
+} = require("./apps/api-node/src/routes/admin-status.routes");
+const {
+  createAdminSearchManagementRoutes,
+} = require("./apps/api-node/src/routes/admin-search-management.routes");
+const {
+  createAdminIndexManagementRoutes,
+} = require("./apps/api-node/src/routes/admin-index-management.routes");
+const {
+  createAdminIndexSyncRoutes,
+} = require("./apps/api-node/src/routes/admin-index-sync.routes");
+const {
+  createAdminOverviewRoutes,
+} = require("./apps/api-node/src/routes/admin-overview.routes");
+const {
+  createAdminBackupsRoutes,
+} = require("./apps/api-node/src/routes/admin-backups.routes");
+const {
+  createAdminRoutingRoutes,
+} = require("./apps/api-node/src/routes/admin-routing.routes");
+const {
+  createAdminExportRoutes,
+} = require("./apps/api-node/src/routes/admin-export.routes");
+const { getClientIp } = require("./apps/api-node/src/utils/request");
 
 require("dotenv").config();
 
 const app = express();
 
-const PORT = Number(process.env.PORT || 3000);
-const JWT_SECRET = process.env.JWT_SECRET || "change-this-secret";
-const ADMIN_USER = process.env.ADMIN_USER || "admin";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "change-this-password";
-const OPENAI_API_KEY = String(process.env.OPENAI_API_KEY || "").trim();
-const OPENAI_MODEL =
-  String(process.env.OPENAI_MODEL || "gpt-4o-mini").trim() || "gpt-4o-mini";
-const ANTHROPIC_API_KEY = String(process.env.ANTHROPIC_API_KEY || "").trim();
-const ANTHROPIC_MODEL =
-  String(process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-latest").trim() ||
-  "claude-3-5-sonnet-latest";
-const GEMINI_API_KEY = String(process.env.GEMINI_API_KEY || "").trim();
-const GEMINI_MODEL =
-  String(process.env.GEMINI_MODEL || "gemini-2.5-flash").trim() ||
-  "gemini-2.5-flash";
-
-function parseModelCandidates(value, defaults) {
-  const list = String(value || "")
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-  const merged = [...list, ...defaults];
-  return [...new Set(merged)];
-}
-
-const OPENAI_MODEL_CANDIDATES = parseModelCandidates(
-  process.env.OPENAI_MODEL_CANDIDATES,
-  [OPENAI_MODEL, "gpt-5-mini", "gpt-4.1-mini", "gpt-4o-mini"],
-);
-const ANTHROPIC_MODEL_CANDIDATES = parseModelCandidates(
-  process.env.ANTHROPIC_MODEL_CANDIDATES,
-  [ANTHROPIC_MODEL, "claude-3-5-sonnet-latest", "claude-3-5-haiku-latest"],
-);
-const GEMINI_MODEL_CANDIDATES = parseModelCandidates(
-  process.env.GEMINI_MODEL_CANDIDATES,
-  [GEMINI_MODEL, "gemini-2.5-flash", "gemini-2.5-pro", "gemini-flash-latest"],
-);
-
-function parseProviderOrder(value) {
-  return String(value || "")
-    .split(",")
-    .map((item) => normalizeAiProvider(item, ""))
-    .filter(Boolean);
-}
-
-function normalizeAiProvider(input, fallback = "openai") {
-  const normalized = String(input || "")
-    .trim()
-    .toLowerCase();
-  if (
-    normalized === "openai" ||
-    normalized === "anthropic" ||
-    normalized === "gemini"
-  ) {
-    return normalized;
-  }
-
-  return fallback;
-}
-
-const AI_PRIMARY_PROVIDER = normalizeAiProvider(
-  process.env.AI_PRIMARY_PROVIDER,
-  "openai",
-);
-const AI_FALLBACK_PROVIDER = normalizeAiProvider(
-  process.env.AI_FALLBACK_PROVIDER,
-  AI_PRIMARY_PROVIDER === "openai" ? "anthropic" : "openai",
-);
-const AI_ROUTING_MODE =
-  String(process.env.AI_ROUTING_MODE || "smart")
-    .trim()
-    .toLowerCase() || "smart";
-const AI_PROVIDER_ORDER = parseProviderOrder(process.env.AI_PROVIDER_ORDER);
-
-const dataDir = path.join(__dirname, "data");
-const analyticsPath = path.join(dataDir, "analytics.json");
-const searchIndexPath = path.join(dataDir, "search-index.json");
-const backupDir = path.join(dataDir, "backups");
-const assistantMemoryPath = path.join(dataDir, "assistant-memory.json");
-const routingStatePath = path.join(dataDir, "routing-state.json");
-const indexSyncStatePath = path.join(dataDir, "index-sync-state.json");
-const rankingConfigPath = path.join(dataDir, "search-ranking-config.json");
+const {
+  ADMIN_PASSWORD,
+  ADMIN_USER,
+  AI_FALLBACK_PROVIDER,
+  AI_PRIMARY_PROVIDER,
+  AI_PROVIDER_ORDER,
+  AI_ROUTING_MODE,
+  ANTHROPIC_API_KEY,
+  ANTHROPIC_MODEL,
+  ANTHROPIC_MODEL_CANDIDATES,
+  DJANGO_ADMIN_TOKEN,
+  DJANGO_API_URL,
+  DJANGO_INDEX_SYNC_ENABLED,
+  DJANGO_INDEX_SYNC_STARTUP,
+  GEMINI_API_KEY,
+  GEMINI_MODEL,
+  GEMINI_MODEL_CANDIDATES,
+  JWT_SECRET,
+  OPENAI_API_KEY,
+  OPENAI_MODEL,
+  OPENAI_MODEL_CANDIDATES,
+  PORT,
+} = env;
 
 // --- Smart Search Result Cache ---
 const SEARCH_CACHE_TTL_MS =
@@ -272,14 +358,6 @@ const DJANGO_INDEX_SYNC_PAGE_SIZE = envNumber(
     max: 500,
   },
 );
-const DJANGO_INDEX_SYNC_ENABLED =
-  String(process.env.DJANGO_INDEX_SYNC_ENABLED || "true")
-    .trim()
-    .toLowerCase() !== "false";
-const DJANGO_INDEX_SYNC_STARTUP =
-  String(process.env.DJANGO_INDEX_SYNC_STARTUP || "true")
-    .trim()
-    .toLowerCase() !== "false";
 const MAX_BACKUP_FILES = envNumber("MAX_BACKUP_FILES", 120, {
   min: 5,
   max: 10000,
@@ -457,30 +535,419 @@ function createClickSignalTelemetryState() {
 
 let clickSignalTelemetry = createClickSignalTelemetryState();
 
-app.use(express.json({ limit: "250kb" }));
-app.use((req, res, next) => {
-  const startedAt = Date.now();
-  const incomingRequestId = String(req.headers["x-request-id"] || "").trim();
-  const requestId = incomingRequestId || randomUUID();
-
-  req.requestId = requestId;
-  res.setHeader("X-Request-ID", requestId);
-  res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("X-Frame-Options", "DENY");
-  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-
-  const originalEnd = res.end.bind(res);
-  res.end = (...args) => {
-    if (!res.headersSent) {
-      res.setHeader("X-Response-Time-Ms", String(Date.now() - startedAt));
-    }
-
-    return originalEnd(...args);
-  };
-
-  next();
+const adminAuth = createAdminAuthMiddleware({
+  jwt,
+  jwtSecret: JWT_SECRET,
 });
+const checkAdminRateLimit = createAdminRateLimitMiddleware({
+  adminRateMap,
+  adminWindowMs: ADMIN_WINDOW_MS,
+  adminRateLimitCount: ADMIN_RATE_LIMIT_COUNT,
+  getClientIp,
+});
+const loginController = createLoginController({
+  jwt,
+  adminUser: ADMIN_USER,
+  adminPassword: ADMIN_PASSWORD,
+  jwtSecret: JWT_SECRET,
+  loginRateLimitCount: LOGIN_RATE_LIMIT_COUNT,
+  loginWindowMs: LOGIN_WINDOW_MS,
+  lockoutThreshold: LOCKOUT_THRESHOLD,
+  lockoutMs: LOCKOUT_MS,
+  loginAttemptMap,
+  getClientIp,
+});
+const healthController = createHealthController({
+  port: PORT,
+  loginWindowMs: LOGIN_WINDOW_MS,
+  loginRateLimitCount: LOGIN_RATE_LIMIT_COUNT,
+  lockoutThreshold: LOCKOUT_THRESHOLD,
+  lockoutMs: LOCKOUT_MS,
+  adminWindowMs: ADMIN_WINDOW_MS,
+  adminRateLimitCount: ADMIN_RATE_LIMIT_COUNT,
+  backupMinIntervalMs: BACKUP_MIN_INTERVAL_MS,
+  backupScheduleMs: BACKUP_SCHEDULE_MS,
+  maxBackupFiles: MAX_BACKUP_FILES,
+  trendDailyPoints: TREND_DAILY_POINTS,
+  trendWeeklyPoints: TREND_WEEKLY_POINTS,
+});
+const pageViewController = createPageViewController({
+  logPageView,
+});
+const resultClickController = createResultClickController({
+  logResultClick,
+});
+const searchRelatedController = createSearchRelatedController({
+  getRelatedQueries,
+});
+const searchSourcesController = createSearchSourcesController({
+  pickSearchBackend,
+  proxyDjangoSearch,
+  getSearchSources,
+});
+const searchSuggestController = createSearchSuggestController({
+  pickSearchBackend,
+  proxyDjangoSearch,
+  getSearchSuggestions,
+});
+const searchTrendingController = createSearchTrendingController({
+  pickSearchBackend,
+  proxyDjangoSearch,
+  getTrendingSearches,
+});
+const searchController = createSearchController({
+  pickSearchBackend,
+  makeSearchCacheKey,
+  getFromSearchCache,
+  proxyDjangoSearch,
+  runSearchPage,
+  logSearch,
+  getAppliedSearchOperators,
+  getSearchSuggestions,
+  getRelatedQueries,
+  setInSearchCache,
+});
+const assistantChatController = createAssistantChatController({
+  checkAssistantRateLimit,
+  assistantMetrics,
+  getClientIp,
+  classifyAssistantHelper,
+  assistantMaxChars: ASSISTANT_MAX_CHARS,
+  normalizeAssistantQueryKey,
+  isWeatherAssistantQuery,
+  isDateOrNewsAssistantQuery,
+  buildWeatherAssistantResponse,
+  markIpWeatherContext,
+  setAssistantCacheEntry,
+  storeAssistantMemory,
+  incrementMetricCounter,
+  buildDateNewsAssistantResponse,
+  getAssistantCacheEntry,
+  isSimpleAssistantQuery,
+  buildRuleBasedAssistantResponse,
+  generateAssistantResponse,
+});
+const popularSearchesController = createPopularSearchesController({
+  fs,
+  analyticsPath,
+});
+const locationAutoController = createLocationAutoController({
+  getClientIp,
+  resolveApproxLocationByIp,
+  sanitizeIpForLookup,
+});
+const assistantStatusController = createAssistantStatusController({
+  getAssistantMemorySummary,
+  aiRoutingMode: AI_ROUTING_MODE,
+  aiPrimaryProvider: AI_PRIMARY_PROVIDER,
+  aiFallbackProvider: AI_FALLBACK_PROVIDER,
+  openaiApiKey: OPENAI_API_KEY,
+  anthropicApiKey: ANTHROPIC_API_KEY,
+  geminiApiKey: GEMINI_API_KEY,
+  openaiModel: OPENAI_MODEL,
+  anthropicModel: ANTHROPIC_MODEL,
+  geminiModel: GEMINI_MODEL,
+  getActiveProviderModel,
+  openaiModelCandidates: OPENAI_MODEL_CANDIDATES,
+  anthropicModelCandidates: ANTHROPIC_MODEL_CANDIDATES,
+  geminiModelCandidates: GEMINI_MODEL_CANDIDATES,
+  assistantProviderHealthMap,
+  assistantWindowMs: ASSISTANT_WINDOW_MS,
+  assistantRateLimitCount: ASSISTANT_RATE_LIMIT_COUNT,
+  assistantMaxChars: ASSISTANT_MAX_CHARS,
+  assistantHistoryMessages: ASSISTANT_HISTORY_MESSAGES,
+  assistantHistoryChars: ASSISTANT_HISTORY_CHARS,
+  assistantReplyMaxChars: ASSISTANT_REPLY_MAX_CHARS,
+  assistantModelTemperature: ASSISTANT_MODEL_TEMPERATURE,
+  assistantOpenaiMaxTokens: ASSISTANT_OPENAI_MAX_TOKENS,
+  assistantAnthropicMaxTokens: ASSISTANT_ANTHROPIC_MAX_TOKENS,
+  assistantGeminiMaxTokens: ASSISTANT_GEMINI_MAX_TOKENS,
+  assistantSimpleQueryWords: ASSISTANT_SIMPLE_QUERY_WORDS,
+  assistantCacheTtlMs: ASSISTANT_CACHE_TTL_MS,
+  assistantCacheMaxEntries: ASSISTANT_CACHE_MAX_ENTRIES,
+  assistantCacheMap,
+  assistantMemoryMaxItems: ASSISTANT_MEMORY_MAX_ITEMS,
+  assistantMetrics,
+});
+const runtimeMetricsController = createRuntimeMetricsController({
+  assistantCacheMap,
+  assistantContextMap,
+  assistantProviderHealthMap,
+  assistantProviderModelStateMap,
+  assistantMetrics,
+  loginAttemptMap,
+  adminRateMap,
+  assistantRateMap,
+});
+const searchStatusController = createSearchStatusController({
+  getSearchIndexStats,
+  buildAdminSearchLatestRunSummary,
+  getSearchRankingConfig,
+  getQueryRewriteRules,
+});
+const rankingConfigGetController = createRankingConfigGetController({
+  getSearchRankingConfig,
+});
+const rankingConfigPostController = createRankingConfigPostController({
+  resetSearchRankingConfig,
+  writeSearchRankingConfig,
+});
+const rewriteRulesGetController = createRewriteRulesGetController({
+  getQueryRewriteRules,
+});
+const rewriteRulesPostController = createRewriteRulesPostController({
+  resetQueryRewriteRules,
+  writeQueryRewriteRules,
+});
+const rewriteRuleSuggestionsController = createRewriteRuleSuggestionsController(
+  {
+    buildRewriteRuleSuggestions,
+  },
+);
+const searchSeedController = createSearchSeedController({
+  djangoAdminToken: DJANGO_ADMIN_TOKEN,
+  toBearerToken,
+  executeDjangoIndexSync,
+  djangoIndexSyncPageSize: DJANGO_INDEX_SYNC_PAGE_SIZE,
+  djangoIndexSyncMaxPages: DJANGO_INDEX_SYNC_MAX_PAGES,
+});
+const searchCrawlController = createSearchCrawlController({
+  djangoAdminToken: DJANGO_ADMIN_TOKEN,
+  toBearerToken,
+  executeDjangoIndexSync,
+  djangoIndexSyncPageSize: DJANGO_INDEX_SYNC_PAGE_SIZE,
+  djangoIndexSyncMaxPages: DJANGO_INDEX_SYNC_MAX_PAGES,
+});
+const indexStatusController = createIndexStatusController({
+  getSearchIndexStats,
+});
+const indexRefreshController = createIndexRefreshController({
+  rebuildLocalSearchIndex,
+  getSearchIndexStats,
+});
+const indexBackupsController = createIndexBackupsController({
+  listSearchIndexBackups,
+});
+const indexRestoreController = createIndexRestoreController({
+  sanitizeSearchIndexBackupFileName,
+  restoreSearchIndexFromBackup,
+  getSearchIndexStats,
+});
+const indexSyncController = createIndexSyncController({
+  parseOptionalIsoDate,
+  readDjangoIndexSyncState,
+  writeDjangoIndexSyncState,
+  toBearerToken,
+  djangoAdminToken: DJANGO_ADMIN_TOKEN,
+  executeDjangoIndexSync,
+});
+const indexSyncResetWatermarkController =
+  createIndexSyncResetWatermarkController({
+    parseOptionalIsoDate,
+    readDjangoIndexSyncState,
+    writeDjangoIndexSyncState,
+  });
+const indexSyncStatusController = createIndexSyncStatusController({
+  djangoSyncInFlight,
+  djangoIndexSyncEnabled: DJANGO_INDEX_SYNC_ENABLED,
+  djangoIndexSyncIntervalMs: DJANGO_INDEX_SYNC_INTERVAL_MS,
+  djangoIndexSyncStartup: DJANGO_INDEX_SYNC_STARTUP,
+  djangoIndexSyncMaxPages: DJANGO_INDEX_SYNC_MAX_PAGES,
+  djangoIndexSyncPageSize: DJANGO_INDEX_SYNC_PAGE_SIZE,
+  djangoAdminToken: DJANGO_ADMIN_TOKEN,
+  djangoSyncRuntime,
+  readDjangoIndexSyncState,
+});
+const adminOverviewController = createAdminOverviewController({
+  readJson,
+  analyticsPath,
+  parseRangeToSince,
+  filterByDateRange,
+  buildOverview,
+  getPeriodComparison,
+  clickSignalWindowDays: CLICK_SIGNAL_WINDOW_DAYS,
+  clickSignalDecayHalfLifeDays: CLICK_SIGNAL_DECAY_HALFLIFE_DAYS,
+  clickSignalDecayMinWeight: CLICK_SIGNAL_DECAY_MIN_WEIGHT,
+  clickSignalMaxBoost: CLICK_SIGNAL_MAX_BOOST,
+  clickSignalCtrMaxBoost: CLICK_SIGNAL_CTR_MAX_BOOST,
+  clickSignalGuardrailMinBaseScore: CLICK_SIGNAL_GUARDRAIL_MIN_BASE_SCORE,
+  clickSignalGuardrailMaxShare: CLICK_SIGNAL_GUARDRAIL_MAX_SHARE,
+  clickSignalDedupWindowMs: CLICK_SIGNAL_DEDUP_WINDOW_MS,
+  getClickSignalTelemetry: () => clickSignalTelemetry,
+});
+const clickSignalResetController = createClickSignalResetController({
+  createClickSignalTelemetryState,
+  setClickSignalTelemetry: (nextTelemetry) => {
+    clickSignalTelemetry = nextTelemetry;
+  },
+});
+const clickSignalSnapshotResetController =
+  createClickSignalSnapshotResetController({
+    createClickSignalTelemetryState,
+    getClickSignalTelemetry: () => clickSignalTelemetry,
+    setClickSignalTelemetry: (nextTelemetry) => {
+      clickSignalTelemetry = nextTelemetry;
+    },
+    clickSignalWindowDays: CLICK_SIGNAL_WINDOW_DAYS,
+    clickSignalDecayHalfLifeDays: CLICK_SIGNAL_DECAY_HALFLIFE_DAYS,
+    clickSignalDecayMinWeight: CLICK_SIGNAL_DECAY_MIN_WEIGHT,
+    clickSignalMaxBoost: CLICK_SIGNAL_MAX_BOOST,
+    clickSignalCtrMaxBoost: CLICK_SIGNAL_CTR_MAX_BOOST,
+    clickSignalGuardrailMinBaseScore: CLICK_SIGNAL_GUARDRAIL_MIN_BASE_SCORE,
+    clickSignalGuardrailMaxShare: CLICK_SIGNAL_GUARDRAIL_MAX_SHARE,
+    clickSignalDedupWindowMs: CLICK_SIGNAL_DEDUP_WINDOW_MS,
+  });
+const adminBackupsListController = createAdminBackupsListController({
+  isAllowedBackupReason,
+  listBackups,
+});
+const adminBackupsDownloadController = createAdminBackupsDownloadController({
+  backupDir,
+  sanitizeBackupFileName,
+});
+const adminBackupsCreateController = createAdminBackupsCreateController({
+  backupAnalytics,
+  listBackups,
+});
+const adminBackupsRestoreController = createAdminBackupsRestoreController({
+  backupDir,
+  sanitizeBackupFileName,
+  analyticsPath,
+  backupAnalytics,
+});
+const routingGetController = createRoutingGetController({
+  getRoutingState: () => routingState,
+});
+const routingUpdateController = createRoutingUpdateController({
+  validRoutingBackends: ["node", "django"],
+  validCanaryPercentages: [0, 10, 50, 100],
+  getRoutingState: () => routingState,
+  saveRoutingState: _saveRoutingState,
+});
+const routingVerifyController = createRoutingVerifyController({
+  getRoutingState: () => routingState,
+  port: PORT,
+});
+const adminExportCsvController = createAdminExportCsvController({
+  readJson,
+  analyticsPath,
+  parseRangeToSince,
+  filterByDateRange,
+  buildOverview,
+  escapeCsv,
+});
+
+app.use(express.json({ limit: "250kb" }));
+app.use(createRequestObservabilityMiddleware({ randomUUID }));
 app.use(express.static(__dirname));
+app.use(createAuthRoutes({ loginController }));
+app.use(createHealthRoutes({ healthController }));
+app.use(
+  createEventsRoutes({
+    pageViewController,
+    resultClickController,
+  }),
+);
+app.use(
+  createSearchRelatedRoutes({
+    searchRelatedController,
+  }),
+);
+app.use(
+  createAnalyticsRoutes({
+    popularSearchesController,
+  }),
+);
+app.use(
+  createSearchPublicRoutes({
+    searchSourcesController,
+    searchSuggestController,
+    searchTrendingController,
+  }),
+);
+app.use(
+  createSearchRoutes({
+    searchController,
+  }),
+);
+app.use(
+  createAssistantRoutes({
+    assistantChatController,
+  }),
+);
+app.use(
+  createLocationRoutes({
+    locationAutoController,
+  }),
+);
+app.use(
+  createAdminStatusRoutes({
+    adminAuth,
+    assistantStatusController,
+    runtimeMetricsController,
+    searchStatusController,
+  }),
+);
+app.use(
+  createAdminSearchManagementRoutes({
+    adminAuth,
+    rankingConfigGetController,
+    rankingConfigPostController,
+    rewriteRulesGetController,
+    rewriteRulesPostController,
+    rewriteRuleSuggestionsController,
+    searchSeedController,
+    searchCrawlController,
+  }),
+);
+app.use(
+  createAdminIndexManagementRoutes({
+    adminAuth,
+    indexStatusController,
+    indexRefreshController,
+    indexBackupsController,
+    indexRestoreController,
+  }),
+);
+app.use(
+  createAdminIndexSyncRoutes({
+    adminAuth,
+    indexSyncController,
+    indexSyncResetWatermarkController,
+    indexSyncStatusController,
+  }),
+);
+app.use(
+  createAdminOverviewRoutes({
+    adminAuth,
+    adminOverviewController,
+    clickSignalResetController,
+    clickSignalSnapshotResetController,
+  }),
+);
+app.use(
+  createAdminBackupsRoutes({
+    adminAuth,
+    adminBackupsListController,
+    adminBackupsDownloadController,
+    adminBackupsCreateController,
+    adminBackupsRestoreController,
+  }),
+);
+app.use(
+  createAdminRoutingRoutes({
+    adminAuth,
+    routingGetController,
+    routingUpdateController,
+    routingVerifyController,
+  }),
+);
+app.use(
+  createAdminExportRoutes({
+    adminAuth,
+    adminExportCsvController,
+  }),
+);
 
 function ensureAnalyticsFile() {
   if (!fs.existsSync(dataDir)) {
@@ -543,15 +1010,6 @@ function ensureAnalyticsFile() {
       "utf8",
     );
   }
-}
-
-function getClientIp(req) {
-  const forwarded = req.headers["x-forwarded-for"];
-  if (typeof forwarded === "string" && forwarded.trim()) {
-    return forwarded.split(",")[0].trim();
-  }
-
-  return String(req.ip || "unknown");
 }
 
 function getIsoWeekData(date) {
@@ -701,48 +1159,6 @@ function getRangeMs(range) {
   return null;
 }
 
-function getLoginState(key) {
-  const now = Date.now();
-  const state = loginAttemptMap.get(key) || {
-    attempts: [],
-    failedCount: 0,
-    lockUntil: 0,
-  };
-
-  state.attempts = state.attempts.filter((ts) => now - ts <= LOGIN_WINDOW_MS);
-
-  if (state.lockUntil <= now) {
-    state.lockUntil = 0;
-  }
-
-  loginAttemptMap.set(key, state);
-  return state;
-}
-
-function checkAdminRateLimit(req, res, next) {
-  const ip = getClientIp(req);
-  const now = Date.now();
-  const state = adminRateMap.get(ip) || { hits: [] };
-  state.hits = state.hits.filter((ts) => now - ts <= ADMIN_WINDOW_MS);
-
-  if (state.hits.length >= ADMIN_RATE_LIMIT_COUNT) {
-    const retryAfter = Math.max(
-      1,
-      Math.ceil((ADMIN_WINDOW_MS - (now - state.hits[0])) / 1000),
-    );
-    res.setHeader("Retry-After", String(retryAfter));
-    res.status(429).json({
-      error: `Too many admin requests. Retry in ${retryAfter} seconds.`,
-    });
-    adminRateMap.set(ip, state);
-    return;
-  }
-
-  state.hits.push(now);
-  adminRateMap.set(ip, state);
-  next();
-}
-
 function readJson(filePath, fallback) {
   try {
     const raw = fs.readFileSync(filePath, "utf8");
@@ -754,6 +1170,256 @@ function readJson(filePath, fallback) {
 
 function writeJson(filePath, value) {
   fs.writeFileSync(filePath, JSON.stringify(value, null, 2), "utf8");
+}
+
+const QUERY_REWRITE_MATCH_TYPES = new Set(["exact", "contains"]);
+const DEFAULT_QUERY_REWRITE_RULES = [
+  {
+    enabled: true,
+    matchType: "exact",
+    from: "pythn",
+    to: "python",
+    reason: "common-typo",
+  },
+  {
+    enabled: true,
+    matchType: "exact",
+    from: "opnai",
+    to: "openai",
+    reason: "common-typo",
+  },
+];
+
+function copyQueryRewriteRules(rules) {
+  return Array.isArray(rules) ? rules.map((rule) => ({ ...rule })) : [];
+}
+
+function normalizeQueryRewriteRules(value) {
+  const rules =
+    value && typeof value === "object" && !Array.isArray(value)
+      ? value.rules
+      : value;
+  if (!Array.isArray(rules)) {
+    throw new Error(
+      "Rewrite rules payload must be a list or an object with a rules list.",
+    );
+  }
+
+  return rules.map((item, index) => {
+    const ruleNumber = index + 1;
+    if (!item || typeof item !== "object") {
+      throw new Error(`Rule ${ruleNumber} must be an object.`);
+    }
+
+    const matchType =
+      normalizeSearchText(String(item.matchType || "exact")) || "exact";
+    if (!QUERY_REWRITE_MATCH_TYPES.has(matchType)) {
+      throw new Error(
+        `Rule ${ruleNumber} has invalid matchType. Use exact or contains.`,
+      );
+    }
+
+    const source = String(item.from || "").trim();
+    const target = String(item.to || "").trim();
+    const reason =
+      String(item.reason || "configured-rewrite").trim() ||
+      "configured-rewrite";
+
+    if (!source) {
+      throw new Error(`Rule ${ruleNumber} is missing a from value.`);
+    }
+    if (!target) {
+      throw new Error(`Rule ${ruleNumber} is missing a to value.`);
+    }
+    if (source.length > 160 || target.length > 160) {
+      throw new Error(
+        `Rule ${ruleNumber} from/to values must be 160 characters or fewer.`,
+      );
+    }
+    if (reason.length > 120) {
+      throw new Error(
+        `Rule ${ruleNumber} reason must be 120 characters or fewer.`,
+      );
+    }
+    if (normalizeSearchText(source) === normalizeSearchText(target)) {
+      throw new Error(`Rule ${ruleNumber} must change the query.`);
+    }
+
+    return {
+      enabled: item.enabled == null ? true : Boolean(item.enabled),
+      matchType,
+      from: source,
+      to: target,
+      reason,
+    };
+  });
+}
+
+function getDefaultQueryRewriteRules() {
+  return copyQueryRewriteRules(DEFAULT_QUERY_REWRITE_RULES);
+}
+
+function getQueryRewriteRules() {
+  try {
+    const parsed = readJson(queryRewriteRulesPath, { rules: [] });
+    return normalizeQueryRewriteRules(parsed);
+  } catch {
+    return [];
+  }
+}
+
+function writeQueryRewriteRules(value) {
+  const normalizedRules = normalizeQueryRewriteRules(value);
+  writeJson(queryRewriteRulesPath, { rules: normalizedRules });
+  return copyQueryRewriteRules(normalizedRules);
+}
+
+function resetQueryRewriteRules() {
+  return writeQueryRewriteRules(getDefaultQueryRewriteRules());
+}
+
+function looksLikeOperatorQuery(query) {
+  return /(^|\s)(site:|-site:|filetype:|inurl:|intitle:)/i.test(
+    String(query || ""),
+  );
+}
+
+function buildRewriteRuleSuggestions({ limit = 10, minConfidence = 0 } = {}) {
+  const analytics = readJson(analyticsPath, { searches: [] });
+  const searches = Array.isArray(analytics.searches) ? analytics.searches : [];
+  const searchesById = new Map(
+    searches
+      .filter((item) => String(item?.id || "").trim())
+      .map((item) => [String(item.id).trim(), item]),
+  );
+
+  const existingKeys = new Set(
+    getQueryRewriteRules().map((rule) =>
+      [
+        normalizeSearchText(rule.from || ""),
+        normalizeSearchText(rule.to || ""),
+        normalizeSearchText(rule.matchType || "exact") || "exact",
+      ].join("||"),
+    ),
+  );
+
+  const candidateStats = new Map();
+  for (const current of searches) {
+    const previousId = String(current?.reformulatesSearchId || "").trim();
+    if (!previousId) {
+      continue;
+    }
+
+    const previous = searchesById.get(previousId);
+    if (!previous) {
+      continue;
+    }
+
+    const previousQuery = String(previous.query || "").trim();
+    const currentQuery = String(current.query || "").trim();
+    const previousNorm = normalizeSearchText(previousQuery);
+    const currentNorm = normalizeSearchText(currentQuery);
+
+    if (!previousNorm || !currentNorm || previousNorm === currentNorm) {
+      continue;
+    }
+    if (previousNorm.length < 3 || currentNorm.length < 3) {
+      continue;
+    }
+    if (
+      looksLikeOperatorQuery(previousNorm) ||
+      looksLikeOperatorQuery(currentNorm)
+    ) {
+      continue;
+    }
+
+    const previousCount = Number(previous.resultCount || 0);
+    const currentCount = Number(current.resultCount || 0);
+    const reformulationType = String(current.reformulationType || "")
+      .trim()
+      .toLowerCase();
+
+    if (
+      reformulationType !== "zero-results-refinement" &&
+      reformulationType !== "low-results-refinement"
+    ) {
+      continue;
+    }
+    if (currentCount <= previousCount) {
+      continue;
+    }
+
+    const key = `${previousNorm}||${currentNorm}`;
+    if (!candidateStats.has(key)) {
+      candidateStats.set(key, {
+        from: previousQuery,
+        to: currentQuery,
+        count: 0,
+        maxImprovement: 0,
+        types: new Set(),
+      });
+    }
+
+    const entry = candidateStats.get(key);
+    entry.count += 1;
+    entry.maxImprovement = Math.max(
+      Number(entry.maxImprovement || 0),
+      currentCount - previousCount,
+    );
+    entry.types.add(reformulationType);
+  }
+
+  const threshold = Math.max(0, Math.min(0.99, Number(minConfidence) || 0));
+  const safeLimit = Math.max(1, Math.min(50, Number(limit) || 10));
+
+  return [...candidateStats.entries()]
+    .map(([key, entry]) => {
+      if (existingKeys.has(`${key}||exact`)) {
+        return null;
+      }
+
+      const count = Number(entry.count || 0);
+      const maxImprovement = Number(entry.maxImprovement || 0);
+      const confidence = Math.min(
+        0.99,
+        0.45 + 0.12 * Math.min(count, 4) + 0.02 * Math.min(maxImprovement, 10),
+      );
+
+      return {
+        enabled: true,
+        matchType: "exact",
+        from: String(entry.from || "").trim(),
+        to: String(entry.to || "").trim(),
+        reason: "telemetry-suggested",
+        signals: {
+          reformulations: count,
+          maxImprovement,
+          types: [...entry.types].sort(),
+          confidence: Number(confidence.toFixed(2)),
+        },
+      };
+    })
+    .filter(
+      (item) =>
+        item &&
+        Number(item.signals?.confidence || 0) >= threshold &&
+        item.from &&
+        item.to,
+    )
+    .sort((left, right) => {
+      const reformulationsDiff =
+        Number(right.signals?.reformulations || 0) -
+        Number(left.signals?.reformulations || 0);
+      if (reformulationsDiff !== 0) {
+        return reformulationsDiff;
+      }
+
+      return (
+        Number(right.signals?.maxImprovement || 0) -
+        Number(left.signals?.maxImprovement || 0)
+      );
+    })
+    .slice(0, safeLimit);
 }
 
 function toSafeFileStamp() {
@@ -1421,17 +2087,6 @@ function checkAssistantRateLimit(req, res) {
   return true;
 }
 
-function normalizeAssistantSuggestions(value) {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value
-    .map((item) => String(item || "").trim())
-    .filter(Boolean)
-    .slice(0, 3);
-}
-
 function incrementMetricCounter(counter, key) {
   const normalized =
     String(key || "unknown")
@@ -1459,14 +2114,6 @@ function classifyAssistantHelper(message) {
   }
 
   return "general";
-}
-
-function normalizeAssistantQueryKey(text) {
-  return String(text || "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .slice(0, 400);
 }
 
 function getAssistantCacheEntry(key) {
@@ -1504,58 +2151,68 @@ function setAssistantCacheEntry(key, value) {
   }
 }
 
+function normalizeAssistantQueryKey(message) {
+  return String(message || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function normalizeAssistantSuggestions(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => String(item || "").trim())
+    .filter(Boolean)
+    .slice(0, 6);
+}
+
 function isSimpleAssistantQuery(message) {
   const normalized = normalizeAssistantQueryKey(message);
   if (!normalized) {
     return true;
   }
 
-  if (
-    /^(hi|hello|hey|salut|buna|test|ping|health check|health-check)$/i.test(
-      normalized,
-    )
-  ) {
+  const wordCount = normalized.split(/\s+/).filter(Boolean).length;
+  if (wordCount <= ASSISTANT_SIMPLE_QUERY_WORDS) {
     return true;
   }
 
-  const wordCount = normalized.split(/\s+/).filter(Boolean).length;
-  const charCount = normalized.length;
-  const hasQuestion = normalized.includes("?");
-  const hasSentencePunctuation = /[.!:;,]/.test(normalized);
-  const helper = classifyAssistantHelper(normalized);
-
-  if (helper === "writing") {
-    return false;
-  }
-
-  if (helper === "weather") {
-    return false;
-  }
-
-  return (
-    wordCount <= ASSISTANT_SIMPLE_QUERY_WORDS &&
-    charCount <= 48 &&
-    !hasQuestion &&
-    !hasSentencePunctuation
+  return /^(help|ajutor|hello|hi|salut|buna|weather|news|jobs?|career|cv|time|date)\b/.test(
+    normalized,
   );
 }
 
 function buildRuleBasedAssistantResponse(message) {
-  const raw = String(message || "").trim();
-  const q = raw.toLowerCase();
+  const raw = String(message || "").trim() || "your topic";
+  const q = normalizeAssistantQueryKey(message);
 
-  if (!raw) {
+  if (/^(hi|hello|hey|salut|buna|bună)\b/.test(q)) {
     return {
-      reply: "Tell me what you want to search and I will refine it.",
+      reply: "Ask a concrete question and I can narrow it down quickly.",
       suggestions: [
-        "latest news today",
-        "best laptops 2026",
-        "javascript tutorial",
+        "latest tech news",
+        "weather this weekend",
+        "improve my CV summary",
       ],
     };
   }
 
-  if (/weather|rain|sun|forecast/.test(q)) {
+  if (/\b(time|date|today|azi|acum)\b/.test(q)) {
+    return {
+      reply:
+        "Add your city or timezone if you want a precise current-time answer.",
+      suggestions: [
+        "current time in Bucharest",
+        "today date in Romania",
+        "weather and date today",
+      ],
+    };
+  }
+
+  if (/weather|rain|sun|forecast|meteo|vreme/.test(q)) {
     return {
       reply: "Add city and timeframe for more precise weather results.",
       suggestions: [
@@ -1566,7 +2223,7 @@ function buildRuleBasedAssistantResponse(message) {
     };
   }
 
-  if (/news|politics|economy/.test(q)) {
+  if (/news|politics|economy|stiri|știri/.test(q)) {
     return {
       reply: "Try trusted sources and a specific timeframe.",
       suggestions: [
@@ -1577,7 +2234,7 @@ function buildRuleBasedAssistantResponse(message) {
     };
   }
 
-  if (/job|career|cv|hiring/.test(q)) {
+  if (/job|career|cv|hiring|angajare|joburi/.test(q)) {
     return {
       reply: "Include location and seniority to narrow job results.",
       suggestions: [`${raw} remote`, `${raw} entry level`, `${raw} salary`],
@@ -5627,822 +6284,7 @@ function logResultClick({ url, title, query, ip }) {
   clickSignalCache.expiresAt = 0;
 }
 
-function adminAuth(req, res, next) {
-  const authHeader = req.headers.authorization || "";
-  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
-
-  if (!token) {
-    res.status(401).json({ error: "Missing auth token." });
-    return;
-  }
-
-  try {
-    const payload = jwt.verify(token, JWT_SECRET);
-    req.user = payload;
-    next();
-  } catch {
-    res.status(401).json({ error: "Invalid or expired token." });
-  }
-}
-
-app.post("/api/auth/login", (req, res) => {
-  const { username, password } = req.body || {};
-  const ip = getClientIp(req);
-  const user = String(username || "")
-    .trim()
-    .toLowerCase();
-  const key = `${ip}|${user}`;
-  const state = getLoginState(key);
-  const now = Date.now();
-
-  if (state.lockUntil > now) {
-    const retryAfter = Math.max(1, Math.ceil((state.lockUntil - now) / 1000));
-    res.setHeader("Retry-After", String(retryAfter));
-    res.status(429).json({
-      error: `Account temporarily locked. Retry in ${retryAfter} seconds.`,
-    });
-    return;
-  }
-
-  if (state.attempts.length >= LOGIN_RATE_LIMIT_COUNT) {
-    const retryAfter = Math.max(
-      1,
-      Math.ceil((LOGIN_WINDOW_MS - (now - state.attempts[0])) / 1000),
-    );
-    res.setHeader("Retry-After", String(retryAfter));
-    res.status(429).json({
-      error: `Too many login attempts. Retry in ${retryAfter} seconds.`,
-    });
-    return;
-  }
-
-  if (username !== ADMIN_USER || password !== ADMIN_PASSWORD) {
-    state.attempts.push(now);
-    state.failedCount += 1;
-
-    if (state.failedCount >= LOCKOUT_THRESHOLD) {
-      state.lockUntil = now + LOCKOUT_MS;
-      state.failedCount = 0;
-    }
-
-    loginAttemptMap.set(key, state);
-    res.status(401).json({ error: "Invalid username or password." });
-    return;
-  }
-
-  loginAttemptMap.delete(key);
-
-  const token = jwt.sign({ username: ADMIN_USER, role: "admin" }, JWT_SECRET, {
-    expiresIn: "12h",
-  });
-
-  res.json({ token });
-});
-
-app.get("/api/search/sources", async (req, res) => {
-  const query = String(req.query.q || "").trim();
-  const limit = String(req.query.limit || "").trim();
-
-  if (pickSearchBackend() === "django") {
-    try {
-      const payload = await proxyDjangoSearch(
-        "/api/search/sources",
-        { q: query, limit },
-        req,
-      );
-      res.json({
-        ok: true,
-        ...payload,
-        servedBy: "django",
-      });
-      return;
-    } catch (error) {
-      console.warn(
-        `[search] Django sources proxy failed, falling back to Node: ${String(error?.message || error)}`,
-      );
-    }
-  }
-
-  const sources = getSearchSources({ query, limit });
-
-  res.json({
-    ok: true,
-    total: sources.length,
-    sources,
-    servedBy: "node",
-  });
-});
-
-app.get("/api/search/suggest", async (req, res) => {
-  const query = String(req.query.q || "").trim();
-  const limit = String(req.query.limit || "").trim();
-
-  if (!query || query.length < 2) {
-    res.json({
-      ok: true,
-      query,
-      total: 0,
-      suggestions: [],
-      servedBy: "node",
-    });
-    return;
-  }
-
-  if (pickSearchBackend() === "django") {
-    try {
-      const payload = await proxyDjangoSearch(
-        "/api/search/suggest",
-        { q: query, limit },
-        req,
-      );
-      res.json({
-        ok: true,
-        ...payload,
-        servedBy: "django",
-      });
-      return;
-    } catch (error) {
-      console.warn(
-        `[search] Django suggest proxy failed, falling back to Node: ${String(error?.message || error)}`,
-      );
-    }
-  }
-
-  const suggestions = getSearchSuggestions(query, limit || 10);
-  res.json({
-    ok: true,
-    query,
-    total: suggestions.length,
-    suggestions,
-    servedBy: "node",
-  });
-});
-
-app.get("/api/search/trending", async (req, res) => {
-  const period = String(req.query.period || "weekly").trim() || "weekly";
-  const limit = String(req.query.limit || "10").trim() || "10";
-  const includeZero =
-    String(req.query.includeZero || "false")
-      .trim()
-      .toLowerCase() === "true";
-  const query = String(req.query.q || "").trim();
-
-  if (pickSearchBackend() === "django") {
-    try {
-      const payload = await proxyDjangoSearch(
-        "/api/search/trending",
-        {
-          period,
-          limit,
-          includeZero: includeZero ? "true" : "false",
-          q: query,
-        },
-        req,
-      );
-
-      res.json({
-        ok: true,
-        ...payload,
-        servedBy: "django",
-      });
-      return;
-    } catch (error) {
-      console.warn(
-        `[search] Django trending proxy failed, falling back to Node: ${String(error?.message || error)}`,
-      );
-    }
-  }
-
-  const payload = getTrendingSearches({
-    period,
-    limit,
-    includeZero,
-    query,
-  });
-
-  res.json({
-    ok: true,
-    generatedAt: new Date().toISOString(),
-    ...payload,
-    servedBy: "node",
-  });
-});
-
-app.get("/api/analytics/popular-searches", (_req, res) => {
-  try {
-    const analyticsContent = fs.readFileSync(analyticsPath, "utf-8");
-    const analytics = JSON.parse(analyticsContent);
-
-    const searches = Array.isArray(analytics.searches)
-      ? analytics.searches
-      : [];
-
-    const queryMap = new Map();
-    const now = Date.now();
-    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
-
-    searches.forEach((item) => {
-      const query = String(item.query || "")
-        .trim()
-        .toLowerCase();
-      if (!query || query.length < 2) {
-        return;
-      }
-
-      const itemTime = new Date(item.at).getTime();
-      const age = now - itemTime;
-
-      if (age > sevenDaysMs) {
-        return;
-      }
-
-      if (!queryMap.has(query)) {
-        queryMap.set(query, {
-          query: String(item.query || "").trim(),
-          count: 0,
-          lastSeen: itemTime,
-        });
-      }
-
-      const entry = queryMap.get(query);
-      entry.count += 1;
-      if (itemTime > entry.lastSeen) {
-        entry.lastSeen = itemTime;
-      }
-    });
-
-    const sorted = Array.from(queryMap.values())
-      .sort((a, b) => {
-        const countDiff = b.count - a.count;
-        if (countDiff !== 0) return countDiff;
-        return b.lastSeen - a.lastSeen;
-      })
-      .slice(0, 12)
-      .map((item) => item.query);
-
-    res.json({
-      ok: true,
-      queries: sorted,
-      generatedAt: new Date().toISOString(),
-    });
-  } catch (error) {
-    console.error(
-      `[analytics] Error fetching popular searches: ${String(error?.message || error)}`,
-    );
-    res.json({
-      ok: true,
-      queries: [],
-      generatedAt: new Date().toISOString(),
-    });
-  }
-});
-
-app.get("/api/search", async (req, res) => {
-  const query = String(req.query.q || "").trim();
-
-  if (!query) {
-    res.status(400).json({ error: "Query is required." });
-    return;
-  }
-
-  const language = String(req.query.language || "").trim();
-  const category = String(req.query.category || "").trim();
-  const source = String(req.query.source || "").trim();
-  const sort = String(req.query.sort || "relevance").trim() || "relevance";
-  const limit = String(req.query.limit || "").trim();
-  const page = String(req.query.page || "").trim();
-
-  // Fast cache path: only for Node-served results (not Django proxy).
-  if (pickSearchBackend() !== "django") {
-    const earlyCacheKey = makeSearchCacheKey(query, {
-      language,
-      category,
-      source,
-      sort,
-      limit,
-      page,
-    });
-    const cached = getFromSearchCache(earlyCacheKey);
-    if (cached) {
-      return res.json({ ...cached, fromCache: true });
-    }
-  }
-
-  if (pickSearchBackend() === "django") {
-    try {
-      const payload = await proxyDjangoSearch(
-        "/api/search",
-        {
-          q: query,
-          language,
-          category,
-          source,
-          sort,
-          limit,
-          page,
-        },
-        req,
-      );
-
-      res.json({
-        ...payload,
-        servedBy: "django",
-      });
-      return;
-    } catch (error) {
-      console.warn(
-        `[search] Django search proxy failed, falling back to Node: ${String(error?.message || error)}`,
-      );
-    }
-  }
-
-  const payload = runSearchPage(query, {
-    language,
-    category,
-    source,
-    sort,
-    limit,
-    page,
-  });
-
-  logSearch({
-    query,
-    resultCount: payload.total,
-    ip: req.ip,
-  });
-
-  const cacheKey = makeSearchCacheKey(query, {
-    language,
-    category,
-    source,
-    sort,
-    limit: payload.limit,
-    page: payload.page,
-  });
-
-  const responsePayload = {
-    engine: "MAGNETO Core",
-    query,
-    queryUsed: payload.queryUsed || query,
-    appliedOperators: getAppliedSearchOperators(payload.queryUsed || query),
-    queryCorrection: payload.queryCorrection || null,
-    querySuggestion: payload.querySuggestion || null,
-    suggestions:
-      payload.total > 0
-        ? []
-        : getSearchSuggestions(payload.queryUsed || query, 8),
-    relatedQueries: getRelatedQueries(query, 6),
-    total: payload.total,
-    appliedFilters: {
-      language,
-      category,
-      source,
-      sort,
-      limit: payload.limit,
-      page: payload.page,
-    },
-    pagination: {
-      page: payload.page,
-      pageSize: payload.limit,
-      offset: payload.offset,
-      total: payload.total,
-      totalPages: payload.totalPages,
-      hasNextPage: payload.hasNextPage,
-      hasPrevPage: payload.hasPrevPage,
-      nextPage: payload.hasNextPage ? payload.page + 1 : null,
-      prevPage: payload.hasPrevPage ? payload.page - 1 : null,
-    },
-    facets: payload.facets,
-    results: payload.results,
-    servedBy: "node",
-  };
-
-  setInSearchCache(cacheKey, responsePayload);
-  res.json(responsePayload);
-});
-
-app.post("/api/events/page-view", (req, res) => {
-  const page = String(req.body?.page || "unknown");
-  logPageView({
-    page,
-    ip: req.ip,
-    userAgent: req.headers["user-agent"] || "unknown",
-  });
-  res.json({ ok: true });
-});
-
-app.post("/api/events/result-click", (req, res) => {
-  const url = String(req.body?.url || "").trim();
-  const title = String(req.body?.title || "").trim();
-  const query = String(req.body?.query || "").trim();
-
-  if (!url || !title || !query) {
-    res.status(400).json({ error: "URL, title, and query are required." });
-    return;
-  }
-
-  logResultClick({
-    url,
-    title,
-    query,
-    ip: req.ip,
-  });
-
-  res.json({ ok: true });
-});
-
-app.get("/api/search/related", (req, res) => {
-  const query = String(req.query.q || "").trim();
-  const limit = Math.min(10, Math.max(1, Number(req.query.limit || 6) || 6));
-
-  if (!query) {
-    return res.status(400).json({ error: "Query is required." });
-  }
-
-  const related = getRelatedQueries(query, limit);
-  res.json({
-    ok: true,
-    query,
-    related,
-    generatedAt: new Date().toISOString(),
-  });
-});
-
-app.post("/api/assistant/chat", async (req, res) => {
-  if (!checkAssistantRateLimit(req, res)) {
-    return;
-  }
-
-  assistantMetrics.requestsTotal += 1;
-
-  const ip = getClientIp(req);
-  const message = String(req.body?.message || "").trim();
-  const history = req.body?.history;
-  const helper = classifyAssistantHelper(message);
-
-  if (!message) {
-    res.status(400).json({ error: "Message is required." });
-    return;
-  }
-
-  if (message.length > ASSISTANT_MAX_CHARS) {
-    res.status(400).json({
-      error: `Message too long. Max ${ASSISTANT_MAX_CHARS} characters.`,
-    });
-    return;
-  }
-
-  const cacheKey = normalizeAssistantQueryKey(message);
-  const weatherIntent = isWeatherAssistantQuery(message, history, ip);
-  const dateNewsIntent = isDateOrNewsAssistantQuery(message);
-
-  // Weather intent has priority over stale generic cache entries.
-  if (weatherIntent) {
-    try {
-      const weather = await buildWeatherAssistantResponse(message, ip);
-      assistantMetrics.localHybridResponses += 1;
-      markIpWeatherContext(ip);
-      setAssistantCacheEntry(cacheKey, {
-        model: "weather-live",
-        helper: "weather",
-        reply: weather.reply,
-        suggestions: weather.suggestions,
-      });
-      storeAssistantMemory({
-        ip,
-        message,
-        reply: weather.reply,
-        provider: "weather-live",
-        helper: "weather",
-        model: "weather-live",
-      });
-      incrementMetricCounter(assistantMetrics.providerCounts, "weather-live");
-      incrementMetricCounter(assistantMetrics.helperCounts, "weather");
-      res.json({
-        ok: true,
-        provider: "weather-live",
-        model: "weather-live",
-        helper: "weather",
-        reply: weather.reply,
-        suggestions: weather.suggestions,
-      });
-      return;
-    } catch {
-      // Continue normal assistant flow (AI/fallback) if weather providers are unavailable.
-    }
-  }
-
-  if (dateNewsIntent.enabled) {
-    const dateNews = await buildDateNewsAssistantResponse(message);
-    assistantMetrics.localHybridResponses += 1;
-    setAssistantCacheEntry(cacheKey, {
-      model: "date-news-live",
-      helper: "general",
-      reply: dateNews.reply,
-      suggestions: dateNews.suggestions,
-    });
-    storeAssistantMemory({
-      ip,
-      message,
-      reply: dateNews.reply,
-      provider: "date-news-live",
-      helper: "general",
-      model: "date-news-live",
-    });
-    incrementMetricCounter(assistantMetrics.providerCounts, "date-news-live");
-    incrementMetricCounter(assistantMetrics.helperCounts, "general");
-    res.json({
-      ok: true,
-      provider: "date-news-live",
-      model: "date-news-live",
-      helper: "general",
-      reply: dateNews.reply,
-      suggestions: dateNews.suggestions,
-    });
-    return;
-  }
-
-  const cached = getAssistantCacheEntry(cacheKey);
-  if (cached) {
-    assistantMetrics.cacheHits += 1;
-    storeAssistantMemory({
-      ip,
-      message,
-      reply: cached.reply,
-      provider: "cache",
-      helper: cached.helper || helper,
-      model: cached.model || "hybrid",
-    });
-    incrementMetricCounter(assistantMetrics.providerCounts, "cache");
-    incrementMetricCounter(
-      assistantMetrics.helperCounts,
-      cached.helper || helper,
-    );
-    res.json({
-      ok: true,
-      provider: "cache",
-      model: cached.model || "hybrid",
-      helper: cached.helper || helper,
-      reply: cached.reply,
-      suggestions: cached.suggestions,
-    });
-    return;
-  }
-
-  if (isSimpleAssistantQuery(message)) {
-    assistantMetrics.localHybridResponses += 1;
-    const localHelper = helper === "writing" ? "writing" : "general";
-    const local = buildRuleBasedAssistantResponse(message);
-    setAssistantCacheEntry(cacheKey, {
-      model: "rule-based",
-      helper: localHelper,
-      reply: local.reply,
-      suggestions: local.suggestions,
-    });
-    storeAssistantMemory({
-      ip,
-      message,
-      reply: local.reply,
-      provider: "local-hybrid",
-      helper: localHelper,
-      model: "rule-based",
-    });
-    incrementMetricCounter(assistantMetrics.providerCounts, "local-hybrid");
-    incrementMetricCounter(assistantMetrics.helperCounts, localHelper);
-    res.json({
-      ok: true,
-      provider: "local-hybrid",
-      model: "rule-based",
-      helper: localHelper,
-      reply: local.reply,
-      suggestions: local.suggestions,
-    });
-    return;
-  }
-
-  try {
-    const ai = await generateAssistantResponse({ message, history, helper });
-    const suggestions =
-      ai.suggestions.length > 0
-        ? ai.suggestions
-        : [`${message} guide`, `${message} 2026`, `${message} explained`];
-
-    if (ai.provider === "openai") {
-      assistantMetrics.openaiResponses += 1;
-    } else if (ai.provider === "anthropic") {
-      assistantMetrics.anthropicResponses += 1;
-    } else if (ai.provider === "gemini") {
-      assistantMetrics.geminiResponses += 1;
-    } else {
-      assistantMetrics.localHybridResponses += 1;
-    }
-    incrementMetricCounter(assistantMetrics.providerCounts, ai.provider);
-    incrementMetricCounter(assistantMetrics.helperCounts, helper);
-    setAssistantCacheEntry(cacheKey, {
-      model: ai.model,
-      helper,
-      reply: ai.reply,
-      suggestions,
-    });
-    storeAssistantMemory({
-      ip,
-      message,
-      reply: ai.reply,
-      provider: ai.provider,
-      helper,
-      model: ai.model,
-    });
-
-    res.json({
-      ok: true,
-      provider: ai.provider,
-      model: ai.model,
-      helper,
-      reply: ai.reply,
-      suggestions,
-    });
-  } catch (error) {
-    assistantMetrics.fallbackResponses += 1;
-    assistantMetrics.lastProviderError = String(
-      error?.message || "Assistant provider unavailable.",
-    );
-    assistantMetrics.lastProviderErrorAt = new Date().toISOString();
-
-    const fallback = buildRuleBasedAssistantResponse(message);
-    setAssistantCacheEntry(cacheKey, {
-      model: "rule-based",
-      helper,
-      reply: fallback.reply,
-      suggestions: fallback.suggestions,
-    });
-    storeAssistantMemory({
-      ip,
-      message,
-      reply: fallback.reply,
-      provider: "fallback",
-      helper,
-      model: "rule-based",
-    });
-    incrementMetricCounter(assistantMetrics.providerCounts, "fallback");
-    incrementMetricCounter(assistantMetrics.helperCounts, helper);
-
-    res.json({
-      ok: true,
-      provider: "fallback",
-      model: "rule-based",
-      helper,
-      reply: fallback.reply,
-      suggestions: fallback.suggestions,
-      warning: String(error?.message || "Assistant provider unavailable."),
-    });
-  }
-});
-
-app.get("/api/location/auto", async (req, res) => {
-  const ip = getClientIp(req);
-
-  try {
-    const location = await resolveApproxLocationByIp(ip);
-    res.json({
-      ok: true,
-      source: location.source,
-      ip: sanitizeIpForLookup(ip) || "auto",
-      latitude: location.latitude,
-      longitude: location.longitude,
-      city: location.city,
-      country: location.country,
-    });
-  } catch {
-    res.status(503).json({
-      ok: false,
-      error: "Automatic location currently unavailable.",
-    });
-  }
-});
-
 app.use("/api/admin", checkAdminRateLimit);
-
-app.get("/api/admin/assistant-status", adminAuth, (_req, res) => {
-  const memory = getAssistantMemorySummary();
-  const providers = {
-    routingMode: AI_ROUTING_MODE,
-    primary: AI_PRIMARY_PROVIDER,
-    fallback: AI_FALLBACK_PROVIDER,
-    configured: {
-      openai: Boolean(OPENAI_API_KEY),
-      anthropic: Boolean(ANTHROPIC_API_KEY),
-      gemini: Boolean(GEMINI_API_KEY),
-    },
-    models: {
-      openai: OPENAI_MODEL,
-      anthropic: ANTHROPIC_MODEL,
-      gemini: GEMINI_MODEL,
-    },
-    activeModels: {
-      openai: getActiveProviderModel("openai") || OPENAI_MODEL,
-      anthropic: getActiveProviderModel("anthropic") || ANTHROPIC_MODEL,
-      gemini: getActiveProviderModel("gemini") || GEMINI_MODEL,
-    },
-    modelCandidates: {
-      openai: OPENAI_MODEL_CANDIDATES,
-      anthropic: ANTHROPIC_MODEL_CANDIDATES,
-      gemini: GEMINI_MODEL_CANDIDATES,
-    },
-    health: Object.fromEntries(assistantProviderHealthMap.entries()),
-  };
-  const anyProviderConfigured = Object.values(providers.configured).some(
-    Boolean,
-  );
-
-  res.json({
-    generatedAt: new Date().toISOString(),
-    assistant: {
-      configured: anyProviderConfigured,
-      model: `${providers.primary}:${providers.models[providers.primary] || OPENAI_MODEL}`,
-      providers,
-      limits: {
-        windowSeconds: Math.round(ASSISTANT_WINDOW_MS / 1000),
-        rateLimitCount: ASSISTANT_RATE_LIMIT_COUNT,
-        maxChars: ASSISTANT_MAX_CHARS,
-        historyMessages: ASSISTANT_HISTORY_MESSAGES,
-        historyChars: ASSISTANT_HISTORY_CHARS,
-        replyMaxChars: ASSISTANT_REPLY_MAX_CHARS,
-        modelTemperature: ASSISTANT_MODEL_TEMPERATURE,
-        providerMaxTokens: {
-          openai: ASSISTANT_OPENAI_MAX_TOKENS,
-          anthropic: ASSISTANT_ANTHROPIC_MAX_TOKENS,
-          gemini: ASSISTANT_GEMINI_MAX_TOKENS,
-        },
-        simpleQueryWords: ASSISTANT_SIMPLE_QUERY_WORDS,
-      },
-      cache: {
-        ttlSeconds: Math.round(ASSISTANT_CACHE_TTL_MS / 1000),
-        maxEntries: ASSISTANT_CACHE_MAX_ENTRIES,
-        currentEntries: assistantCacheMap.size,
-      },
-      memory: {
-        path: "data/assistant-memory.json",
-        ...memory,
-        maxItems: ASSISTANT_MEMORY_MAX_ITEMS,
-      },
-      metrics: assistantMetrics,
-      billing: {
-        note: "Billing and quota are managed separately for each AI provider account.",
-        openai: {
-          overviewUrl:
-            "https://platform.openai.com/settings/organization/billing/overview",
-          usageUrl: "https://platform.openai.com/usage",
-        },
-        anthropic: {
-          overviewUrl: "https://console.anthropic.com/settings/plans",
-          usageUrl: "https://console.anthropic.com/settings/usage",
-        },
-        gemini: {
-          overviewUrl: "https://aistudio.google.com/",
-          usageUrl:
-            "https://console.cloud.google.com/apis/api/generativelanguage.googleapis.com/quotas",
-        },
-      },
-    },
-  });
-});
-
-app.get("/api/admin/runtime-metrics", adminAuth, (_req, res) => {
-  const memory = process.memoryUsage();
-  const toMb = (bytes) =>
-    Math.round((Number(bytes || 0) / (1024 * 1024)) * 100) / 100;
-
-  res.json({
-    generatedAt: new Date().toISOString(),
-    runtime: {
-      process: {
-        nodeVersion: process.version,
-        platform: process.platform,
-        pid: process.pid,
-        uptimeSeconds: Math.round(process.uptime()),
-      },
-      memory: {
-        rssMb: toMb(memory.rss),
-        heapTotalMb: toMb(memory.heapTotal),
-        heapUsedMb: toMb(memory.heapUsed),
-        externalMb: toMb(memory.external),
-        arrayBuffersMb: toMb(memory.arrayBuffers),
-      },
-      assistant: {
-        cacheEntries: assistantCacheMap.size,
-        contextEntries: assistantContextMap.size,
-        providerHealthEntries: assistantProviderHealthMap.size,
-        modelStateEntries: assistantProviderModelStateMap.size,
-        metrics: assistantMetrics,
-      },
-      rateLimitMaps: {
-        loginAttempts: loginAttemptMap.size,
-        admin: adminRateMap.size,
-        assistant: assistantRateMap.size,
-      },
-    },
-  });
-});
 
 function buildAdminSearchLatestRunSummary() {
   const state = readDjangoIndexSyncState();
@@ -6476,726 +6318,6 @@ function buildAdminSearchLatestRunSummary() {
   };
 }
 
-function getDjangoSyncAuthHeaderFromRequest(req) {
-  return (
-    toBearerToken(process.env.DJANGO_ADMIN_TOKEN) ||
-    toBearerToken(req.headers.authorization || "")
-  );
-}
-
-app.get("/api/admin/search/status", adminAuth, (_req, res) => {
-  const indexStats = getSearchIndexStats();
-  const latestRun = buildAdminSearchLatestRunSummary();
-  const rankingConfig = getSearchRankingConfig();
-  const sourceCount = Array.isArray(indexStats.topSources)
-    ? indexStats.topSources.length
-    : 0;
-
-  res.json({
-    ok: true,
-    generatedAt: new Date().toISOString(),
-    search: {
-      sources: {
-        active: sourceCount,
-        total: sourceCount,
-      },
-      documents: {
-        indexed: Number(indexStats.totalDocs || 0),
-        blocked: 0,
-        errors: 0,
-      },
-      blockRules: 0,
-      latestRun,
-      recentRuns: latestRun.startedAt ? [latestRun] : [],
-      rankingConfig,
-    },
-  });
-});
-
-app.get("/api/admin/search/ranking-config", adminAuth, (_req, res) => {
-  res.json({
-    ok: true,
-    generatedAt: new Date().toISOString(),
-    rankingConfig: getSearchRankingConfig(),
-  });
-});
-
-app.post("/api/admin/search/ranking-config", adminAuth, (req, res) => {
-  const shouldReset = Boolean(req.body?.reset);
-
-  try {
-    const rankingConfig = shouldReset
-      ? resetSearchRankingConfig()
-      : writeSearchRankingConfig(req.body?.rankingConfig || {});
-    res.json({
-      ok: true,
-      generatedAt: new Date().toISOString(),
-      rankingConfig,
-    });
-  } catch (error) {
-    res.status(400).json({
-      error: String(error?.message || "Could not update ranking config."),
-    });
-  }
-});
-
-app.post("/api/admin/search/seed", adminAuth, async (req, res) => {
-  const authHeader = getDjangoSyncAuthHeaderFromRequest(req);
-  if (!authHeader) {
-    res.status(400).json({
-      error:
-        "Missing Django auth token. Set DJANGO_ADMIN_TOKEN or provide Authorization header.",
-    });
-    return;
-  }
-
-  try {
-    const result = await executeDjangoIndexSync({
-      req,
-      authHeader,
-      source: "",
-      statusFilter: "indexed",
-      pageSize: DJANGO_INDEX_SYNC_PAGE_SIZE,
-      maxPages: Math.max(5, DJANGO_INDEX_SYNC_MAX_PAGES),
-      createBackup: true,
-      updatedSince: null,
-      reason: "seed",
-    });
-
-    res.json({
-      ok: true,
-      generatedAt: new Date().toISOString(),
-      seed: result.sync,
-      refresh: result.refresh,
-      index: result.index,
-    });
-  } catch (error) {
-    res.status(502).json({
-      error: String(error?.message || "Could not seed search sources."),
-    });
-  }
-});
-
-app.post("/api/admin/search/crawl", adminAuth, async (req, res) => {
-  const authHeader = getDjangoSyncAuthHeaderFromRequest(req);
-  if (!authHeader) {
-    res.status(400).json({
-      error:
-        "Missing Django auth token. Set DJANGO_ADMIN_TOKEN or provide Authorization header.",
-    });
-    return;
-  }
-
-  const maxPages = Math.max(
-    1,
-    Math.min(
-      300,
-      Number.parseInt(
-        String(req.body?.maxPages || DJANGO_INDEX_SYNC_MAX_PAGES),
-        10,
-      ) || DJANGO_INDEX_SYNC_MAX_PAGES,
-    ),
-  );
-
-  try {
-    const result = await executeDjangoIndexSync({
-      req,
-      authHeader,
-      source: "",
-      statusFilter: "indexed",
-      pageSize: DJANGO_INDEX_SYNC_PAGE_SIZE,
-      maxPages,
-      createBackup: true,
-      updatedSince: null,
-      reason: "crawl",
-    });
-
-    res.json({
-      ok: true,
-      generatedAt: new Date().toISOString(),
-      crawl: result.sync,
-      refresh: result.refresh,
-      index: result.index,
-    });
-  } catch (error) {
-    res.status(502).json({
-      error: String(error?.message || "Could not start search crawl."),
-    });
-  }
-});
-
-app.get("/api/admin/index/status", adminAuth, (_req, res) => {
-  res.json({
-    ok: true,
-    generatedAt: new Date().toISOString(),
-    index: getSearchIndexStats(),
-  });
-});
-
-app.post("/api/admin/index/refresh", adminAuth, (req, res) => {
-  const mergeDocs = Array.isArray(req.body?.mergeDocs)
-    ? req.body.mergeDocs
-    : [];
-  const createBackup =
-    req.body?.createBackup == null ? true : Boolean(req.body?.createBackup);
-
-  if (mergeDocs.length > 2000) {
-    res.status(400).json({
-      error: "Too many mergeDocs items in one request. Max is 2000.",
-    });
-    return;
-  }
-
-  try {
-    const refresh = rebuildLocalSearchIndex({
-      mergeDocs,
-      createBackup,
-    });
-
-    res.json({
-      ok: true,
-      generatedAt: new Date().toISOString(),
-      refresh,
-      index: getSearchIndexStats(),
-    });
-  } catch (error) {
-    res.status(500).json({
-      error: String(error?.message || "Could not refresh local search index."),
-    });
-  }
-});
-
-app.get("/api/admin/index/backups", adminAuth, (req, res) => {
-  const requestedReason = String(req.query.reason || "all")
-    .trim()
-    .toLowerCase();
-  const backups = listSearchIndexBackups();
-  const filtered =
-    requestedReason && requestedReason !== "all"
-      ? backups.filter(
-          (item) => String(item.reason || "").toLowerCase() === requestedReason,
-        )
-      : backups;
-
-  res.json({
-    ok: true,
-    generatedAt: new Date().toISOString(),
-    reason: requestedReason || "all",
-    total: filtered.length,
-    backups: filtered.slice(0, 200),
-  });
-});
-
-app.post("/api/admin/index/restore", adminAuth, (req, res) => {
-  const fileName = sanitizeSearchIndexBackupFileName(req.body?.fileName);
-  if (!fileName) {
-    res.status(400).json({ error: "Invalid search-index backup file name." });
-    return;
-  }
-
-  const createBackup =
-    req.body?.createBackup == null ? true : Boolean(req.body?.createBackup);
-
-  try {
-    const restore = restoreSearchIndexFromBackup(fileName, { createBackup });
-    res.json({
-      ok: true,
-      generatedAt: new Date().toISOString(),
-      restore,
-      index: getSearchIndexStats(),
-    });
-  } catch (error) {
-    const message = String(error?.message || "Could not restore search index.");
-    if (/not found/i.test(message)) {
-      res.status(404).json({ error: message });
-      return;
-    }
-    res.status(400).json({ error: message });
-  }
-});
-
-app.post("/api/admin/index/sync-django", adminAuth, async (req, res) => {
-  const source = String(req.body?.source || "")
-    .trim()
-    .toLowerCase();
-  const statusFilter = String(req.body?.status || "indexed")
-    .trim()
-    .toLowerCase();
-  const pageSize = Math.max(
-    1,
-    Math.min(
-      500,
-      Number.parseInt(String(req.body?.pageSize || "200"), 10) || 200,
-    ),
-  );
-  const maxPages = Math.max(
-    1,
-    Math.min(
-      300,
-      Number.parseInt(String(req.body?.maxPages || "50"), 10) || 50,
-    ),
-  );
-  const createBackup =
-    req.body?.createBackup == null ? true : Boolean(req.body?.createBackup);
-  const useWatermark = Boolean(req.body?.useWatermark);
-  const resetWatermark = Boolean(req.body?.resetWatermark);
-  const updatedSinceRaw = String(req.body?.updatedSince || "").trim();
-  let updatedSince = updatedSinceRaw
-    ? parseOptionalIsoDate(updatedSinceRaw)
-    : null;
-  let usedPersistedWatermark = false;
-
-  const allowedStatuses = new Set(["indexed", "blocked", "error", "all"]);
-  if (!allowedStatuses.has(statusFilter)) {
-    res.status(400).json({
-      error: "Invalid status. Allowed: indexed, blocked, error, all.",
-    });
-    return;
-  }
-
-  if (updatedSinceRaw && !updatedSince) {
-    res.status(400).json({ error: "Invalid updatedSince ISO datetime." });
-    return;
-  }
-
-  if (resetWatermark) {
-    const syncState = readDjangoIndexSyncState();
-    writeDjangoIndexSyncState({
-      ...syncState,
-      updatedSince: "",
-    });
-  }
-
-  if (!updatedSince && useWatermark) {
-    const syncState = readDjangoIndexSyncState();
-    const persisted = parseOptionalIsoDate(syncState.updatedSince);
-    if (persisted) {
-      updatedSince = persisted;
-      usedPersistedWatermark = true;
-    }
-  }
-
-  const explicitDjangoToken = toBearerToken(
-    req.body?.djangoToken || process.env.DJANGO_ADMIN_TOKEN,
-  );
-  const forwardedAuthHeader = toBearerToken(req.headers.authorization || "");
-  const djangoAuthHeader = explicitDjangoToken || forwardedAuthHeader;
-
-  if (!djangoAuthHeader) {
-    res.status(400).json({
-      error:
-        "Missing Django auth token. Provide body.djangoToken or DJANGO_ADMIN_TOKEN.",
-    });
-    return;
-  }
-
-  try {
-    const result = await executeDjangoIndexSync({
-      req,
-      authHeader: djangoAuthHeader,
-      source,
-      statusFilter,
-      pageSize,
-      maxPages,
-      createBackup,
-      updatedSince,
-      reason: "manual",
-    });
-
-    res.json({
-      ok: true,
-      generatedAt: new Date().toISOString(),
-      sync: {
-        ...result.sync,
-        useWatermark,
-        resetWatermark,
-        usedPersistedWatermark,
-      },
-      refresh: result.refresh,
-      index: result.index,
-      state: result.state,
-    });
-  } catch (error) {
-    res.status(502).json({
-      error: String(error?.message || "Django sync failed."),
-      sync: {
-        source: source || "all",
-        status: statusFilter,
-        updatedSince: updatedSince ? updatedSince.toISOString() : "",
-        maxPages,
-        pageSize,
-      },
-    });
-  }
-});
-
-app.post("/api/admin/index/sync-reset-watermark", adminAuth, (req, res) => {
-  const updatedSinceRaw = String(req.body?.updatedSince || "").trim();
-  const updatedSince = updatedSinceRaw
-    ? parseOptionalIsoDate(updatedSinceRaw)
-    : null;
-
-  if (updatedSinceRaw && !updatedSince) {
-    res.status(400).json({ error: "Invalid updatedSince ISO datetime." });
-    return;
-  }
-
-  const current = readDjangoIndexSyncState();
-  const nextState = {
-    ...current,
-    updatedSince: updatedSince ? updatedSince.toISOString() : "",
-    lastError: "",
-  };
-  writeDjangoIndexSyncState(nextState);
-
-  res.json({
-    ok: true,
-    generatedAt: new Date().toISOString(),
-    state: nextState,
-  });
-});
-
-app.get("/api/admin/index/sync-status", adminAuth, (_req, res) => {
-  res.json({
-    ok: true,
-    generatedAt: new Date().toISOString(),
-    running: djangoSyncInFlight,
-    config: {
-      enabled: DJANGO_INDEX_SYNC_ENABLED,
-      intervalMs: DJANGO_INDEX_SYNC_INTERVAL_MS,
-      startup: DJANGO_INDEX_SYNC_STARTUP,
-      defaultMaxPages: DJANGO_INDEX_SYNC_MAX_PAGES,
-      defaultPageSize: DJANGO_INDEX_SYNC_PAGE_SIZE,
-      hasDjangoAdminToken: Boolean(
-        String(process.env.DJANGO_ADMIN_TOKEN || "").trim(),
-      ),
-    },
-    runtime: djangoSyncRuntime,
-    state: readDjangoIndexSyncState(),
-  });
-});
-
-app.get("/api/admin/overview", adminAuth, (req, res) => {
-  const analytics = readJson(analyticsPath, {
-    searches: [],
-    pageViews: [],
-    resultClicks: [],
-  });
-  const allSearches = Array.isArray(analytics.searches)
-    ? analytics.searches
-    : [];
-  const allPageViews = Array.isArray(analytics.pageViews)
-    ? analytics.pageViews
-    : [];
-  const allResultClicks = Array.isArray(analytics.resultClicks)
-    ? analytics.resultClicks
-    : [];
-  const requestedRange = String(req.query.range || "all");
-  const range = ["all", "24h", "7d", "30d"].includes(requestedRange)
-    ? requestedRange
-    : "all";
-
-  const sinceDate = parseRangeToSince(range);
-  const searches = filterByDateRange(allSearches, sinceDate);
-  const pageViews = filterByDateRange(allPageViews, sinceDate);
-  const resultClicks = filterByDateRange(allResultClicks, sinceDate);
-  const overview = buildOverview(searches, pageViews, resultClicks);
-  const comparison = getPeriodComparison(
-    allSearches,
-    allPageViews,
-    allResultClicks,
-    range,
-  );
-
-  res.json({
-    generatedAt: new Date().toISOString(),
-    range,
-    comparison,
-    clickSignalConfig: {
-      windowDays: CLICK_SIGNAL_WINDOW_DAYS,
-      decayHalfLifeDays: CLICK_SIGNAL_DECAY_HALFLIFE_DAYS,
-      decayMinWeight: CLICK_SIGNAL_DECAY_MIN_WEIGHT,
-      maxBoost: CLICK_SIGNAL_MAX_BOOST,
-      ctrMaxBoost: CLICK_SIGNAL_CTR_MAX_BOOST,
-      guardrailMinBaseScore: CLICK_SIGNAL_GUARDRAIL_MIN_BASE_SCORE,
-      guardrailMaxShare: CLICK_SIGNAL_GUARDRAIL_MAX_SHARE,
-      dedupSeconds: Math.round(CLICK_SIGNAL_DEDUP_WINDOW_MS / 1000),
-      rangeStartAt: sinceDate ? sinceDate.toISOString() : null,
-    },
-    clickSignalTelemetry,
-    ...overview,
-  });
-});
-
-app.post("/api/admin/click-signal/reset", adminAuth, (_req, res) => {
-  clickSignalTelemetry = createClickSignalTelemetryState();
-
-  res.json({
-    ok: true,
-    generatedAt: new Date().toISOString(),
-    clickSignalTelemetry,
-  });
-});
-
-app.post("/api/admin/click-signal/snapshot-reset", adminAuth, (_req, res) => {
-  const generatedAt = new Date().toISOString();
-  const snapshot = {
-    generatedAt,
-    clickSignalConfig: {
-      windowDays: CLICK_SIGNAL_WINDOW_DAYS,
-      decayHalfLifeDays: CLICK_SIGNAL_DECAY_HALFLIFE_DAYS,
-      decayMinWeight: CLICK_SIGNAL_DECAY_MIN_WEIGHT,
-      maxBoost: CLICK_SIGNAL_MAX_BOOST,
-      ctrMaxBoost: CLICK_SIGNAL_CTR_MAX_BOOST,
-      guardrailMinBaseScore: CLICK_SIGNAL_GUARDRAIL_MIN_BASE_SCORE,
-      guardrailMaxShare: CLICK_SIGNAL_GUARDRAIL_MAX_SHARE,
-      dedupSeconds: Math.round(CLICK_SIGNAL_DEDUP_WINDOW_MS / 1000),
-    },
-    clickSignalTelemetry,
-  };
-
-  clickSignalTelemetry = createClickSignalTelemetryState();
-
-  res.json({
-    ok: true,
-    generatedAt,
-    snapshot,
-    clickSignalTelemetry,
-  });
-});
-
-app.get("/api/admin/backups", adminAuth, (req, res) => {
-  const requestedReason = String(req.query.reason || "all").trim();
-  const reasonFilter = requestedReason === "all" ? "all" : requestedReason;
-  if (reasonFilter !== "all" && !isAllowedBackupReason(reasonFilter)) {
-    res.status(400).json({ error: "Invalid backup reason filter." });
-    return;
-  }
-
-  const allBackups = listBackups();
-  const filteredBackups =
-    reasonFilter === "all"
-      ? allBackups
-      : allBackups.filter((item) => item.reason === reasonFilter);
-
-  res.json({
-    generatedAt: new Date().toISOString(),
-    reason: reasonFilter,
-    backups: filteredBackups.slice(0, 100),
-  });
-});
-
-app.get("/api/admin/backups/download", adminAuth, (req, res) => {
-  const fileName = sanitizeBackupFileName(req.query.fileName);
-  if (!fileName) {
-    res.status(400).json({ error: "Invalid backup file name." });
-    return;
-  }
-
-  const sourcePath = path.join(backupDir, fileName);
-  if (!fs.existsSync(sourcePath)) {
-    res.status(404).json({ error: "Backup file not found." });
-    return;
-  }
-
-  res.setHeader("Content-Type", "application/json; charset=utf-8");
-  res.setHeader(
-    "Content-Disposition",
-    `attachment; filename=${JSON.stringify(fileName)}`,
-  );
-  res.sendFile(sourcePath);
-});
-
-app.post("/api/admin/backups/create", adminAuth, (_req, res) => {
-  backupAnalytics("manual", { force: true });
-  res.json({
-    ok: true,
-    generatedAt: new Date().toISOString(),
-    backups: listBackups().slice(0, 100),
-  });
-});
-
-app.post("/api/admin/backups/restore", adminAuth, (req, res) => {
-  const fileName = sanitizeBackupFileName(req.body?.fileName);
-  if (!fileName) {
-    res.status(400).json({ error: "Invalid backup file name." });
-    return;
-  }
-
-  const sourcePath = path.join(backupDir, fileName);
-  if (!fs.existsSync(sourcePath)) {
-    res.status(404).json({ error: "Backup file not found." });
-    return;
-  }
-
-  backupAnalytics("pre-restore", { force: true });
-  fs.copyFileSync(sourcePath, analyticsPath);
-  backupAnalytics("restored", { force: true });
-
-  res.json({
-    ok: true,
-    restoredFrom: fileName,
-    generatedAt: new Date().toISOString(),
-  });
-});
-
-app.get("/api/admin/export.csv", adminAuth, (req, res) => {
-  const analytics = readJson(analyticsPath, {
-    searches: [],
-    pageViews: [],
-    resultClicks: [],
-  });
-  const allSearches = Array.isArray(analytics.searches)
-    ? analytics.searches
-    : [];
-  const allPageViews = Array.isArray(analytics.pageViews)
-    ? analytics.pageViews
-    : [];
-  const allResultClicks = Array.isArray(analytics.resultClicks)
-    ? analytics.resultClicks
-    : [];
-  const requestedRange = String(req.query.range || "all");
-  const range = ["all", "24h", "7d", "30d"].includes(requestedRange)
-    ? requestedRange
-    : "all";
-
-  const sinceDate = parseRangeToSince(range);
-  const searches = filterByDateRange(allSearches, sinceDate);
-  const pageViews = filterByDateRange(allPageViews, sinceDate);
-  const resultClicks = filterByDateRange(allResultClicks, sinceDate);
-  const overview = buildOverview(searches, pageViews, resultClicks);
-
-  const lines = [];
-  lines.push(
-    "rowType,timestamp,query,resultCount,page,ip,userAgent,count,percent,range",
-  );
-
-  for (const item of searches) {
-    lines.push(
-      [
-        "search",
-        item.at || "",
-        item.query || "",
-        item.resultCount || 0,
-        "",
-        item.ip || "",
-        "",
-        "",
-        "",
-        range,
-      ]
-        .map(escapeCsv)
-        .join(","),
-    );
-  }
-
-  for (const item of resultClicks) {
-    lines.push(
-      [
-        "result_click",
-        item.at || "",
-        item.query || "",
-        "",
-        item.url || "",
-        item.ip || "",
-        "",
-        "",
-        "",
-        range,
-      ]
-        .map(escapeCsv)
-        .join(","),
-    );
-  }
-
-  for (const item of pageViews) {
-    lines.push(
-      [
-        "page_view",
-        item.at || "",
-        "",
-        "",
-        item.page || "",
-        item.ip || "",
-        item.userAgent || "",
-        "",
-        "",
-        range,
-      ]
-        .map(escapeCsv)
-        .join(","),
-    );
-  }
-
-  for (const item of overview.topQueries) {
-    lines.push(
-      [
-        "top_query",
-        "",
-        item.query,
-        "",
-        "",
-        "",
-        "",
-        item.count,
-        item.percent,
-        range,
-      ]
-        .map(escapeCsv)
-        .join(","),
-    );
-  }
-
-  for (const item of overview.trafficByPage) {
-    lines.push(
-      [
-        "traffic_page",
-        "",
-        "",
-        "",
-        item.page,
-        "",
-        "",
-        item.count,
-        item.percent,
-        range,
-      ]
-        .map(escapeCsv)
-        .join(","),
-    );
-  }
-
-  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-  res.setHeader("Content-Type", "text/csv; charset=utf-8");
-  res.setHeader(
-    "Content-Disposition",
-    `attachment; filename=magneto-analytics-${range}-${stamp}.csv`,
-  );
-  res.send(lines.join("\n"));
-});
-
-app.get("/api/health", (_, res) => {
-  res.json({
-    ok: true,
-    service: "magneto-search",
-    timestamp: new Date().toISOString(),
-    runtime: {
-      port: PORT,
-      loginWindowMinutes: Math.round(LOGIN_WINDOW_MS / 60000),
-      loginRateLimitCount: LOGIN_RATE_LIMIT_COUNT,
-      lockoutThreshold: LOCKOUT_THRESHOLD,
-      lockoutMinutes: Math.round(LOCKOUT_MS / 60000),
-      adminWindowSeconds: Math.round(ADMIN_WINDOW_MS / 1000),
-      adminRateLimitCount: ADMIN_RATE_LIMIT_COUNT,
-      backupMinIntervalMinutes: Math.round(BACKUP_MIN_INTERVAL_MS / 60000),
-      backupScheduleMinutes: Math.round(BACKUP_SCHEDULE_MS / 60000),
-      maxBackupFiles: MAX_BACKUP_FILES,
-      trendDailyPoints: TREND_DAILY_POINTS,
-      trendWeeklyPoints: TREND_WEEKLY_POINTS,
-    },
-  });
-});
-
 // ─── Traffic routing state ────────────────────────────────────────────────────
 const VALID_ROUTING_BACKENDS = ["node", "django"];
 const VALID_CANARY_PERCENTAGES = [0, 10, 50, 100];
@@ -7204,7 +6326,7 @@ function _loadRoutingState() {
   const defaults = {
     activeBackend: "node",
     canaryPercent: 100,
-    djangoUrl: String(process.env.DJANGO_API_URL || "http://127.0.0.1:8000"),
+    djangoUrl: DJANGO_API_URL,
     note: "Initial state – Node backend at 100%.",
     updatedAt: new Date().toISOString(),
   };
@@ -7216,9 +6338,7 @@ function _loadRoutingState() {
       VALID_CANARY_PERCENTAGES.includes(saved.canaryPercent)
     ) {
       // Always refresh djangoUrl from env so env overrides persist
-      saved.djangoUrl = String(
-        process.env.DJANGO_API_URL || "http://127.0.0.1:8000",
-      );
+      saved.djangoUrl = DJANGO_API_URL;
       return { ...defaults, ...saved };
     }
   } catch (_) {
@@ -7237,119 +6357,6 @@ function _saveRoutingState() {
 
 let routingState = _loadRoutingState();
 
-app.get("/api/admin/routing", adminAuth, (_req, res) => {
-  res.json({
-    ok: true,
-    generatedAt: new Date().toISOString(),
-    routing: { ...routingState },
-  });
-});
-
-app.post("/api/admin/routing", adminAuth, (req, res) => {
-  const body = req.body || {};
-  const newBackend = String(body.activeBackend || "").toLowerCase();
-  const newCanaryRaw = body.canaryPercent;
-  const newNote = String(body.note || "").slice(0, 300);
-
-  if (newBackend && !VALID_ROUTING_BACKENDS.includes(newBackend)) {
-    res
-      .status(400)
-      .json({ error: "Invalid activeBackend. Allowed: node, django." });
-    return;
-  }
-
-  if (
-    newCanaryRaw !== undefined &&
-    !VALID_CANARY_PERCENTAGES.includes(Number(newCanaryRaw))
-  ) {
-    res
-      .status(400)
-      .json({ error: "Invalid canaryPercent. Allowed: 0, 10, 50, 100." });
-    return;
-  }
-
-  if (newBackend) {
-    routingState.activeBackend = newBackend;
-  }
-
-  if (newCanaryRaw !== undefined) {
-    routingState.canaryPercent = Number(newCanaryRaw);
-  }
-
-  if (newNote) {
-    routingState.note = newNote;
-  }
-
-  routingState.updatedAt = new Date().toISOString();
-  _saveRoutingState();
-
-  res.json({
-    ok: true,
-    generatedAt: new Date().toISOString(),
-    routing: { ...routingState },
-  });
-});
-
-app.post("/api/admin/routing/verify", adminAuth, async (_req, res) => {
-  const checks = [];
-
-  const nodeHealthUrl = `http://127.0.0.1:${PORT}/api/health`;
-  const nodeStart = Date.now();
-  try {
-    const nodeResp = await fetch(nodeHealthUrl);
-    const nodeData = await nodeResp.json().catch(() => ({}));
-    const nodeOk =
-      nodeResp.ok && (nodeData.ok === true || nodeData.status === "ok");
-    checks.push({
-      backend: "node",
-      url: nodeHealthUrl,
-      ok: nodeOk,
-      statusCode: nodeResp.status,
-      latencyMs: Date.now() - nodeStart,
-    });
-  } catch (err) {
-    checks.push({
-      backend: "node",
-      url: nodeHealthUrl,
-      ok: false,
-      error: String(err?.message || "Unreachable"),
-      latencyMs: Date.now() - nodeStart,
-    });
-  }
-
-  const djangoHealthUrl = `${routingState.djangoUrl}/api/health`;
-  const djangoStart = Date.now();
-  try {
-    const djangoResp = await fetch(djangoHealthUrl);
-    const djangoData = await djangoResp.json().catch(() => ({}));
-    const djangoOk =
-      djangoResp.ok && (djangoData.ok === true || djangoData.status === "ok");
-    checks.push({
-      backend: "django",
-      url: djangoHealthUrl,
-      ok: djangoOk,
-      statusCode: djangoResp.status,
-      latencyMs: Date.now() - djangoStart,
-    });
-  } catch (err) {
-    checks.push({
-      backend: "django",
-      url: djangoHealthUrl,
-      ok: false,
-      error: String(err?.message || "Unreachable"),
-      latencyMs: Date.now() - djangoStart,
-    });
-  }
-
-  const allOk = checks.every((c) => c.ok);
-  res.json({
-    ok: allOk,
-    generatedAt: new Date().toISOString(),
-    checks,
-    routing: { ...routingState },
-  });
-});
-
 ensureAnalyticsFile();
 backupAnalytics("startup");
 
@@ -7358,7 +6365,7 @@ async function runScheduledDjangoIndexSync(reason = "scheduled") {
     return;
   }
 
-  const authHeader = toBearerToken(process.env.DJANGO_ADMIN_TOKEN);
+  const authHeader = toBearerToken(DJANGO_ADMIN_TOKEN);
   if (!authHeader) {
     djangoSyncRuntime.lastError =
       "DJANGO_ADMIN_TOKEN is not set. Scheduled sync skipped.";

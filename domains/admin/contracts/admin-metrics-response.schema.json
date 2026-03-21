@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "magneto/domains/admin/contracts/admin-metrics-response.schema.json",
+  "title": "AdminMetricsResponse",
+  "type": "object",
+  "required": ["generatedAt"],
+  "properties": {
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "range": {
+      "type": "string",
+      "enum": ["all", "24h", "7d", "30d"]
+    },
+    "comparison": {
+      "type": "object"
+    },
+    "clickSignalConfig": {
+      "type": "object"
+    },
+    "clickSignalTelemetry": {
+      "type": "object"
+    },
+    "totals": {
+      "type": "object"
+    },
+    "topQueries": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "trafficByPage": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "latestSearches": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  },
+  "additionalProperties": true
+}

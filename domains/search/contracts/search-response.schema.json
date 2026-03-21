@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "magneto/domains/search/contracts/search-response.schema.json",
+  "title": "SearchResponse",
+  "type": "object",
+  "required": ["query", "total", "results"],
+  "properties": {
+    "engine": {
+      "type": "string"
+    },
+    "query": {
+      "type": "string"
+    },
+    "queryUsed": {
+      "type": "string"
+    },
+    "queryCorrection": {
+      "type": ["object", "null"]
+    },
+    "querySuggestion": {
+      "type": ["object", "null"]
+    },
+    "relatedQueries": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "total": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "appliedFilters": {
+      "type": "object"
+    },
+    "pagination": {
+      "type": "object"
+    },
+    "facets": {
+      "type": "object"
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["title", "url"],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "score": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "servedBy": {
+      "type": "string",
+      "enum": ["node", "django"]
+    }
+  },
+  "additionalProperties": true
+}

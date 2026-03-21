@@ -327,14 +327,24 @@ const adminIndexRestoreCreateBackup = document.getElementById(
   "adminIndexRestoreCreateBackup",
 );
 
-const ADMIN_TOKEN_KEY = "magneto.admin.token";
+const magnetoAdminState = window.MagnetoAdminState || {};
+const magnetoApiClient = window.MagnetoApiClient || {};
+const magnetoTrackingApi = window.MagnetoTrackingApi || {};
+const magnetoSearchApi = window.MagnetoSearchApi || {};
+const magnetoAssistantApi = window.MagnetoAssistantApi || {};
+const magnetoAdminApi = window.MagnetoAdminApi || {};
+const ADMIN_TOKEN_KEY =
+  String(magnetoAdminState.ADMIN_TOKEN_KEY || "magneto.admin.token") ||
+  "magneto.admin.token";
 const ADMIN_CLICK_SNAPSHOT_HISTORY_KEY = "magneto.admin.click-snapshot.history";
 const ADMIN_CLICK_SNAPSHOT_BASELINE_KEY =
   "magneto.admin.click-snapshot.baseline";
 const ADMIN_CLICK_SNAPSHOT_CLEANUP_DISMISS_KEY =
   "magneto.admin.click-snapshot.cleanup-dismiss";
 const ADMIN_CLICK_SNAPSHOT_HISTORY_MAX = 12;
-const API_BASE_URL = String(window.MAGNETO_API_BASE_URL || "")
+const API_BASE_URL = String(
+  magnetoApiClient.API_BASE_URL || window.MAGNETO_API_BASE_URL || "",
+)
   .trim()
   .replace(/\/+$/, "");
 let currentAdminRange = "all";
@@ -385,7 +395,9 @@ const FLAG_ROTATION_MAX_MS = 600000;
 const FLAG_ROTATION_INDEX_KEY = "MAGNETO_FLAG_INDEX";
 let flagRotationTimerId = null;
 let currentFlagRotationIndex = 0;
-const API_FETCH_TIMEOUT_MS = 12000;
+const API_FETCH_TIMEOUT_MS = Number(
+  magnetoApiClient.API_FETCH_TIMEOUT_MS || 12000,
+);
 
 function getFlagRotationIntervalMs() {
   return FLAG_ROTATION_DEFAULT_MS;
@@ -569,60 +581,71 @@ function updateSearchAutoRefreshCountdown() {
   setSearchAutoRefreshState(true, secondsRemaining);
 }
 
-function buildApiUrl(path) {
-  const target = String(path || "").trim();
-  if (!target.startsWith("/api/")) {
-    return target;
-  }
+const buildApiUrl =
+  typeof magnetoApiClient.buildApiUrl === "function"
+    ? magnetoApiClient.buildApiUrl
+    : function buildApiUrlFallback(path) {
+        const target = String(path || "").trim();
+        if (!target.startsWith("/api/")) {
+          return target;
+        }
 
-  return API_BASE_URL ? `${API_BASE_URL}${target}` : target;
-}
-
-function apiFetch(path, options) {
-  const requestOptions =
-    options && typeof options === "object" ? { ...options } : {};
-  const timeoutRaw = Number(requestOptions.timeoutMs);
-  const timeoutMs =
-    Number.isFinite(timeoutRaw) && timeoutRaw > 0
-      ? timeoutRaw
-      : API_FETCH_TIMEOUT_MS;
-  delete requestOptions.timeoutMs;
-
-  const controller = new AbortController();
-  const originalSignal = requestOptions.signal;
-  let removeAbortForwarder = null;
-
-  if (originalSignal) {
-    if (originalSignal.aborted) {
-      controller.abort();
-    } else {
-      const forwardAbort = () => controller.abort();
-      originalSignal.addEventListener("abort", forwardAbort, { once: true });
-      removeAbortForwarder = () => {
-        originalSignal.removeEventListener("abort", forwardAbort);
+        return API_BASE_URL ? `${API_BASE_URL}${target}` : target;
       };
-    }
-  }
 
-  requestOptions.signal = controller.signal;
-  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+const apiFetch =
+  typeof magnetoApiClient.apiFetch === "function"
+    ? magnetoApiClient.apiFetch
+    : function apiFetchFallback(path, options) {
+        const requestOptions =
+          options && typeof options === "object" ? { ...options } : {};
+        const timeoutRaw = Number(requestOptions.timeoutMs);
+        const timeoutMs =
+          Number.isFinite(timeoutRaw) && timeoutRaw > 0
+            ? timeoutRaw
+            : API_FETCH_TIMEOUT_MS;
+        delete requestOptions.timeoutMs;
 
-  return fetch(buildApiUrl(path), requestOptions)
-    .catch((error) => {
-      if (error?.name === "AbortError") {
-        throw new Error(
-          `Request timed out after ${timeoutMs}ms. Check API server and API base.`,
+        const controller = new AbortController();
+        const originalSignal = requestOptions.signal;
+        let removeAbortForwarder = null;
+
+        if (originalSignal) {
+          if (originalSignal.aborted) {
+            controller.abort();
+          } else {
+            const forwardAbort = () => controller.abort();
+            originalSignal.addEventListener("abort", forwardAbort, {
+              once: true,
+            });
+            removeAbortForwarder = () => {
+              originalSignal.removeEventListener("abort", forwardAbort);
+            };
+          }
+        }
+
+        requestOptions.signal = controller.signal;
+        const timeoutId = window.setTimeout(
+          () => controller.abort(),
+          timeoutMs,
         );
-      }
-      throw error;
-    })
-    .finally(() => {
-      window.clearTimeout(timeoutId);
-      if (removeAbortForwarder) {
-        removeAbortForwarder();
-      }
-    });
-}
+
+        return fetch(buildApiUrl(path), requestOptions)
+          .catch((error) => {
+            if (error?.name === "AbortError") {
+              throw new Error(
+                `Request timed out after ${timeoutMs}ms. Check API server and API base.`,
+              );
+            }
+            throw error;
+          })
+          .finally(() => {
+            window.clearTimeout(timeoutId);
+            if (removeAbortForwarder) {
+              removeAbortForwarder();
+            }
+          });
+      };
 
 function syncSidePanelHeights() {
   if (!rightPanel) {
@@ -857,16 +880,25 @@ async function requestAssistantResponse(userText) {
     : [];
 
   try {
-    const response = await apiFetch("/api/assistant/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: userText, history }),
-    });
+    const payload =
+      typeof magnetoAssistantApi.requestAssistantChat === "function"
+        ? await magnetoAssistantApi.requestAssistantChat(userText, history)
+        : await (async () => {
+            const response = await apiFetch("/api/assistant/chat", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ message: userText, history }),
+            });
 
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      throw new Error(payload.error || "Assistant request failed.");
-    }
+            const fallbackPayload = await response.json().catch(() => ({}));
+            if (!response.ok) {
+              throw new Error(
+                fallbackPayload.error || "Assistant request failed.",
+              );
+            }
+
+            return fallbackPayload;
+          })();
 
     const reply = String(payload.reply || "").trim();
     const suggestions = Array.isArray(payload.suggestions)
@@ -1259,6 +1291,10 @@ function clearSearchHistory() {
 }
 
 async function fetchPopularSearches() {
+  if (typeof magnetoSearchApi.fetchPopularSearches === "function") {
+    return magnetoSearchApi.fetchPopularSearches();
+  }
+
   try {
     const response = await apiFetch("/api/analytics/popular-searches");
     if (!response.ok) {
@@ -1766,6 +1802,12 @@ async function fetchLocationByIp() {
 }
 
 async function fetchLocationFromBackend() {
+  if (
+    typeof window.MagnetoLocationApi?.fetchLocationFromBackend === "function"
+  ) {
+    return window.MagnetoLocationApi.fetchLocationFromBackend();
+  }
+
   const response = await apiFetch("/api/location/auto");
   if (!response.ok) {
     throw new Error("Backend location unavailable.");
@@ -1933,6 +1975,10 @@ function initWeatherWidget() {
 }
 
 async function trackPageView(pageName) {
+  if (typeof magnetoTrackingApi.trackPageView === "function") {
+    return magnetoTrackingApi.trackPageView(pageName);
+  }
+
   try {
     await apiFetch("/api/events/page-view", {
       method: "POST",
@@ -2680,10 +2726,19 @@ function setAdminStatus(message, isError = false) {
 }
 
 function getAdminToken() {
+  if (typeof magnetoAdminState.getAdminToken === "function") {
+    return magnetoAdminState.getAdminToken();
+  }
+
   return localStorage.getItem(ADMIN_TOKEN_KEY) || "";
 }
 
 function setAdminToken(token) {
+  if (typeof magnetoAdminState.setAdminToken === "function") {
+    magnetoAdminState.setAdminToken(token);
+    return;
+  }
+
   if (!token) {
     localStorage.removeItem(ADMIN_TOKEN_KEY);
     return;
@@ -3121,6 +3176,10 @@ function renderAdminClickSnapshotHistory() {
 }
 
 async function fetchAdminOverview(range = "all") {
+  if (typeof magnetoAdminApi.fetchAdminOverview === "function") {
+    return magnetoAdminApi.fetchAdminOverview(range);
+  }
+
   const token = getAdminToken();
   const params = new URLSearchParams({ range });
 
@@ -3140,6 +3199,10 @@ async function fetchAdminOverview(range = "all") {
 }
 
 async function resetClickSignalTelemetry() {
+  if (typeof magnetoAdminApi.resetClickSignalTelemetry === "function") {
+    return magnetoAdminApi.resetClickSignalTelemetry();
+  }
+
   const token = getAdminToken();
   const response = await apiFetch("/api/admin/click-signal/reset", {
     method: "POST",
@@ -3157,6 +3220,12 @@ async function resetClickSignalTelemetry() {
 }
 
 async function snapshotAndResetClickSignalTelemetry() {
+  if (
+    typeof magnetoAdminApi.snapshotAndResetClickSignalTelemetry === "function"
+  ) {
+    return magnetoAdminApi.snapshotAndResetClickSignalTelemetry();
+  }
+
   const token = getAdminToken();
   const response = await apiFetch("/api/admin/click-signal/snapshot-reset", {
     method: "POST",
@@ -3173,6 +3242,38 @@ async function snapshotAndResetClickSignalTelemetry() {
   return payload;
 }
 
+async function exportAdminCsv(range = "all") {
+  if (typeof magnetoAdminApi.exportAdminCsv === "function") {
+    return magnetoAdminApi.exportAdminCsv(range);
+  }
+
+  const token = getAdminToken();
+  const params = new URLSearchParams({ range });
+  const response = await apiFetch(
+    `/api/admin/export.csv?${params.toString()}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.error || "Could not export CSV.");
+  }
+
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `magneto-analytics-${range}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 function setClickTelemetryActionButtonsBusy(isBusy) {
   const busy = Boolean(isBusy);
   if (adminResetClickTelemetryBtn) {
@@ -3184,6 +3285,10 @@ function setClickTelemetryActionButtonsBusy(isBusy) {
 }
 
 async function fetchAdminBackups(reason = "all") {
+  if (typeof magnetoAdminApi.fetchAdminBackups === "function") {
+    return magnetoAdminApi.fetchAdminBackups(reason);
+  }
+
   const token = getAdminToken();
   const params = new URLSearchParams({ reason });
   const response = await apiFetch(`/api/admin/backups?${params.toString()}`, {
@@ -3201,6 +3306,10 @@ async function fetchAdminBackups(reason = "all") {
 }
 
 async function fetchAdminAssistantStatus() {
+  if (typeof magnetoAdminApi.fetchAdminAssistantStatus === "function") {
+    return magnetoAdminApi.fetchAdminAssistantStatus();
+  }
+
   const token = getAdminToken();
   const response = await apiFetch("/api/admin/assistant-status", {
     headers: {
@@ -3217,6 +3326,10 @@ async function fetchAdminAssistantStatus() {
 }
 
 async function fetchAdminRuntimeMetrics() {
+  if (typeof magnetoAdminApi.fetchAdminRuntimeMetrics === "function") {
+    return magnetoAdminApi.fetchAdminRuntimeMetrics();
+  }
+
   const token = getAdminToken();
   const response = await apiFetch("/api/admin/runtime-metrics", {
     headers: {
@@ -3233,6 +3346,10 @@ async function fetchAdminRuntimeMetrics() {
 }
 
 async function fetchAdminSearchStatus() {
+  if (typeof magnetoAdminApi.fetchAdminSearchStatus === "function") {
+    return magnetoAdminApi.fetchAdminSearchStatus();
+  }
+
   const token = getAdminToken();
   const response = await apiFetch("/api/admin/search/status", {
     headers: {
@@ -3249,6 +3366,10 @@ async function fetchAdminSearchStatus() {
 }
 
 async function fetchAdminRankingConfig() {
+  if (typeof magnetoAdminApi.fetchAdminRankingConfig === "function") {
+    return magnetoAdminApi.fetchAdminRankingConfig();
+  }
+
   const token = getAdminToken();
   const response = await apiFetch("/api/admin/search/ranking-config", {
     headers: {
@@ -3265,6 +3386,10 @@ async function fetchAdminRankingConfig() {
 }
 
 async function postAdminRankingConfig({ rankingConfig = null, reset = false }) {
+  if (typeof magnetoAdminApi.postAdminRankingConfig === "function") {
+    return magnetoAdminApi.postAdminRankingConfig({ rankingConfig, reset });
+  }
+
   const token = getAdminToken();
   const response = await apiFetch("/api/admin/search/ranking-config", {
     method: "POST",
@@ -3287,6 +3412,10 @@ async function postAdminRankingConfig({ rankingConfig = null, reset = false }) {
 }
 
 async function fetchAdminRewriteRules() {
+  if (typeof magnetoAdminApi.fetchAdminRewriteRules === "function") {
+    return magnetoAdminApi.fetchAdminRewriteRules();
+  }
+
   const token = getAdminToken();
   const response = await apiFetch("/api/admin/search/rewrite-rules", {
     headers: {
@@ -3303,6 +3432,10 @@ async function fetchAdminRewriteRules() {
 }
 
 async function postAdminRewriteRules({ rewriteRules = null, reset = false }) {
+  if (typeof magnetoAdminApi.postAdminRewriteRules === "function") {
+    return magnetoAdminApi.postAdminRewriteRules({ rewriteRules, reset });
+  }
+
   const token = getAdminToken();
   const response = await apiFetch("/api/admin/search/rewrite-rules/update", {
     method: "POST",
@@ -3325,6 +3458,13 @@ async function postAdminRewriteRules({ rewriteRules = null, reset = false }) {
 }
 
 async function fetchAdminRewriteRuleSuggestions(limit = 10, minConfidence = 0) {
+  if (typeof magnetoAdminApi.fetchAdminRewriteRuleSuggestions === "function") {
+    return magnetoAdminApi.fetchAdminRewriteRuleSuggestions(
+      limit,
+      minConfidence,
+    );
+  }
+
   const token = getAdminToken();
   const query = new URLSearchParams({
     limit: String(limit),
@@ -3350,6 +3490,10 @@ async function fetchAdminRewriteRuleSuggestions(limit = 10, minConfidence = 0) {
 }
 
 async function postAdminSearchSeed(force = false) {
+  if (typeof magnetoAdminApi.postAdminSearchSeed === "function") {
+    return magnetoAdminApi.postAdminSearchSeed(force);
+  }
+
   const token = getAdminToken();
   const response = await apiFetch("/api/admin/search/seed", {
     method: "POST",
@@ -3369,6 +3513,10 @@ async function postAdminSearchSeed(force = false) {
 }
 
 async function postAdminSearchCrawl({ sourceIds = [], maxPages = null } = {}) {
+  if (typeof magnetoAdminApi.postAdminSearchCrawl === "function") {
+    return magnetoAdminApi.postAdminSearchCrawl({ sourceIds, maxPages });
+  }
+
   const token = getAdminToken();
   const body = {};
   if (Array.isArray(sourceIds) && sourceIds.length > 0) {
@@ -3396,6 +3544,10 @@ async function postAdminSearchCrawl({ sourceIds = [], maxPages = null } = {}) {
 }
 
 async function fetchAdminIndexSyncStatus() {
+  if (typeof magnetoAdminApi.fetchAdminIndexSyncStatus === "function") {
+    return magnetoAdminApi.fetchAdminIndexSyncStatus();
+  }
+
   const token = getAdminToken();
   const response = await apiFetch("/api/admin/index/sync-status", {
     headers: {
@@ -3412,6 +3564,10 @@ async function fetchAdminIndexSyncStatus() {
 }
 
 async function postAdminIndexSync(body = {}) {
+  if (typeof magnetoAdminApi.postAdminIndexSync === "function") {
+    return magnetoAdminApi.postAdminIndexSync(body);
+  }
+
   const token = getAdminToken();
   const response = await apiFetch("/api/admin/index/sync-django", {
     method: "POST",
@@ -3431,6 +3587,10 @@ async function postAdminIndexSync(body = {}) {
 }
 
 async function postAdminIndexSyncResetWatermark(updatedSince = "") {
+  if (typeof magnetoAdminApi.postAdminIndexSyncResetWatermark === "function") {
+    return magnetoAdminApi.postAdminIndexSyncResetWatermark(updatedSince);
+  }
+
   const token = getAdminToken();
   const response = await apiFetch("/api/admin/index/sync-reset-watermark", {
     method: "POST",
@@ -3450,6 +3610,10 @@ async function postAdminIndexSyncResetWatermark(updatedSince = "") {
 }
 
 async function fetchAdminIndexStatus() {
+  if (typeof magnetoAdminApi.fetchAdminIndexStatus === "function") {
+    return magnetoAdminApi.fetchAdminIndexStatus();
+  }
+
   const token = getAdminToken();
   const response = await apiFetch("/api/admin/index/status", {
     headers: {
@@ -3466,6 +3630,10 @@ async function fetchAdminIndexStatus() {
 }
 
 async function postAdminIndexRefresh(body = {}) {
+  if (typeof magnetoAdminApi.postAdminIndexRefresh === "function") {
+    return magnetoAdminApi.postAdminIndexRefresh(body);
+  }
+
   const token = getAdminToken();
   const response = await apiFetch("/api/admin/index/refresh", {
     method: "POST",
@@ -3485,6 +3653,10 @@ async function postAdminIndexRefresh(body = {}) {
 }
 
 async function fetchAdminIndexBackups(reason = "all") {
+  if (typeof magnetoAdminApi.fetchAdminIndexBackups === "function") {
+    return magnetoAdminApi.fetchAdminIndexBackups(reason);
+  }
+
   const token = getAdminToken();
   const params = new URLSearchParams({ reason });
   const response = await apiFetch(
@@ -3505,6 +3677,10 @@ async function fetchAdminIndexBackups(reason = "all") {
 }
 
 async function postAdminIndexRestore(body = {}) {
+  if (typeof magnetoAdminApi.postAdminIndexRestore === "function") {
+    return magnetoAdminApi.postAdminIndexRestore(body);
+  }
+
   const token = getAdminToken();
   const response = await apiFetch("/api/admin/index/restore", {
     method: "POST",
@@ -3524,6 +3700,10 @@ async function postAdminIndexRestore(body = {}) {
 }
 
 async function downloadBackupFile(fileName) {
+  if (typeof magnetoAdminApi.downloadBackupFile === "function") {
+    return magnetoAdminApi.downloadBackupFile(fileName);
+  }
+
   const token = getAdminToken();
   const params = new URLSearchParams({ fileName });
   const response = await apiFetch(
@@ -3552,6 +3732,10 @@ async function downloadBackupFile(fileName) {
 }
 
 async function createBackupNow() {
+  if (typeof magnetoAdminApi.createBackupNow === "function") {
+    return magnetoAdminApi.createBackupNow();
+  }
+
   const token = getAdminToken();
   const response = await apiFetch("/api/admin/backups/create", {
     method: "POST",
@@ -3569,7 +3753,34 @@ async function createBackupNow() {
   return payload.backups || [];
 }
 
+async function restoreBackup(fileName) {
+  if (typeof magnetoAdminApi.restoreBackup === "function") {
+    return magnetoAdminApi.restoreBackup(fileName);
+  }
+
+  const token = getAdminToken();
+  const response = await apiFetch("/api/admin/backups/restore", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ fileName }),
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || "Could not restore backup.");
+  }
+
+  return payload;
+}
+
 async function fetchAdminRouting() {
+  if (typeof magnetoAdminApi.fetchAdminRouting === "function") {
+    return magnetoAdminApi.fetchAdminRouting();
+  }
+
   const token = getAdminToken();
   const response = await apiFetch("/api/admin/routing", {
     headers: { Authorization: `Bearer ${token}` },
@@ -3582,6 +3793,10 @@ async function fetchAdminRouting() {
 }
 
 async function postAdminRouting(update) {
+  if (typeof magnetoAdminApi.postAdminRouting === "function") {
+    return magnetoAdminApi.postAdminRouting(update);
+  }
+
   const token = getAdminToken();
   const response = await apiFetch("/api/admin/routing", {
     method: "POST",
@@ -3599,6 +3814,10 @@ async function postAdminRouting(update) {
 }
 
 async function fetchAdminRoutingVerify() {
+  if (typeof magnetoAdminApi.fetchAdminRoutingVerify === "function") {
+    return magnetoAdminApi.fetchAdminRoutingVerify();
+  }
+
   const token = getAdminToken();
   const response = await apiFetch("/api/admin/routing/verify", {
     method: "POST",
@@ -3615,6 +3834,17 @@ async function fetchAdminRoutingVerify() {
 }
 
 function renderRoutingState(routing) {
+  if (
+    typeof window.MagnetoAdminRoutingPanel?.renderRoutingState === "function"
+  ) {
+    return window.MagnetoAdminRoutingPanel.renderRoutingState({
+      routing,
+      statusGrid: adminRoutingStatusGrid,
+      updatedAtElement: adminRoutingUpdatedAt,
+      createStatusItem: createAssistantStatusItem,
+    });
+  }
+
   if (!adminRoutingStatusGrid) {
     return;
   }
@@ -3650,6 +3880,16 @@ function renderRoutingState(routing) {
 }
 
 function renderRoutingVerify(result) {
+  if (
+    typeof window.MagnetoAdminRoutingPanel?.renderRoutingVerify === "function"
+  ) {
+    return window.MagnetoAdminRoutingPanel.renderRoutingVerify({
+      result,
+      verifyResultElement: adminRoutingVerifyResult,
+      documentRef: document,
+    });
+  }
+
   if (!adminRoutingVerifyResult) {
     return;
   }
@@ -3679,6 +3919,27 @@ function renderRoutingVerify(result) {
     list.appendChild(li);
   });
   adminRoutingVerifyResult.appendChild(list);
+}
+
+async function refreshRoutingStatus(okMessage = "") {
+  if (!adminRoutingStatusGrid) {
+    return;
+  }
+
+  try {
+    const payload = await fetchAdminRouting();
+    renderRoutingState(payload.routing || {});
+    if (adminRoutingVerifyResult) {
+      adminRoutingVerifyResult.hidden = true;
+    }
+    if (okMessage) {
+      setAdminStatus(okMessage);
+    }
+  } catch (error) {
+    if (okMessage) {
+      setAdminStatus(error.message || "Could not load routing state.", true);
+    }
+  }
 }
 
 function getFilteredSortedSearchRuns() {
@@ -4333,6 +4594,23 @@ function renderAdminSearchRunsTable() {
 }
 
 function renderAdminSearchStatus(payload) {
+  if (
+    typeof window.MagnetoAdminSearchStatusPanel?.renderSearchStatus ===
+    "function"
+  ) {
+    return window.MagnetoAdminSearchStatusPanel.renderSearchStatus({
+      payload,
+      statusGrid: adminSearchStatusGrid,
+      statusMeta: adminSearchStatusMeta,
+      createStatusItem: createAssistantStatusItem,
+      formatDate: formatAssistantDate,
+      onRecentRunsChange: (runs) => {
+        adminSearchRecentRuns = runs;
+      },
+      onRenderRunsTable: renderAdminSearchRunsTable,
+    });
+  }
+
   if (!adminSearchStatusGrid) {
     return;
   }
@@ -4626,6 +4904,18 @@ function renderAdminRewriteRules(payload) {
 }
 
 function renderAdminSearchStatusError(errorMessage) {
+  if (
+    typeof window.MagnetoAdminSearchStatusPanel?.renderSearchStatusError ===
+    "function"
+  ) {
+    return window.MagnetoAdminSearchStatusPanel.renderSearchStatusError({
+      errorMessage,
+      statusGrid: adminSearchStatusGrid,
+      statusMeta: adminSearchStatusMeta,
+      documentRef: document,
+    });
+  }
+
   if (!adminSearchStatusGrid) {
     return;
   }
@@ -4995,6 +5285,10 @@ async function refreshRewriteRulesWithMessage(okMessage = "") {
 }
 
 async function trackResultClick(url, title, query) {
+  if (typeof magnetoTrackingApi.trackResultClick === "function") {
+    return magnetoTrackingApi.trackResultClick(url, title, query);
+  }
+
   try {
     const normalizedUrl = String(url || "").trim();
     const normalizedTitle = String(title || "").trim();
@@ -6076,31 +6370,7 @@ function initAdminPage() {
       }
 
       try {
-        const token = getAdminToken();
-        const params = new URLSearchParams({ range: currentAdminRange });
-        const response = await apiFetch(
-          `/api/admin/export.csv?${params.toString()}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        );
-
-        if (!response.ok) {
-          const payload = await response.json().catch(() => ({}));
-          throw new Error(payload.error || "Could not export CSV.");
-        }
-
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `magneto-analytics-${currentAdminRange}.csv`;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        URL.revokeObjectURL(url);
+        await exportAdminCsv(currentAdminRange);
         setAdminStatus("CSV export completed.");
       } catch (error) {
         setAdminStatus(error.message || "Could not export CSV.", true);
@@ -7020,27 +7290,3 @@ function initAdminPage() {
     });
   });
 }
-
-function getPageNameFromPath() {
-  const fileName = window.location.pathname.split("/").pop() || "index.html";
-
-  if (!fileName || fileName === "/") {
-    return "index.html";
-  }
-
-  return fileName;
-}
-
-initHomeForm();
-renderSearchHistory(getSearchHistory());
-fetchPopularSearches().then((queries) => {
-  renderPopularSearches(queries);
-});
-initMagnetoFlagRotation();
-initWeatherWidget();
-initResultsPage();
-initAdminPage();
-trackPageView(getPageNameFromPath());
-
-window.addEventListener("resize", syncSidePanelHeights);
-requestAnimationFrame(syncSidePanelHeights);

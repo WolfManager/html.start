@@ -4,8 +4,15 @@ const dotenv = require("dotenv");
 
 const isJsonOutput = process.argv.includes("--json");
 const requireAdminChecks = process.argv.includes("--require-admin");
+const withAdminChecks = process.argv.includes("--with-admin");
 const maxLatencyArg = process.argv.find((arg) =>
   String(arg).startsWith("--max-latency-ms="),
+);
+const apiTargetArg = process.argv.find((arg) =>
+  String(arg).startsWith("--api-target="),
+);
+const apiBaseArg = process.argv.find((arg) =>
+  String(arg).startsWith("--api-base="),
 );
 const maxLatencyMs = maxLatencyArg
   ? Number(String(maxLatencyArg).split("=")[1])
@@ -13,8 +20,14 @@ const maxLatencyMs = maxLatencyArg
 const saveReport = process.argv.includes("--save-report");
 const outArg = process.argv.find((arg) => String(arg).startsWith("--out="));
 const labelArg = process.argv.find((arg) => String(arg).startsWith("--label="));
+const gateNameArg = process.argv.find((arg) =>
+  String(arg).startsWith("--gate-name="),
+);
 const reportLabel = labelArg
   ? String(labelArg).slice("--label=".length).trim()
+  : "";
+const gateName = gateNameArg
+  ? String(gateNameArg).slice("--gate-name=".length).trim()
   : "";
 
 function log(message) {
@@ -72,11 +85,25 @@ const nodePort = String(
   process.env.MAGNETO_NODE_PORT || process.env.PORT || "3000",
 ).trim();
 const djangoPort = String(process.env.MAGNETO_DJANGO_PORT || "8000").trim();
+const apiTargetRaw = apiTargetArg
+  ? String(apiTargetArg).slice("--api-target=".length).trim().toLowerCase()
+  : String(process.env.MAGNETO_HEALTH_API_TARGET || "node")
+      .trim()
+      .toLowerCase();
+
+const apiTarget =
+  apiTargetRaw === "django" || apiTargetRaw === "node" ? apiTargetRaw : "node";
 
 const DEFAULT_WEB_BASE =
   process.env.MAGNETO_WEB_BASE || `http://localhost:${nodePort}`;
-const DEFAULT_API_BASE =
-  process.env.MAGNETO_API_BASE || `http://127.0.0.1:${djangoPort}`;
+const explicitApiBase = apiBaseArg
+  ? String(apiBaseArg).slice("--api-base=".length).trim()
+  : String(process.env.MAGNETO_API_BASE || "").trim();
+const DEFAULT_API_BASE = explicitApiBase
+  ? explicitApiBase
+  : apiTarget === "django"
+    ? `http://127.0.0.1:${djangoPort}`
+    : `http://127.0.0.1:${nodePort}`;
 
 function trimSlash(value) {
   return String(value || "").replace(/\/+$/, "");
@@ -91,6 +118,10 @@ const adminUser = String(
 const adminPassword = String(
   process.env.MAGNETO_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || "",
 ).trim();
+const hasAdminCredentials = Boolean(adminUser && adminPassword);
+const shouldRunAdminChecks = Boolean(
+  requireAdminChecks || (withAdminChecks && hasAdminCredentials),
+);
 
 async function parseJsonSafe(response) {
   try {
@@ -167,9 +198,12 @@ async function runAssistantChatCheck(apiBaseUrl) {
 async function main() {
   log(`Running MAGNETO health-check...`);
   log(`Web base: ${webBase}`);
+  log(`API target: ${apiTarget}`);
   log(`API base: ${apiBase}`);
-  if (adminUser && adminPassword) {
+  if (shouldRunAdminChecks) {
     log("Admin checks: enabled (credentials detected)");
+  } else {
+    log("Admin checks: disabled (use --with-admin or --require-admin)");
   }
 
   const checks = [
@@ -205,7 +239,7 @@ async function main() {
   const results = await Promise.all(checks);
 
   let adminToken = "";
-  if (adminUser && adminPassword) {
+  if (shouldRunAdminChecks) {
     const loginResult = await runCheck(
       "api:admin:login",
       () =>
@@ -279,9 +313,7 @@ async function main() {
       );
     }
   } else {
-    log(
-      "Skipping admin checks: set MAGNETO_ADMIN_USER/MAGNETO_ADMIN_PASSWORD or ADMIN_USER/ADMIN_PASSWORD.",
-    );
+    log("Skipping admin checks.");
   }
 
   let failures = 0;
@@ -298,7 +330,7 @@ async function main() {
   }
 
   const gateFindings = [];
-  if (requireAdminChecks && !(adminUser && adminPassword)) {
+  if (requireAdminChecks && !hasAdminCredentials) {
     gateFindings.push(
       "Admin credentials missing while --require-admin is enabled.",
     );
@@ -316,10 +348,13 @@ async function main() {
   const report = {
     generatedAt: new Date().toISOString(),
     label: reportLabel || null,
+    gateName: gateName || null,
+    apiTarget,
     webBase,
     apiBase,
-    adminChecksEnabled: Boolean(adminUser && adminPassword),
+    adminChecksEnabled: shouldRunAdminChecks,
     options: {
+      withAdminChecks,
       requireAdminChecks,
       maxLatencyMs: Number.isFinite(maxLatencyMs) ? maxLatencyMs : null,
     },
@@ -328,6 +363,17 @@ async function main() {
     gateFailures: gateFindings.length,
     gateFindings,
     passed: failures === 0 && gateFindings.length === 0,
+  };
+  report.goNoGo = report.passed ? "GO" : "NO-GO";
+  report.summary = {
+    checksTotal: results.length,
+    checksPassed: results.filter((item) => item.ok).length,
+    checksFailed: failures,
+    maxLatencyMs: results.reduce(
+      (maxValue, item) => Math.max(maxValue, Number(item.ms) || 0),
+      0,
+    ),
+    latencyGateMs: Number.isFinite(maxLatencyMs) ? maxLatencyMs : null,
   };
 
   const savedReportPath = writeReport(report);
@@ -340,6 +386,11 @@ async function main() {
   } else if (savedReportPath) {
     log(`Saved report: ${savedReportPath}`);
   }
+
+  const verdictPrefix = gateName ? ` (${gateName})` : "";
+  log(
+    `GO/NO-GO${verdictPrefix}: ${report.goNoGo} [target=${apiTarget}, apiBase=${apiBase}]`,
+  );
 
   if (failures > 0 || gateFindings.length > 0) {
     if (failures > 0) {
