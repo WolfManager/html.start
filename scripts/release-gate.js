@@ -1,7 +1,48 @@
 const { spawn } = require("child_process");
+const fs = require("fs");
+const path = require("path");
 
 const isJsonOutput = process.argv.includes("--json");
 const withAdminChecks = process.argv.includes("--with-admin");
+const saveReport = process.argv.includes("--save-report");
+const outArg = process.argv.find((arg) => String(arg).startsWith("--out="));
+const labelArg = process.argv.find((arg) => String(arg).startsWith("--label="));
+const reportLabel = labelArg
+  ? String(labelArg).slice("--label=".length).trim()
+  : "";
+
+function buildReportPath() {
+  if (outArg) {
+    const raw = String(outArg).slice("--out=".length).trim();
+    if (raw) {
+      return path.isAbsolute(raw) ? raw : path.resolve(process.cwd(), raw);
+    }
+  }
+
+  if (!saveReport) {
+    return "";
+  }
+
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  return path.join(
+    process.cwd(),
+    "data",
+    "backups",
+    "release-gate",
+    `release-gate-${stamp}.json`,
+  );
+}
+
+function writeReport(report) {
+  const outputPath = buildReportPath();
+  if (!outputPath) {
+    return "";
+  }
+
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+  fs.writeFileSync(outputPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+  return outputPath;
+}
 
 function log(message) {
   if (!isJsonOutput) {
@@ -98,6 +139,7 @@ async function main() {
   const failedStep = results.find((item) => !item.ok) || null;
   const report = {
     generatedAt: new Date().toISOString(),
+    label: reportLabel || null,
     mode: withAdminChecks ? "public+admin" : "public",
     stepsTotal: plan.length,
     stepsExecuted: results.length,
@@ -120,9 +162,17 @@ async function main() {
     })),
   };
 
+  const savedReportPath = writeReport(report);
+  if (savedReportPath) {
+    report.savedReportPath = savedReportPath;
+  }
+
   if (isJsonOutput) {
     console.log(JSON.stringify(report, null, 2));
   } else {
+    if (savedReportPath) {
+      log(`Saved report: ${savedReportPath}`);
+    }
     log("\n====================");
     log(`Release Gate: ${report.goNoGo}`);
     log(

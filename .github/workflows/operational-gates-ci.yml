@@ -1,0 +1,95 @@
+name: Operational Gates CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  operational-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    env:
+      DJANGO_DEBUG: "true"
+      DJANGO_SECRET_KEY: "ci-django-secret-key-1234567890-abcdef"
+      ADMIN_USER: "admin"
+      ADMIN_PASSWORD: "change-this-password"
+      JWT_SECRET: "ci-jwt-secret-1234567890-abcdef"
+      SESSION_COOKIE_SECURE: "true"
+      CSRF_COOKIE_SECURE: "true"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Install Django dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend-django/requirements.txt
+
+      - name: Start Node and Django backends
+        run: |
+          node server.js > node-gates.log 2>&1 &
+          python backend-django/manage.py runserver 127.0.0.1:8000 > django-gates.log 2>&1 &
+
+      - name: Wait for services
+        run: |
+          for i in {1..40}; do
+            if curl -fsS http://127.0.0.1:3000/api/health > /dev/null && curl -fsS http://127.0.0.1:8000/api/health > /dev/null; then
+              echo "Node and Django are healthy"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Services did not become healthy in time"
+          exit 1
+
+      - name: Run health gates (daily report)
+        run: npm run health:check:gate:daily
+
+      - name: Run critical parity gates (daily report)
+        run: npm run parity:critical:gate:daily
+
+      - name: Run unified release gate (public)
+        run: npm run release:gate:daily
+
+      - name: Run unified release gate (admin)
+        run: npm run release:gate:admin:daily
+
+      - name: Upload gate artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: operational-gate-artifacts
+          path: |
+            data/backups/health-check/**/*.json
+            data/backups/parity/**/*.json
+            data/backups/release-gate/**/*.json
+            node-gates.log
+            django-gates.log
+          if-no-files-found: warn
+
+      - name: Dump backend logs on failure
+        if: failure()
+        run: |
+          echo "--- node-gates.log ---"
+          cat node-gates.log || true
+          echo "--- django-gates.log ---"
+          cat django-gates.log || true

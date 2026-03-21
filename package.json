@@ -48,6 +48,8 @@
     "release:gate:json": "node scripts/release-gate.js --json",
     "release:gate:admin": "node scripts/release-gate.js --with-admin",
     "release:gate:admin:json": "node scripts/release-gate.js --json --with-admin",
+    "release:gate:daily": "node scripts/release-gate.js --json --save-report --out=data/backups/release-gate/latest-release-gate.json --label=release-public-daily",
+    "release:gate:admin:daily": "node scripts/release-gate.js --json --with-admin --save-report --out=data/backups/release-gate/latest-release-gate-admin.json --label=release-admin-daily",
     "assistant:benchmark": "node scripts/assistant-benchmark.js",
     "benchmark:all": "node test-all-benchmarks.js"
   },
