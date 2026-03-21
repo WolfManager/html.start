@@ -112,10 +112,15 @@ function buildPlan() {
       "health:check:gate:all:admin",
       "parity:critical:gate",
       "parity:critical:gate:admin",
+      "contract:validate:gate:admin",
     ];
   }
 
-  return ["health:check:gate:all", "parity:critical:gate"];
+  return [
+    "health:check:gate:all",
+    "parity:critical:gate",
+    "contract:validate:gate",
+  ];
 }
 
 async function main() {

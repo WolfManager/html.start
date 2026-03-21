@@ -67,6 +67,9 @@ jobs:
       - name: Run critical parity gates (daily report)
         run: npm run parity:critical:gate:daily
 
+      - name: Run contract validation gate (daily report)
+        run: npm run contract:validate:gate:daily
+
       - name: Run unified release gate (public)
         run: npm run release:gate:daily
 
@@ -81,6 +84,7 @@ jobs:
           path: |
             data/backups/health-check/**/*.json
             data/backups/parity/**/*.json
+            data/backups/contract/**/*.json
             data/backups/release-gate/**/*.json
             node-gates.log
             django-gates.log
