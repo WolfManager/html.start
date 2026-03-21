@@ -240,14 +240,14 @@ function validateRewriteRules(body) {
 function validateRankingConfig(body) {
   return Boolean(
     body &&
-      body.ok === true &&
-      body.rankingConfig &&
-      typeof body.rankingConfig === "object" &&
-      body.rankingConfig.coverageThresholdByIntent &&
-      typeof body.rankingConfig.coverageThresholdByIntent === "object" &&
-      body.rankingConfig.sourceAuthorityBoosts &&
-      typeof body.rankingConfig.sourceAuthorityBoosts === "object" &&
-      Array.isArray(body.rankingConfig.optionalQueryTokens),
+    body.ok === true &&
+    body.rankingConfig &&
+    typeof body.rankingConfig === "object" &&
+    body.rankingConfig.coverageThresholdByIntent &&
+    typeof body.rankingConfig.coverageThresholdByIntent === "object" &&
+    body.rankingConfig.sourceAuthorityBoosts &&
+    typeof body.rankingConfig.sourceAuthorityBoosts === "object" &&
+    Array.isArray(body.rankingConfig.optionalQueryTokens),
   );
 }
 
@@ -704,7 +704,8 @@ async function runAdminChecks() {
         nodeRankingConfig.body?.rankingConfig?.coverageThresholdByIntent || {},
       ).length,
       coverageIntentCountDjango: Object.keys(
-        djangoRankingConfig.body?.rankingConfig?.coverageThresholdByIntent || {},
+        djangoRankingConfig.body?.rankingConfig?.coverageThresholdByIntent ||
+          {},
       ).length,
       optionalTokenCountNode: Array.isArray(
         nodeRankingConfig.body?.rankingConfig?.optionalQueryTokens,
