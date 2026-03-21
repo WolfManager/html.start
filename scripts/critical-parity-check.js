@@ -265,6 +265,21 @@ function validateIndexSyncStatus(body) {
   );
 }
 
+function validateIndexStatus(body) {
+  return Boolean(
+    body &&
+    body.ok === true &&
+    body.index &&
+    typeof body.index === "object" &&
+    Number.isInteger(body.index.totalDocs) &&
+    body.index.file &&
+    typeof body.index.file === "object" &&
+    Array.isArray(body.index.topLanguages) &&
+    Array.isArray(body.index.topCategories) &&
+    Array.isArray(body.index.topSources),
+  );
+}
+
 function buildParityDiffForSearch(nodeBody, djangoBody) {
   const nodeTop = uniqueNormalized(
     (nodeBody?.results || []).slice(0, 5).map((i) => i?.url),
@@ -731,6 +746,56 @@ async function runAdminChecks() {
       )
         ? djangoRankingConfig.body.rankingConfig.optionalQueryTokens.length
         : 0,
+    },
+  });
+
+  const nodeIndexStatus = nodeToken
+    ? await fetchJson(`${nodeBase}/api/admin/index/status`, {
+        headers: {
+          Authorization: `Bearer ${nodeToken}`,
+        },
+      })
+    : {
+        ok: false,
+        status: 0,
+        ms: 0,
+        body: null,
+        error: "Missing Node admin token.",
+      };
+
+  const djangoIndexStatus = djangoToken
+    ? await fetchJson(`${djangoBase}/api/admin/index/status`, {
+        headers: {
+          Authorization: `Bearer ${djangoToken}`,
+        },
+      })
+    : {
+        ok: false,
+        status: 0,
+        ms: 0,
+        body: null,
+        error: "Missing Django admin token.",
+      };
+
+  checks.push({
+    name: "admin:index:status",
+    node: nodeIndexStatus,
+    django: djangoIndexStatus,
+    parityOk:
+      nodeIndexStatus.ok &&
+      djangoIndexStatus.ok &&
+      validateIndexStatus(nodeIndexStatus.body) &&
+      validateIndexStatus(djangoIndexStatus.body),
+    parityDetails: {
+      totalDocsMatches:
+        Number(nodeIndexStatus.body?.index?.totalDocs || 0) ===
+        Number(djangoIndexStatus.body?.index?.totalDocs || 0),
+      fileSizeMatches:
+        Number(nodeIndexStatus.body?.index?.file?.sizeBytes || 0) ===
+        Number(djangoIndexStatus.body?.index?.file?.sizeBytes || 0),
+      topLanguageCountMatches:
+        Number(nodeIndexStatus.body?.index?.topLanguages?.length || 0) ===
+        Number(djangoIndexStatus.body?.index?.topLanguages?.length || 0),
     },
   });
 

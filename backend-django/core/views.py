@@ -41,6 +41,7 @@ from .services.assistant_runtime_service import (
     store_memory,
 )
 from .services.index_sync_status_service import build_index_sync_status_payload
+from .services.index_status_service import build_index_status_payload
 from .services.assistant_service import generate_assistant_response, probe_providers_health
 from .services.location_service import resolve_approx_location
 from .services.runtime_metrics_service import get_runtime_metrics
@@ -715,6 +716,21 @@ def admin_search_export(request):
                 }
                 for doc in docs
             ],
+        }
+    )
+
+
+@api_view(["GET"])
+def admin_index_status(request):
+    auth_error = _admin_auth_error(request)
+    if auth_error is not None:
+        return auth_error
+
+    return Response(
+        {
+            "ok": True,
+            "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            **build_index_status_payload(),
         }
     )
 

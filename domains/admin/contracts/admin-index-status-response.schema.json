@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "magneto/domains/admin/contracts/admin-index-status-response.schema.json",
+  "title": "AdminIndexStatusResponse",
+  "type": "object",
+  "required": ["ok", "generatedAt", "index"],
+  "properties": {
+    "ok": {
+      "type": "boolean"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "index": {
+      "type": "object",
+      "required": ["totalDocs", "file", "topLanguages", "topCategories", "topSources"],
+      "properties": {
+        "totalDocs": { "type": "integer", "minimum": 0 },
+        "file": {
+          "type": "object",
+          "required": ["path", "sizeBytes", "mtime"],
+          "properties": {
+            "path": { "type": "string", "minLength": 1 },
+            "sizeBytes": { "type": "integer", "minimum": 0 },
+            "mtime": { "type": "string" }
+          },
+          "additionalProperties": true
+        },
+        "topLanguages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["value", "count"],
+            "properties": {
+              "value": { "type": "string", "minLength": 1 },
+              "count": { "type": "integer", "minimum": 0 }
+            },
+            "additionalProperties": true
+          }
+        },
+        "topCategories": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["value", "count"],
+            "properties": {
+              "value": { "type": "string", "minLength": 1 },
+              "count": { "type": "integer", "minimum": 0 }
+            },
+            "additionalProperties": true
+          }
+        },
+        "topSources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["value", "count"],
+            "properties": {
+              "value": { "type": "string", "minLength": 1 },
+              "count": { "type": "integer", "minimum": 0 }
+            },
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

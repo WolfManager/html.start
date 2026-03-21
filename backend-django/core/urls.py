@@ -6,6 +6,7 @@ from .views import (
     admin_backups_download,
     admin_backups_restore,
     admin_export_csv,
+    admin_index_status,
     admin_index_sync_status,
     admin_assistant_status,
     admin_search_crawl,
@@ -59,5 +60,6 @@ urlpatterns = [
     path("admin/backups/create", admin_backups_create, name="admin-backups-create"),
     path("admin/backups/restore", admin_backups_restore, name="admin-backups-restore"),
     path("admin/export.csv", admin_export_csv, name="admin-export-csv"),
+    path("admin/index/status", admin_index_status, name="admin-index-status"),
     path("admin/index/sync-status", admin_index_sync_status, name="admin-index-sync-status"),
 ]
