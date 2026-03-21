@@ -41,6 +41,7 @@ from .services.assistant_runtime_service import (
     store_memory,
 )
 from .services.index_sync_status_service import build_index_sync_status_payload
+from .services.index_backups_service import list_search_index_backups
 from .services.index_status_service import build_index_status_payload
 from .services.assistant_service import generate_assistant_response, probe_providers_health
 from .services.location_service import resolve_approx_location
@@ -716,6 +717,25 @@ def admin_search_export(request):
                 }
                 for doc in docs
             ],
+        }
+    )
+
+
+@api_view(["GET"])
+def admin_index_backups(request):
+    auth_error = _admin_auth_error(request)
+    if auth_error is not None:
+        return auth_error
+
+    requested_reason = str(request.query_params.get("reason") or "all").strip().lower()
+    filtered = list_search_index_backups(requested_reason)
+    return Response(
+        {
+            "ok": True,
+            "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "reason": requested_reason or "all",
+            "total": len(filtered),
+            "backups": filtered[:200],
         }
     )
 

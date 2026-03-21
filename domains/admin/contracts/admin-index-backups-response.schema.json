@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "magneto/domains/admin/contracts/admin-index-backups-response.schema.json",
+  "title": "AdminIndexBackupsResponse",
+  "type": "object",
+  "required": ["ok", "generatedAt", "reason", "total", "backups"],
+  "properties": {
+    "ok": {
+      "type": "boolean"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "total": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "backups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["fileName", "sizeBytes", "createdAt", "reason"],
+        "properties": {
+          "fileName": { "type": "string", "minLength": 1 },
+          "sizeBytes": { "type": "integer", "minimum": 0 },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "reason": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

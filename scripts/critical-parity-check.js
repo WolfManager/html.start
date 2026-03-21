@@ -280,6 +280,16 @@ function validateIndexStatus(body) {
   );
 }
 
+function validateIndexBackups(body) {
+  return Boolean(
+    body &&
+    body.ok === true &&
+    typeof body.reason === "string" &&
+    Number.isInteger(body.total) &&
+    Array.isArray(body.backups),
+  );
+}
+
 function buildParityDiffForSearch(nodeBody, djangoBody) {
   const nodeTop = uniqueNormalized(
     (nodeBody?.results || []).slice(0, 5).map((i) => i?.url),
@@ -746,6 +756,56 @@ async function runAdminChecks() {
       )
         ? djangoRankingConfig.body.rankingConfig.optionalQueryTokens.length
         : 0,
+    },
+  });
+
+  const nodeIndexBackups = nodeToken
+    ? await fetchJson(`${nodeBase}/api/admin/index/backups?reason=all`, {
+        headers: {
+          Authorization: `Bearer ${nodeToken}`,
+        },
+      })
+    : {
+        ok: false,
+        status: 0,
+        ms: 0,
+        body: null,
+        error: "Missing Node admin token.",
+      };
+
+  const djangoIndexBackups = djangoToken
+    ? await fetchJson(`${djangoBase}/api/admin/index/backups?reason=all`, {
+        headers: {
+          Authorization: `Bearer ${djangoToken}`,
+        },
+      })
+    : {
+        ok: false,
+        status: 0,
+        ms: 0,
+        body: null,
+        error: "Missing Django admin token.",
+      };
+
+  checks.push({
+    name: "admin:index:backups",
+    node: nodeIndexBackups,
+    django: djangoIndexBackups,
+    parityOk:
+      nodeIndexBackups.ok &&
+      djangoIndexBackups.ok &&
+      validateIndexBackups(nodeIndexBackups.body) &&
+      validateIndexBackups(djangoIndexBackups.body),
+    parityDetails: {
+      totalMatches:
+        Number(nodeIndexBackups.body?.total || 0) ===
+        Number(djangoIndexBackups.body?.total || 0),
+      reasonMatches:
+        String(nodeIndexBackups.body?.reason || "") ===
+        String(djangoIndexBackups.body?.reason || ""),
+      firstBackupMatches:
+        String(nodeIndexBackups.body?.backups?.[0]?.fileName || "") ===
+        String(djangoIndexBackups.body?.backups?.[0]?.fileName || ""),
     },
   });
 
