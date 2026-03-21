@@ -41,7 +41,11 @@ from .services.assistant_runtime_service import (
     store_memory,
 )
 from .services.index_sync_status_service import build_index_sync_status_payload
-from .services.index_backups_service import list_search_index_backups
+from .services.index_backups_service import (
+    list_search_index_backups,
+    restore_search_index_from_backup,
+    sanitize_search_index_backup_file_name,
+)
 from .services.index_status_service import build_index_status_payload
 from .services.assistant_service import generate_assistant_response, probe_providers_health
 from .services.location_service import resolve_approx_location
@@ -736,6 +740,50 @@ def admin_index_backups(request):
             "reason": requested_reason or "all",
             "total": len(filtered),
             "backups": filtered[:200],
+        }
+    )
+
+
+@api_view(["POST"])
+def admin_index_restore(request):
+    auth_error = _admin_auth_error(request)
+    if auth_error is not None:
+        return auth_error
+
+    file_name = sanitize_search_index_backup_file_name(
+        str((request.data or {}).get("fileName") or "")
+    )
+    if not file_name:
+        return Response(
+            {"error": "Invalid search-index backup file name."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    raw_create_backup = (request.data or {}).get("createBackup")
+    create_backup = True if raw_create_backup is None else bool(raw_create_backup)
+
+    try:
+        restore = restore_search_index_from_backup(
+            file_name,
+            create_backup=create_backup,
+        )
+    except FileNotFoundError as exc:
+        return Response(
+            {"error": str(exc)},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    except ValueError as exc:
+        return Response(
+            {"error": str(exc)},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    return Response(
+        {
+            "ok": True,
+            "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "restore": restore,
+            **build_index_status_payload(),
         }
     )
 

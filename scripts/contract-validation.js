@@ -419,6 +419,27 @@ const ADMIN_CHECKS = [
     adminOnly: true,
   },
   {
+    name: "POST /api/admin/index/restore invalid fileName → error-response",
+    method: "POST",
+    path: "/api/admin/index/restore",
+    body: JSON.stringify({ fileName: "../bad.json" }),
+    schema: "error-response",
+    expectStatus: 400,
+    adminOnly: true,
+  },
+  {
+    name: "POST /api/admin/index/restore missing backup → error-response",
+    method: "POST",
+    path: "/api/admin/index/restore",
+    body: JSON.stringify({
+      fileName: "search-index-2099-01-01T00-00-00-000Z-missing.json",
+      createBackup: false,
+    }),
+    schema: "error-response",
+    expectStatus: 404,
+    adminOnly: true,
+  },
+  {
     name: "GET /api/admin/index/backups → admin-index-backups-response",
     method: "GET",
     path: "/api/admin/index/backups?reason=all",

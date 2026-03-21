@@ -555,6 +555,99 @@ class CoreApiTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("error", payload)
 
+    def test_admin_index_restore_requires_admin_auth(self) -> None:
+        response = self.client.post(
+            "/api/admin/index/restore",
+            {"fileName": "search-index-sample.json"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 401)
+
+    def test_admin_index_restore_rejects_invalid_file_name(self) -> None:
+        token = self._admin_token()
+        response = self.client.post(
+            "/api/admin/index/restore",
+            {"fileName": "../bad.json"},
+            format="json",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        payload = self._json(response)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("error", payload)
+
+    @patch(
+        "core.views.sanitize_search_index_backup_file_name",
+        return_value="search-index-missing.json",
+    )
+    @patch(
+        "core.views.restore_search_index_from_backup",
+        side_effect=FileNotFoundError("Search-index backup file not found."),
+    )
+    def test_admin_index_restore_returns_404_when_backup_missing(
+        self,
+        _mock_restore,
+        _mock_sanitize,
+    ) -> None:
+        token = self._admin_token()
+        response = self.client.post(
+            "/api/admin/index/restore",
+            {"fileName": "search-index-missing.json", "createBackup": False},
+            format="json",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        payload = self._json(response)
+
+        self.assertEqual(response.status_code, 404)
+        self.assertIn("error", payload)
+
+    @patch(
+        "core.views.build_index_status_payload",
+        return_value={
+            "index": {
+                "totalDocs": 1,
+                "file": {
+                    "path": "D:/Visual Studio Code/data/search-index.json",
+                    "sizeBytes": 123,
+                    "mtime": "2026-03-21T00:00:00Z",
+                },
+                "topLanguages": [{"value": "en", "count": 1}],
+                "topCategories": [{"value": "Development", "count": 1}],
+                "topSources": [{"value": "example.com", "count": 1}],
+            }
+        },
+    )
+    @patch(
+        "core.views.restore_search_index_from_backup",
+        return_value={
+            "restoredFrom": "search-index-sample.json",
+            "preRestoreBackup": "search-index-pre-restore.json",
+        },
+    )
+    @patch(
+        "core.views.sanitize_search_index_backup_file_name",
+        return_value="search-index-sample.json",
+    )
+    def test_admin_index_restore_returns_ok_payload(
+        self,
+        _mock_sanitize,
+        _mock_restore,
+        _mock_index_status,
+    ) -> None:
+        token = self._admin_token()
+        response = self.client.post(
+            "/api/admin/index/restore",
+            {"fileName": "search-index-sample.json", "createBackup": False},
+            format="json",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        payload = self._json(response)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(payload.get("ok"), True)
+        self.assertIn("restore", payload)
+        self.assertIn("index", payload)
+
     def test_admin_export_csv_requires_admin_auth(self) -> None:
         response = self.client.get("/api/admin/export.csv?range=7d")
         self.assertEqual(response.status_code, 401)

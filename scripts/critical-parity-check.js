@@ -290,6 +290,10 @@ function validateIndexBackups(body) {
   );
 }
 
+function validateErrorResponse(body) {
+  return Boolean(body && typeof body.error === "string" && body.error.trim());
+}
+
 function buildParityDiffForSearch(nodeBody, djangoBody) {
   const nodeTop = uniqueNormalized(
     (nodeBody?.results || []).slice(0, 5).map((i) => i?.url),
@@ -806,6 +810,123 @@ async function runAdminChecks() {
       firstBackupMatches:
         String(nodeIndexBackups.body?.backups?.[0]?.fileName || "") ===
         String(djangoIndexBackups.body?.backups?.[0]?.fileName || ""),
+    },
+  });
+
+  const invalidRestoreBody = JSON.stringify({ fileName: "../bad.json" });
+  const nodeIndexRestoreInvalid = nodeToken
+    ? await fetchJson(`${nodeBase}/api/admin/index/restore`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${nodeToken}`,
+          "Content-Type": "application/json",
+        },
+        body: invalidRestoreBody,
+      })
+    : {
+        ok: false,
+        status: 0,
+        ms: 0,
+        body: null,
+        error: "Missing Node admin token.",
+      };
+
+  const djangoIndexRestoreInvalid = djangoToken
+    ? await fetchJson(`${djangoBase}/api/admin/index/restore`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${djangoToken}`,
+          "Content-Type": "application/json",
+        },
+        body: invalidRestoreBody,
+      })
+    : {
+        ok: false,
+        status: 0,
+        ms: 0,
+        body: null,
+        error: "Missing Django admin token.",
+      };
+
+  checks.push({
+    name: "admin:index:restore:invalid-file",
+    node: {
+      ...nodeIndexRestoreInvalid,
+      ok: nodeIndexRestoreInvalid.status === 400,
+    },
+    django: {
+      ...djangoIndexRestoreInvalid,
+      ok: djangoIndexRestoreInvalid.status === 400,
+    },
+    parityOk:
+      nodeIndexRestoreInvalid.status === 400 &&
+      djangoIndexRestoreInvalid.status === 400 &&
+      validateErrorResponse(nodeIndexRestoreInvalid.body) &&
+      validateErrorResponse(djangoIndexRestoreInvalid.body),
+    parityDetails: {
+      messageMatches:
+        String(nodeIndexRestoreInvalid.body?.error || "") ===
+        String(djangoIndexRestoreInvalid.body?.error || ""),
+    },
+  });
+
+  const missingRestoreBody = JSON.stringify({
+    fileName: "search-index-2099-01-01T00-00-00-000Z-missing.json",
+    createBackup: false,
+  });
+  const nodeIndexRestoreMissing = nodeToken
+    ? await fetchJson(`${nodeBase}/api/admin/index/restore`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${nodeToken}`,
+          "Content-Type": "application/json",
+        },
+        body: missingRestoreBody,
+      })
+    : {
+        ok: false,
+        status: 0,
+        ms: 0,
+        body: null,
+        error: "Missing Node admin token.",
+      };
+
+  const djangoIndexRestoreMissing = djangoToken
+    ? await fetchJson(`${djangoBase}/api/admin/index/restore`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${djangoToken}`,
+          "Content-Type": "application/json",
+        },
+        body: missingRestoreBody,
+      })
+    : {
+        ok: false,
+        status: 0,
+        ms: 0,
+        body: null,
+        error: "Missing Django admin token.",
+      };
+
+  checks.push({
+    name: "admin:index:restore:not-found",
+    node: {
+      ...nodeIndexRestoreMissing,
+      ok: nodeIndexRestoreMissing.status === 404,
+    },
+    django: {
+      ...djangoIndexRestoreMissing,
+      ok: djangoIndexRestoreMissing.status === 404,
+    },
+    parityOk:
+      nodeIndexRestoreMissing.status === 404 &&
+      djangoIndexRestoreMissing.status === 404 &&
+      validateErrorResponse(nodeIndexRestoreMissing.body) &&
+      validateErrorResponse(djangoIndexRestoreMissing.body),
+    parityDetails: {
+      messageMatches:
+        String(nodeIndexRestoreMissing.body?.error || "") ===
+        String(djangoIndexRestoreMissing.body?.error || ""),
     },
   });
 
