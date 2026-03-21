@@ -100,6 +100,9 @@ const SCHEMAS = {
   "assistant-response": loadSchema(
     "domains/assistant/contracts/assistant-response.schema.json",
   ),
+  "admin-index-sync-status-response": loadSchema(
+    "domains/admin/contracts/admin-index-sync-status-response.schema.json",
+  ),
   "admin-metrics-response": loadSchema(
     "domains/admin/contracts/admin-metrics-response.schema.json",
   ),
@@ -407,6 +410,13 @@ const ADMIN_CHECKS = [
     method: "GET",
     path: "/api/admin/search/ranking-config",
     schema: "search-ranking-config-response",
+    adminOnly: true,
+  },
+  {
+    name: "GET /api/admin/index/sync-status → admin-index-sync-status-response",
+    method: "GET",
+    path: "/api/admin/index/sync-status",
+    schema: "admin-index-sync-status-response",
     adminOnly: true,
   },
 ];

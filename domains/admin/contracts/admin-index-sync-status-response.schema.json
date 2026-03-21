@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "magneto/domains/admin/contracts/admin-index-sync-status-response.schema.json",
+  "title": "AdminIndexSyncStatusResponse",
+  "type": "object",
+  "required": ["ok", "generatedAt", "running", "config", "runtime", "state"],
+  "properties": {
+    "ok": {
+      "type": "boolean"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "running": {
+      "type": "boolean"
+    },
+    "config": {
+      "type": "object",
+      "required": [
+        "enabled",
+        "intervalMs",
+        "startup",
+        "defaultMaxPages",
+        "defaultPageSize",
+        "hasDjangoAdminToken"
+      ],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "intervalMs": { "type": "integer", "minimum": 0 },
+        "startup": { "type": "boolean" },
+        "defaultMaxPages": { "type": "integer", "minimum": 1 },
+        "defaultPageSize": { "type": "integer", "minimum": 1 },
+        "hasDjangoAdminToken": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
+    "runtime": {
+      "type": "object",
+      "required": ["lastRunAt", "lastSuccessAt", "lastError", "lastSummary"],
+      "properties": {
+        "lastRunAt": { "type": "string" },
+        "lastSuccessAt": { "type": "string" },
+        "lastError": { "type": "string" },
+        "lastSummary": {
+          "type": ["object", "null"]
+        }
+      },
+      "additionalProperties": true
+    },
+    "state": {
+      "type": "object",
+      "required": ["updatedSince", "lastRunAt", "lastSuccessAt", "lastError"],
+      "properties": {
+        "updatedSince": { "type": "string" },
+        "lastRunAt": { "type": "string" },
+        "lastSuccessAt": { "type": "string" },
+        "lastError": { "type": "string" }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}
