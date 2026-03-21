@@ -198,6 +198,45 @@ function validateOverview(body) {
   );
 }
 
+function validateRuntimeMetrics(body) {
+  return Boolean(body && body.runtime && typeof body.runtime === "object");
+}
+
+function validateRouting(body) {
+  return Boolean(
+    body &&
+    body.ok === true &&
+    body.routing &&
+    typeof body.routing.activeBackend === "string" &&
+    Number.isFinite(Number(body.routing.canaryPercent)),
+  );
+}
+
+function validateAssistantStatus(body) {
+  return Boolean(
+    body &&
+    body.assistant &&
+    typeof body.assistant === "object" &&
+    typeof body.assistant.configured === "boolean" &&
+    body.assistant.providers &&
+    typeof body.assistant.providers === "object",
+  );
+}
+
+function validateSearchStatus(body) {
+  return Boolean(
+    body &&
+    body.ok === true &&
+    body.search &&
+    body.search.sources &&
+    body.search.documents,
+  );
+}
+
+function validateRewriteRules(body) {
+  return Boolean(body && body.ok === true && Array.isArray(body.rewriteRules));
+}
+
 function buildParityDiffForSearch(nodeBody, djangoBody) {
   const nodeTop = uniqueNormalized(
     (nodeBody?.results || []).slice(0, 5).map((i) => i?.url),
@@ -396,6 +435,217 @@ async function runAdminChecks() {
       djangoOverview.ok &&
       validateOverview(nodeOverview.body) &&
       validateOverview(djangoOverview.body),
+  });
+
+  const nodeRuntimeMetrics = nodeToken
+    ? await fetchJson(`${nodeBase}/api/admin/runtime-metrics`, {
+        headers: {
+          Authorization: `Bearer ${nodeToken}`,
+        },
+      })
+    : {
+        ok: false,
+        status: 0,
+        ms: 0,
+        body: null,
+        error: "Missing Node admin token.",
+      };
+
+  const djangoRuntimeMetrics = djangoToken
+    ? await fetchJson(`${djangoBase}/api/admin/runtime-metrics`, {
+        headers: {
+          Authorization: `Bearer ${djangoToken}`,
+        },
+      })
+    : {
+        ok: false,
+        status: 0,
+        ms: 0,
+        body: null,
+        error: "Missing Django admin token.",
+      };
+
+  checks.push({
+    name: "admin:runtime-metrics",
+    node: nodeRuntimeMetrics,
+    django: djangoRuntimeMetrics,
+    parityOk:
+      nodeRuntimeMetrics.ok &&
+      djangoRuntimeMetrics.ok &&
+      validateRuntimeMetrics(nodeRuntimeMetrics.body) &&
+      validateRuntimeMetrics(djangoRuntimeMetrics.body),
+  });
+
+  const nodeRouting = nodeToken
+    ? await fetchJson(`${nodeBase}/api/admin/routing`, {
+        headers: {
+          Authorization: `Bearer ${nodeToken}`,
+        },
+      })
+    : {
+        ok: false,
+        status: 0,
+        ms: 0,
+        body: null,
+        error: "Missing Node admin token.",
+      };
+
+  const djangoRouting = djangoToken
+    ? await fetchJson(`${djangoBase}/api/admin/routing`, {
+        headers: {
+          Authorization: `Bearer ${djangoToken}`,
+        },
+      })
+    : {
+        ok: false,
+        status: 0,
+        ms: 0,
+        body: null,
+        error: "Missing Django admin token.",
+      };
+
+  checks.push({
+    name: "admin:routing",
+    node: nodeRouting,
+    django: djangoRouting,
+    parityOk:
+      nodeRouting.ok &&
+      djangoRouting.ok &&
+      validateRouting(nodeRouting.body) &&
+      validateRouting(djangoRouting.body),
+    parityDetails: {
+      activeBackendMatches:
+        String(nodeRouting.body?.routing?.activeBackend || "") ===
+        String(djangoRouting.body?.routing?.activeBackend || ""),
+      canaryPercentMatches:
+        Number(nodeRouting.body?.routing?.canaryPercent) ===
+        Number(djangoRouting.body?.routing?.canaryPercent),
+    },
+  });
+
+  const nodeAssistantStatus = nodeToken
+    ? await fetchJson(`${nodeBase}/api/admin/assistant-status`, {
+        headers: {
+          Authorization: `Bearer ${nodeToken}`,
+        },
+      })
+    : {
+        ok: false,
+        status: 0,
+        ms: 0,
+        body: null,
+        error: "Missing Node admin token.",
+      };
+
+  const djangoAssistantStatus = djangoToken
+    ? await fetchJson(`${djangoBase}/api/admin/assistant-status`, {
+        headers: {
+          Authorization: `Bearer ${djangoToken}`,
+        },
+      })
+    : {
+        ok: false,
+        status: 0,
+        ms: 0,
+        body: null,
+        error: "Missing Django admin token.",
+      };
+
+  checks.push({
+    name: "admin:assistant-status",
+    node: nodeAssistantStatus,
+    django: djangoAssistantStatus,
+    parityOk:
+      nodeAssistantStatus.ok &&
+      djangoAssistantStatus.ok &&
+      validateAssistantStatus(nodeAssistantStatus.body) &&
+      validateAssistantStatus(djangoAssistantStatus.body),
+  });
+
+  const nodeSearchStatus = nodeToken
+    ? await fetchJson(`${nodeBase}/api/admin/search/status`, {
+        headers: {
+          Authorization: `Bearer ${nodeToken}`,
+        },
+      })
+    : {
+        ok: false,
+        status: 0,
+        ms: 0,
+        body: null,
+        error: "Missing Node admin token.",
+      };
+
+  const djangoSearchStatus = djangoToken
+    ? await fetchJson(`${djangoBase}/api/admin/search/status`, {
+        headers: {
+          Authorization: `Bearer ${djangoToken}`,
+        },
+      })
+    : {
+        ok: false,
+        status: 0,
+        ms: 0,
+        body: null,
+        error: "Missing Django admin token.",
+      };
+
+  checks.push({
+    name: "admin:search-status",
+    node: nodeSearchStatus,
+    django: djangoSearchStatus,
+    parityOk:
+      nodeSearchStatus.ok &&
+      djangoSearchStatus.ok &&
+      validateSearchStatus(nodeSearchStatus.body) &&
+      validateSearchStatus(djangoSearchStatus.body),
+  });
+
+  const nodeRewriteRules = nodeToken
+    ? await fetchJson(`${nodeBase}/api/admin/search/rewrite-rules`, {
+        headers: {
+          Authorization: `Bearer ${nodeToken}`,
+        },
+      })
+    : {
+        ok: false,
+        status: 0,
+        ms: 0,
+        body: null,
+        error: "Missing Node admin token.",
+      };
+
+  const djangoRewriteRules = djangoToken
+    ? await fetchJson(`${djangoBase}/api/admin/search/rewrite-rules`, {
+        headers: {
+          Authorization: `Bearer ${djangoToken}`,
+        },
+      })
+    : {
+        ok: false,
+        status: 0,
+        ms: 0,
+        body: null,
+        error: "Missing Django admin token.",
+      };
+
+  checks.push({
+    name: "admin:search:rewrite-rules",
+    node: nodeRewriteRules,
+    django: djangoRewriteRules,
+    parityOk:
+      nodeRewriteRules.ok &&
+      djangoRewriteRules.ok &&
+      validateRewriteRules(nodeRewriteRules.body) &&
+      validateRewriteRules(djangoRewriteRules.body),
+    parityDetails: {
+      nodeRuleCount: Array.isArray(nodeRewriteRules.body?.rewriteRules)
+        ? nodeRewriteRules.body.rewriteRules.length
+        : 0,
+      djangoRuleCount: Array.isArray(djangoRewriteRules.body?.rewriteRules)
+        ? djangoRewriteRules.body.rewriteRules.length
+        : 0,
+    },
   });
 
   return checks;
