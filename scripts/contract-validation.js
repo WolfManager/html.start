@@ -88,6 +88,9 @@ const SCHEMAS = {
   "search-request": loadSchema(
     "domains/search/contracts/search-request.schema.json",
   ),
+  "search-ranking-config-response": loadSchema(
+    "domains/search/contracts/search-ranking-config-response.schema.json",
+  ),
   "search-response": loadSchema(
     "domains/search/contracts/search-response.schema.json",
   ),
@@ -171,6 +174,22 @@ function validateNode(value, schema, path) {
           violations.push(`${path}: unexpected field "${key}"`);
         }
       }
+    } else if (
+      schema.additionalProperties &&
+      typeof schema.additionalProperties === "object"
+    ) {
+      const allowedKeys = new Set(Object.keys(schema.properties));
+      for (const key of Object.keys(value)) {
+        if (!allowedKeys.has(key)) {
+          violations.push(
+            ...validateNode(
+              value[key],
+              schema.additionalProperties,
+              `${path}.${key}`,
+            ),
+          );
+        }
+      }
     }
 
     for (const [key, propSchema] of Object.entries(schema.properties)) {
@@ -211,10 +230,14 @@ function validateNode(value, schema, path) {
 
   if (typeof value === "number") {
     if (Number.isFinite(schema.minimum) && value < schema.minimum) {
-      violations.push(`${path}: expected minimum ${schema.minimum}, got ${value}`);
+      violations.push(
+        `${path}: expected minimum ${schema.minimum}, got ${value}`,
+      );
     }
     if (Number.isFinite(schema.maximum) && value > schema.maximum) {
-      violations.push(`${path}: expected maximum ${schema.maximum}, got ${value}`);
+      violations.push(
+        `${path}: expected maximum ${schema.maximum}, got ${value}`,
+      );
     }
   }
 
@@ -377,6 +400,13 @@ const ADMIN_CHECKS = [
     method: "GET",
     path: "/api/admin/overview",
     schema: "admin-metrics-response",
+    adminOnly: true,
+  },
+  {
+    name: "GET /api/admin/search/ranking-config → search-ranking-config-response",
+    method: "GET",
+    path: "/api/admin/search/ranking-config",
+    schema: "search-ranking-config-response",
     adminOnly: true,
   },
 ];

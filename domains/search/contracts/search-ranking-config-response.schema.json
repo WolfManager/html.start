@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "magneto/domains/search/contracts/search-ranking-config-response.schema.json",
+  "title": "SearchRankingConfigResponse",
+  "type": "object",
+  "required": ["ok", "generatedAt", "rankingConfig"],
+  "properties": {
+    "ok": {
+      "type": "boolean"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "rankingConfig": {
+      "type": "object",
+      "required": [
+        "coverageThresholdByIntent",
+        "sourceAuthorityBoosts",
+        "optionalQueryTokens"
+      ],
+      "properties": {
+        "coverageThresholdByIntent": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0.35,
+            "maximum": 0.95
+          }
+        },
+        "sourceAuthorityBoosts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20
+          }
+        },
+        "optionalQueryTokens": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 40
+          }
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}
