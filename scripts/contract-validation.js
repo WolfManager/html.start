@@ -304,6 +304,20 @@ const PUBLIC_CHECKS = [
     body: JSON.stringify({ message: "contract-test" }),
     schema: "assistant-response",
   },
+  {
+    name: "GET /api/search without q → error-response",
+    method: "GET",
+    path: "/api/search",
+    schema: "error-response",
+    expectStatus: 400,
+  },
+  {
+    name: "GET /api/admin/overview without token → error-response",
+    method: "GET",
+    path: "/api/admin/overview",
+    schema: "error-response",
+    expectStatus: 401,
+  },
 ];
 
 const ADMIN_CHECKS = [
