@@ -930,6 +930,65 @@ async function runAdminChecks() {
     },
   });
 
+  const tooManyMergeDocsBody = JSON.stringify({
+    mergeDocs: Array.from({ length: 2001 }, (_, idx) => idx),
+  });
+  const nodeIndexRefreshTooMany = nodeToken
+    ? await fetchJson(`${nodeBase}/api/admin/index/refresh`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${nodeToken}`,
+          "Content-Type": "application/json",
+        },
+        body: tooManyMergeDocsBody,
+      })
+    : {
+        ok: false,
+        status: 0,
+        ms: 0,
+        body: null,
+        error: "Missing Node admin token.",
+      };
+
+  const djangoIndexRefreshTooMany = djangoToken
+    ? await fetchJson(`${djangoBase}/api/admin/index/refresh`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${djangoToken}`,
+          "Content-Type": "application/json",
+        },
+        body: tooManyMergeDocsBody,
+      })
+    : {
+        ok: false,
+        status: 0,
+        ms: 0,
+        body: null,
+        error: "Missing Django admin token.",
+      };
+
+  checks.push({
+    name: "admin:index:refresh:too-many-merge-docs",
+    node: {
+      ...nodeIndexRefreshTooMany,
+      ok: nodeIndexRefreshTooMany.status === 400,
+    },
+    django: {
+      ...djangoIndexRefreshTooMany,
+      ok: djangoIndexRefreshTooMany.status === 400,
+    },
+    parityOk:
+      nodeIndexRefreshTooMany.status === 400 &&
+      djangoIndexRefreshTooMany.status === 400 &&
+      validateErrorResponse(nodeIndexRefreshTooMany.body) &&
+      validateErrorResponse(djangoIndexRefreshTooMany.body),
+    parityDetails: {
+      messageMatches:
+        String(nodeIndexRefreshTooMany.body?.error || "") ===
+        String(djangoIndexRefreshTooMany.body?.error || ""),
+    },
+  });
+
   const nodeIndexStatus = nodeToken
     ? await fetchJson(`${nodeBase}/api/admin/index/status`, {
         headers: {

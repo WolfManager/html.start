@@ -46,6 +46,7 @@ from .services.index_backups_service import (
     restore_search_index_from_backup,
     sanitize_search_index_backup_file_name,
 )
+from .services.index_refresh_service import rebuild_search_index
 from .services.index_status_service import build_index_status_payload
 from .services.assistant_service import generate_assistant_response, probe_providers_health
 from .services.location_service import resolve_approx_location
@@ -783,6 +784,44 @@ def admin_index_restore(request):
             "ok": True,
             "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             "restore": restore,
+            **build_index_status_payload(),
+        }
+    )
+
+
+@api_view(["POST"])
+def admin_index_refresh(request):
+    auth_error = _admin_auth_error(request)
+    if auth_error is not None:
+        return auth_error
+
+    merge_docs = (request.data or {}).get("mergeDocs")
+    safe_merge_docs = merge_docs if isinstance(merge_docs, list) else []
+    if len(safe_merge_docs) > 2000:
+        return Response(
+            {"error": "Too many mergeDocs items in one request. Max is 2000."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    raw_create_backup = (request.data or {}).get("createBackup")
+    create_backup = True if raw_create_backup is None else bool(raw_create_backup)
+
+    try:
+        refresh = rebuild_search_index(
+            merge_docs=safe_merge_docs,
+            create_backup=create_backup,
+        )
+    except Exception as exc:
+        return Response(
+            {"error": str(exc) or "Could not refresh local search index."},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    return Response(
+        {
+            "ok": True,
+            "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "refresh": refresh,
             **build_index_status_payload(),
         }
     )

@@ -648,6 +648,77 @@ class CoreApiTests(TestCase):
         self.assertIn("restore", payload)
         self.assertIn("index", payload)
 
+    def test_admin_index_refresh_requires_admin_auth(self) -> None:
+        response = self.client.post(
+            "/api/admin/index/refresh",
+            {},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 401)
+
+    def test_admin_index_refresh_rejects_too_many_merge_docs(self) -> None:
+        token = self._admin_token()
+        response = self.client.post(
+            "/api/admin/index/refresh",
+            {"mergeDocs": list(range(2001))},
+            format="json",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        payload = self._json(response)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("error", payload)
+
+    @patch(
+        "core.views.build_index_status_payload",
+        return_value={
+            "index": {
+                "totalDocs": 2,
+                "file": {
+                    "path": "D:/Visual Studio Code/data/search-index.json",
+                    "sizeBytes": 256,
+                    "mtime": "2026-03-21T00:00:00Z",
+                },
+                "topLanguages": [{"value": "en", "count": 2}],
+                "topCategories": [{"value": "Development", "count": 2}],
+                "topSources": [{"value": "example.com", "count": 2}],
+            }
+        },
+    )
+    @patch(
+        "core.views.rebuild_search_index",
+        return_value={
+            "beforeCount": 2,
+            "afterCount": 2,
+            "removedInvalid": 0,
+            "deduplicated": 0,
+            "backupFile": None,
+            "artifacts": {
+                "docCount": 2,
+                "vocabularySize": 10,
+                "tokenDfSize": 8,
+            },
+        },
+    )
+    def test_admin_index_refresh_returns_ok_payload(
+        self,
+        _mock_refresh,
+        _mock_index_status,
+    ) -> None:
+        token = self._admin_token()
+        response = self.client.post(
+            "/api/admin/index/refresh",
+            {"mergeDocs": [], "createBackup": False},
+            format="json",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        payload = self._json(response)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(payload.get("ok"), True)
+        self.assertIn("refresh", payload)
+        self.assertIn("index", payload)
+
     def test_admin_export_csv_requires_admin_auth(self) -> None:
         response = self.client.get("/api/admin/export.csv?range=7d")
         self.assertEqual(response.status_code, 401)

@@ -440,6 +440,17 @@ const ADMIN_CHECKS = [
     adminOnly: true,
   },
   {
+    name: "POST /api/admin/index/refresh with too many mergeDocs → error-response",
+    method: "POST",
+    path: "/api/admin/index/refresh",
+    body: JSON.stringify({
+      mergeDocs: Array.from({ length: 2001 }, (_, idx) => idx),
+    }),
+    schema: "error-response",
+    expectStatus: 400,
+    adminOnly: true,
+  },
+  {
     name: "GET /api/admin/index/backups → admin-index-backups-response",
     method: "GET",
     path: "/api/admin/index/backups?reason=all",
