@@ -90,6 +90,125 @@ const assistantMemoryPath = path.join(dataDir, "assistant-memory.json");
 const routingStatePath = path.join(dataDir, "routing-state.json");
 const indexSyncStatePath = path.join(dataDir, "index-sync-state.json");
 const rankingConfigPath = path.join(dataDir, "search-ranking-config.json");
+
+// --- Smart Search Result Cache ---
+const SEARCH_CACHE_TTL_MS =
+  envNumber("SEARCH_CACHE_TTL_SECONDS", 300, { min: 30, max: 3600 }) * 1000;
+const SEARCH_CACHE_MAX_ENTRIES = envNumber("SEARCH_CACHE_MAX_ENTRIES", 500, {
+  min: 50,
+  max: 5000,
+});
+const searchResultCache = new Map(); // cacheKey -> { payload, expiresAt }
+
+function makeSearchCacheKey(query, opts) {
+  return [
+    String(query || "")
+      .trim()
+      .toLowerCase(),
+    String(opts.sort || "relevance"),
+    String(opts.language || ""),
+    String(opts.category || ""),
+    String(opts.source || ""),
+    String(opts.page || 1),
+    String(opts.limit || 20),
+  ].join("|");
+}
+
+function getFromSearchCache(key) {
+  const entry = searchResultCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    searchResultCache.delete(key);
+    return null;
+  }
+  return entry.payload;
+}
+
+function setInSearchCache(key, payload) {
+  if (searchResultCache.size >= SEARCH_CACHE_MAX_ENTRIES) {
+    const oldest = searchResultCache.keys().next().value;
+    searchResultCache.delete(oldest);
+  }
+  searchResultCache.set(key, {
+    payload,
+    expiresAt: Date.now() + SEARCH_CACHE_TTL_MS,
+  });
+}
+
+function invalidateSearchCache() {
+  searchResultCache.clear();
+}
+
+// --- Related Queries Co-occurrence Tracking ---
+const QUERY_SEQUENCE_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+const RELATED_QUERIES_MAX_PER_QUERY = 20;
+const RELATED_QUERIES_MAX_DISTINCT = 1000;
+const recentSearchByIp = new Map(); // ip -> { query, at }
+const relatedQueriesMap = new Map(); // normalizedQuery -> Map<related -> count>
+
+function recordRelatedQueryPair(a, b) {
+  if (!relatedQueriesMap.has(a)) {
+    if (relatedQueriesMap.size >= RELATED_QUERIES_MAX_DISTINCT) {
+      const oldest = relatedQueriesMap.keys().next().value;
+      relatedQueriesMap.delete(oldest);
+    }
+    relatedQueriesMap.set(a, new Map());
+  }
+  const inner = relatedQueriesMap.get(a);
+  inner.set(b, (inner.get(b) || 0) + 1);
+  if (inner.size > RELATED_QUERIES_MAX_PER_QUERY) {
+    let minCount = Infinity;
+    let minKey = null;
+    for (const [k, v] of inner) {
+      if (v < minCount) {
+        minCount = v;
+        minKey = k;
+      }
+    }
+    if (minKey !== null) inner.delete(minKey);
+  }
+}
+
+function trackQuerySequence(query, ip) {
+  const normalizedIp = String(ip || "unknown");
+  const normalizedQuery = String(query || "")
+    .trim()
+    .toLowerCase();
+  if (!normalizedQuery || normalizedQuery.length < 2) return;
+
+  const recent = recentSearchByIp.get(normalizedIp);
+  if (
+    recent &&
+    recent.query &&
+    recent.query !== normalizedQuery &&
+    Date.now() - recent.at < QUERY_SEQUENCE_WINDOW_MS
+  ) {
+    recordRelatedQueryPair(recent.query, normalizedQuery);
+    recordRelatedQueryPair(normalizedQuery, recent.query);
+  }
+
+  recentSearchByIp.set(normalizedIp, {
+    query: normalizedQuery,
+    at: Date.now(),
+  });
+  if (recentSearchByIp.size > 10000) {
+    const oldest = recentSearchByIp.keys().next().value;
+    recentSearchByIp.delete(oldest);
+  }
+}
+
+function getRelatedQueries(query, limit = 6) {
+  const normalizedQuery = String(query || "")
+    .trim()
+    .toLowerCase();
+  const inner = relatedQueriesMap.get(normalizedQuery);
+  if (!inner || inner.size === 0) return [];
+  return Array.from(inner.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, Math.min(limit, 10))
+    .map(([q]) => q);
+}
+
 const SEARCH_PROXY_TIMEOUT_MS = envNumber("SEARCH_PROXY_TIMEOUT_MS", 5000, {
   min: 500,
   max: 30000,
@@ -748,6 +867,7 @@ function rebuildLocalSearchIndex({ mergeDocs = [], createBackup = true } = {}) {
 
   writeJson(searchIndexPath, rebuilt);
   resetLocalSearchArtifactsCache();
+  invalidateSearchCache();
   const artifacts = getLocalSearchArtifacts();
 
   return {
@@ -2988,6 +3108,17 @@ function computeFreshnessScore(fetchedAt) {
   );
 }
 
+// Weight for freshness signal in relevance ranking (per intent type).
+// News queries heavily weight recency; docs/code prefer stability.
+function getFreshnessWeight(intents) {
+  if (!Array.isArray(intents) || intents.length === 0) return 0.04;
+  if (intents.includes("news")) return 0.18;
+  if (intents.includes("jobs")) return 0.1;
+  if (intents.includes("research")) return 0.06;
+  if (intents.includes("docs") || intents.includes("code")) return 0.02;
+  return 0.04;
+}
+
 function getTokenIdfWeight(token, tokenDfMap, docCount) {
   const docs = Math.max(1, Number(docCount || 1));
   const df = Number(tokenDfMap?.get(token) || 0);
@@ -4173,14 +4304,19 @@ function runSearchAll(
           clickTelemetryForQuery.cappedByGuardrail += 1;
         }
       }
+      const freshnessScore = computeFreshnessScore(normalized.fetchedAt);
       return {
         ...normalized,
-        freshnessScore: computeFreshnessScore(normalized.fetchedAt),
+        freshnessScore,
         _score:
           baseScore +
           computeIntentBoost(normalized, intents) +
           getSourceAuthorityBoost(normalized, intents) +
-          clickBoost,
+          clickBoost +
+          // Freshness bonus applied only for relevance sort; intent-adjusted weight.
+          (normalizedSort === "relevance"
+            ? freshnessScore * getFreshnessWeight(intents)
+            : 0),
       };
     })
     .filter((doc) => {
@@ -4348,6 +4484,25 @@ function runSearchPage(
   const pagedResults = allResults.slice(offset, offset + safeLimit);
   const totalPages = total > 0 ? Math.ceil(total / safeLimit) : 0;
 
+  // Proactive spelling hint: when results exist but are sparse, suggest a correction
+  // as a soft hint without auto-applying it (unlike the zero-result correction above).
+  let querySuggestion = null;
+  if (total > 0 && total < 5 && !queryCorrection) {
+    const hintArtifacts = getLocalSearchArtifacts();
+    const parsedForHint = parseSearchOperators(queryUsed);
+    const hint = suggestQueryCorrection(
+      parsedForHint.cleanedQuery,
+      hintArtifacts,
+    );
+    if (
+      hint?.correctedQuery &&
+      hint.correctedQuery.trim().toLowerCase() !==
+        parsedForHint.cleanedQuery.trim().toLowerCase()
+    ) {
+      querySuggestion = { correctedQuery: hint.correctedQuery };
+    }
+  }
+
   const contextualLanguages = runSearchAll(queryUsed, {
     category,
     source,
@@ -4371,6 +4526,7 @@ function runSearchPage(
     offset,
     queryUsed,
     queryCorrection,
+    querySuggestion,
     page: total > 0 ? safePage : 1,
     totalPages,
     hasNextPage: offset + safeLimit < total,
@@ -5382,6 +5538,7 @@ async function executeDjangoIndexSync({
 }
 
 function logSearch({ query, resultCount, ip }) {
+  trackQuerySequence(query, ip);
   const analytics = readJson(analyticsPath, { searches: [], pageViews: [] });
   analytics.searches.push({
     id: `s-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
@@ -5755,6 +5912,22 @@ app.get("/api/search", async (req, res) => {
   const limit = String(req.query.limit || "").trim();
   const page = String(req.query.page || "").trim();
 
+  // Fast cache path: only for Node-served results (not Django proxy).
+  if (pickSearchBackend() !== "django") {
+    const earlyCacheKey = makeSearchCacheKey(query, {
+      language,
+      category,
+      source,
+      sort,
+      limit,
+      page,
+    });
+    const cached = getFromSearchCache(earlyCacheKey);
+    if (cached) {
+      return res.json({ ...cached, fromCache: true });
+    }
+  }
+
   if (pickSearchBackend() === "django") {
     try {
       const payload = await proxyDjangoSearch(
@@ -5798,16 +5971,27 @@ app.get("/api/search", async (req, res) => {
     ip: req.ip,
   });
 
-  res.json({
+  const cacheKey = makeSearchCacheKey(query, {
+    language,
+    category,
+    source,
+    sort,
+    limit: payload.limit,
+    page: payload.page,
+  });
+
+  const responsePayload = {
     engine: "MAGNETO Core",
     query,
     queryUsed: payload.queryUsed || query,
     appliedOperators: getAppliedSearchOperators(payload.queryUsed || query),
     queryCorrection: payload.queryCorrection || null,
+    querySuggestion: payload.querySuggestion || null,
     suggestions:
       payload.total > 0
         ? []
         : getSearchSuggestions(payload.queryUsed || query, 8),
+    relatedQueries: getRelatedQueries(query, 6),
     total: payload.total,
     appliedFilters: {
       language,
@@ -5831,7 +6015,10 @@ app.get("/api/search", async (req, res) => {
     facets: payload.facets,
     results: payload.results,
     servedBy: "node",
-  });
+  };
+
+  setInSearchCache(cacheKey, responsePayload);
+  res.json(responsePayload);
 });
 
 app.post("/api/events/page-view", (req, res) => {
@@ -5862,6 +6049,23 @@ app.post("/api/events/result-click", (req, res) => {
   });
 
   res.json({ ok: true });
+});
+
+app.get("/api/search/related", (req, res) => {
+  const query = String(req.query.q || "").trim();
+  const limit = Math.min(10, Math.max(1, Number(req.query.limit || 6) || 6));
+
+  if (!query) {
+    return res.status(400).json({ error: "Query is required." });
+  }
+
+  const related = getRelatedQueries(query, limit);
+  res.json({
+    ok: true,
+    query,
+    related,
+    generatedAt: new Date().toISOString(),
+  });
 });
 
 app.post("/api/assistant/chat", async (req, res) => {

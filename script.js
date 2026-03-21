@@ -35,6 +35,7 @@ const resultsMeta = document.getElementById("resultsMeta");
 const resultsAssist = document.getElementById("resultsAssist");
 const resultsDidYouMean = document.getElementById("resultsDidYouMean");
 const resultsSuggestChips = document.getElementById("resultsSuggestChips");
+const resultsRelated = document.getElementById("resultsRelated");
 const resultsList = document.getElementById("resultsList");
 const resultsFilters = document.getElementById("resultsFilters");
 const resultsFilterLanguage = document.getElementById("resultsFilterLanguage");
@@ -2302,6 +2303,37 @@ async function initResultsPage() {
         resultsAssist.hidden = false;
       }
 
+      // Proactive "Did you mean?" hint — shown even when results exist but are sparse.
+      const suggestion = payload.querySuggestion || null;
+      const suggestionQuery = String(suggestion?.correctedQuery || "").trim();
+      if (
+        resultsAssist &&
+        resultsDidYouMean &&
+        suggestionQuery &&
+        suggestionQuery.toLowerCase() !==
+          String(currentQuery || "")
+            .trim()
+            .toLowerCase() &&
+        !correctionApplied // don't double-show with auto-correction
+      ) {
+        resultsDidYouMean.innerHTML = "";
+        const hintPrefix = document.createElement("span");
+        hintPrefix.textContent = "Did you mean: ";
+        const hintBtn = document.createElement("button");
+        hintBtn.type = "button";
+        hintBtn.className = "results-didyoumean-btn";
+        hintBtn.textContent = suggestionQuery;
+        hintBtn.addEventListener("click", async () => {
+          currentQuery = suggestionQuery;
+          currentPage = 1;
+          renderResultsHeading();
+          await performResultsSearch(true, 1);
+        });
+        resultsDidYouMean.append(hintPrefix, hintBtn);
+        resultsDidYouMean.hidden = false;
+        resultsAssist.hidden = false;
+      }
+
       if (resultsAssist && resultsSuggestChips) {
         const suggestions = Array.isArray(payload.suggestions)
           ? payload.suggestions
@@ -2476,6 +2508,42 @@ async function initResultsPage() {
           li.appendChild(footer);
         }
         resultsList.appendChild(li);
+      }
+
+      // Related queries section — powered by session co-occurrence tracking.
+      if (resultsRelated) {
+        resultsRelated.innerHTML = "";
+        resultsRelated.hidden = true;
+        const related = Array.isArray(payload.relatedQueries)
+          ? payload.relatedQueries
+              .map((q) => String(q || "").trim())
+              .filter((q) => q.length > 0)
+              .filter((q) => q.toLowerCase() !== currentQuery.toLowerCase())
+              .slice(0, 6)
+          : [];
+        if (related.length > 0) {
+          const title = document.createElement("p");
+          title.className = "results-related-title";
+          title.textContent = "Related searches";
+          resultsRelated.appendChild(title);
+          const chips = document.createElement("div");
+          chips.className = "results-related-chips";
+          related.forEach((q) => {
+            const chip = document.createElement("button");
+            chip.type = "button";
+            chip.className = "results-suggest-chip results-related-chip";
+            chip.textContent = q;
+            chip.addEventListener("click", async () => {
+              currentQuery = q;
+              currentPage = 1;
+              renderResultsHeading();
+              await performResultsSearch(true, 1);
+            });
+            chips.appendChild(chip);
+          });
+          resultsRelated.appendChild(chips);
+          resultsRelated.hidden = false;
+        }
       }
     } catch (error) {
       const apiBaseLabel = API_BASE_URL || "(relative /api)";

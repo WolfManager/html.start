@@ -1286,6 +1286,49 @@ select:focus,
   background: rgba(12, 40, 61, 0.92);
 }
 
+/* Related Searches section */
+.results-related {
+  margin: 0 auto 28px;
+  max-width: 820px;
+  padding: 18px 22px;
+  border: 1px solid rgba(132, 213, 255, 0.18);
+  border-radius: 16px;
+  background: rgba(9, 25, 40, 0.55);
+  backdrop-filter: blur(8px);
+  animation: fadeIn 420ms ease both;
+}
+
+.results-related-title {
+  margin: 0 0 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  color: rgba(132, 213, 255, 0.6);
+}
+
+.results-related-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.results-related-chip {
+  background: rgba(12, 40, 61, 0.7) !important;
+  border-color: rgba(132, 213, 255, 0.28) !important;
+  font-size: 0.78rem !important;
+  transition:
+    background 0.18s,
+    border-color 0.18s,
+    transform 0.15s;
+}
+
+.results-related-chip:hover {
+  background: rgba(20, 58, 88, 0.9) !important;
+  border-color: rgba(132, 213, 255, 0.55) !important;
+  transform: translateY(-1px);
+}
+
 .results-summary-card {
   border: 1px solid rgba(104, 179, 221, 0.24);
   border-radius: 18px;
