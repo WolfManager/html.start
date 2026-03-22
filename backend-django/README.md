@@ -33,6 +33,33 @@ This backend runs in parallel with the existing Node.js service.
 - `POST /api/admin/backups/restore`
 - `GET /api/admin/export.csv?range=all|24h|7d|30d`
 
+## Enhanced Search Endpoint (Parity Complete)
+
+The `/api/search?q=...` endpoint now implements full response parity with Node.js backend:
+
+**New response fields added:**
+- `appliedOperators` - Structured parsing of search operators (site, filetype, inurl, intitle, cleanedQuery)
+- `queryCorrection` - Automatic spelling correction (Levenshtein distance ≤2) applied when zero results
+- `querySuggestion` - Spelling suggestion recommended on sparse results (0-4 results)
+- `suggestions` - Autocomplete/search suggestions when results are empty
+- `relatedQueries` - Related queries from analytics (up to 6)
+- `servedBy` - Identifies backend: `"django"` or `"node"`
+
+**Search operator support:**
+- `site:domain.com` - restrict to domain
+- `-site:domain.com` - exclude domain
+- `filetype:pdf` - filter by file type
+- `inurl:text` - URL must contain text
+- `intitle:text` - page title must contain text
+
+**Features:**
+- Intelligent query correction on zero results (auto-applied if correction produces results)
+- Spelling suggestions on sparse results (guidance without auto-correction)
+- Structured operator extraction and reconstruction (preserves original query intent)
+- Full backward compatibility (no breaking changes to existing response structure)
+
+See `docs/API-SEARCH-ENDPOINT.md` for complete endpoint documentation, examples, and algorithm details.
+
 Assistant chat supports provider routing by environment variables:
 
 - `AI_PRIMARY_PROVIDER`
