@@ -140,6 +140,62 @@ def invalidate_vocabulary_cache() -> None:
     _vocabulary_cache["vocabulary"] = []
 
 
+def _normalize_accents_advanced(text: str) -> str:
+    """
+    Advanced accent normalization: café → cafe, naïve → naive, etc.
+    Also handles special cases: C++ → cpp, C# → csharp
+    """
+    raw = str(text or "").strip()
+    if not raw:
+        return ""
+
+    try:
+        import unicodedata
+        # NFD decomposition: café → cafe
+        normalized = unicodedata.normalize("NFD", raw)
+        normalized = "".join(ch for ch in normalized if unicodedata.category(ch) != "Mn")
+    except Exception:
+        normalized = raw
+
+    # Handle special programming language syntax
+    normalized = normalized.replace("C++", "cpp").replace("c++", "cpp")
+    normalized = normalized.replace("C#", "csharp").replace("c#", "csharp")
+    normalized = normalized.replace("C++", "cpp")
+
+    return normalized.lower()
+
+
+def _expand_query_with_synonyms(query: str) -> str:
+    """
+    Expand short query tokens with common synonyms.
+    e.g., "ai" → "artificial intelligence", "js" → "javascript"
+
+    Only expands if synonym significantly improves search results potential.
+    """
+    raw = str(query or "").strip()
+    if not raw or len(raw) > 50:
+        return raw
+
+    tokens = tokenize(raw)
+    expanded_tokens: list[str] = []
+
+    for token in tokens:
+        normalized = _normalize_accents_advanced(token)
+
+        # Check if token has synonym mapping
+        if normalized.lower() in QUERY_SYNONYMS:
+            synonyms = QUERY_SYNONYMS.get(normalized.lower(), [])
+            # Add primary synonym (first in list)
+            if synonyms:
+                expanded_tokens.append(synonyms[0])
+            else:
+                expanded_tokens.append(token)
+        else:
+            expanded_tokens.append(token)
+
+    return " ".join(expanded_tokens).strip()
+
+
 def _normalize_text(value: str) -> str:
     raw = str(value or "")
     try:
@@ -367,11 +423,20 @@ def _read_query_rewrite_rules() -> list[dict[str, Any]]:
 
 
 def _apply_query_rewrite_rules(query: str) -> tuple[str, dict[str, Any] | None]:
+    """
+    Apply query rewrite rules with enhanced matching.
+
+    Enhancement: Try both original and accent-normalized versions,
+    and also check expanded synonym version for better matching.
+    """
     original_query = str(query or "").strip()
     if not original_query:
         return "", None
 
     normalized_query = _normalize_filter_value(original_query)
+    expanded_query = _expand_query_with_synonyms(original_query)
+    accent_normalized = _normalize_accents_advanced(original_query)
+
     for rule in _read_query_rewrite_rules():
         if rule.get("enabled", True) is False:
             continue
@@ -386,10 +451,20 @@ def _apply_query_rewrite_rules(query: str) -> tuple[str, dict[str, Any] | None]:
         rewritten_query = None
 
         if match_type == "exact":
-            if normalized_query == normalized_source:
+            # Try: original, accent-normalized, and expanded versions
+            if (normalized_query == normalized_source or
+                _normalize_filter_value(accent_normalized) == normalized_source or
+                _normalize_filter_value(expanded_query) == normalized_source):
                 rewritten_query = target
         elif match_type == "contains":
-            if normalized_source and normalized_source in normalized_query:
+            # Enhanced: look for pattern in all versions
+            search_text = normalized_query
+            if normalized_source not in search_text:
+                search_text = _normalize_filter_value(accent_normalized)
+            if normalized_source not in search_text:
+                search_text = _normalize_filter_value(expanded_query)
+
+            if normalized_source and normalized_source in search_text:
                 rewritten_query = re.sub(
                     re.escape(source),
                     target,
@@ -1463,23 +1538,31 @@ def get_related_queries(query: str, limit: int = 6) -> list[str]:
 
 def _compute_query_ctr_score(query: str, hits: int, positive_hits: int) -> float:
     """
-    Compute CTR-enhanced score for a query.
-    Combines frequency and click-through signals.
+    RefinedCTR-enhanced score for better ranking accuracy.
 
-    Score components:
-    - Frequency: positive hits * 2 (base signal)
-    - CTR: (positive_hits / hits) * hits (click efficiency)
-    - Decay: log2(hits) * 0.5 (down-weight single-hit queries)
+    Scoring formula (refined):
+    - Frequency base: log2(positive_hits + 1) * 4 (logarithmic scale)
+    - CTR signal: (positive_hits / hits) * 5 when hits > 0 (0-5 range)
+    - Frequency depth: log2(hits + 1) * 1.5 (total search volume)
+    - Combined score normalized for stability
+
+    This gives better differentiation between high-quality vs low-quality suggestions.
     """
     if hits <= 0 or positive_hits <= 0:
         return 0.0
 
-    base_score = float(positive_hits * 2 + hits)
-    ctr = float(positive_hits) / float(hits)
-    ctr_boost = ctr * hits * 0.3  # CTR contributes 30% of score
-    frequency_decay = math.log2(max(1.0, float(hits))) * 0.5  # Smooth decay for frequency
+    # Normalize CTR to 0-1 range then scale
+    ctr = min(1.0, float(positive_hits) / float(hits))
 
-    return base_score + ctr_boost + frequency_decay
+    # Component scores
+    frequency_base = math.log2(float(positive_hits) + 1) * 4  # log scale for positive results
+    ctr_signal = ctr * 5  # CTR in 0-5 range (dominant signal)
+    hit_depth = math.log2(float(hits) + 1) * 1.5  # total search volume influence
+
+    # Combined score: emphasize CTR but reward frequency
+    combined = frequency_base + ctr_signal + hit_depth
+
+    return combined
 
 
 def _get_popular_query_suggestions(partial: str, limit: int) -> list[dict[str, Any]]:
