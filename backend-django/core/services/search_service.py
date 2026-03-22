@@ -81,6 +81,30 @@ CLICK_SIGNAL_DECAY_HALFLIFE_DAYS = 14
 CLICK_SIGNAL_DECAY_MIN_WEIGHT = 0.2
 VOCABULARY_CACHE_TTL_SECONDS = 3600  # 1 hour
 
+# LLM SEMANTIC FALLBACK CONFIG
+LLM_ENABLED = True  # set to False to disable LLM fallback
+LLM_API_TIMEOUT_SECONDS = 3.0  # fast timeout to avoid blocking
+LLM_SEMANTIC_MAX_TOKENS = 100
+LLM_SEMANTIC_TEMPERATURE = 0.3  # low temperature for focused responses
+LLM_FALLBACK_THRESHOLD_RESULTS = 2  # trigger semantic fallback if results < this
+LLM_MAX_RETRIES = 1
+
+# LEARNING-TO-RANK CONFIG
+LTR_DATA_COLLECTION_ENABLED = True  # collect training data
+LTR_MIN_TRAINING_SAMPLES = 1000  # collect this many interactions before training
+LTR_FEATURE_CACHE_TTL_SECONDS = 7200  # 2 hours
+LTR_MODEL_REFRESH_DAYS = 7  # retrain model weekly
+LTR_FEATURES_TO_TRACK = [
+    "query_length",
+    "has_operators",
+    "result_count",
+    "click_count",
+    "ctr_signal",
+    "doc_position",
+    "doc_score",
+    "dwell_time_ms",
+]
+
 _click_signal_cache: dict[str, Any] = {
     "expiresAt": 0.0,
     "queryUrlCounts": {},
@@ -91,6 +115,13 @@ _click_signal_cache: dict[str, Any] = {
 _vocabulary_cache: dict[str, Any] = {
     "expiresAt": 0.0,
     "vocabulary": [],
+}
+
+_ltr_feature_cache: dict[str, Any] = {
+    "expiresAt": 0.0,
+    "training_samples": [],  # list of (features, label) tuples
+    "model_timestamp": None,
+    "sample_count": 0,
 }
 
 
@@ -138,6 +169,154 @@ def invalidate_click_signal_cache() -> None:
 def invalidate_vocabulary_cache() -> None:
     _vocabulary_cache["expiresAt"] = 0.0
     _vocabulary_cache["vocabulary"] = []
+
+
+def _collect_ltr_training_sample(
+    query: str,
+    doc_url: str,
+    doc_score: float,
+    position: int,
+    clicked: bool,
+    dwell_time_ms: int = 0,
+) -> None:
+    """
+    Collect training sample for learning-to-rank model.
+    Called after user interacts with search result.
+    """
+    if not LTR_DATA_COLLECTION_ENABLED:
+        return
+
+    try:
+        features = {
+            "query_length": len(tokenize(str(query or ""))),
+            "has_operators": bool(_parse_search_operators(query)[1].get("sites")),
+            "doc_score": float(doc_score or 0.0),
+            "position": int(position or 0),
+            "dwell_time_ms": int(dwell_time_ms or 0),
+        }
+
+        # Label: 1 if clicked (relevant), 0 if not (not relevant)
+        label = 1 if clicked else 0
+
+        now = time.time()
+        global _ltr_feature_cache
+        if now >= float(_ltr_feature_cache.get("expiresAt") or 0):
+            _ltr_feature_cache["training_samples"] = []
+            _ltr_feature_cache["expiresAt"] = now + LTR_FEATURE_CACHE_TTL_SECONDS
+
+        _ltr_feature_cache["training_samples"].append({
+            "features": features,
+            "label": label,
+            "timestamp": now,
+        })
+        _ltr_feature_cache["sample_count"] = len(_ltr_feature_cache.get("training_samples") or [])
+    except Exception as e:
+        # Silently fail on LTR collection; don't break search
+        pass
+
+
+def _call_llm_semantic_fallback(query: str, max_retries: int = 1) -> list[str] | None:
+    """
+    Use LLM for semantic query understanding when search fails.
+
+    Returns list of clarifying questions or alternative search suggestions.
+    Falls back gracefully if LLM unavailable or times out.
+    """
+    if not LLM_ENABLED:
+        return None
+
+    try:
+        from django.conf import settings
+        import os
+
+        # Check for LLM provider config
+        provider = getattr(settings, "LLM_PROVIDER", os.getenv("LLM_PROVIDER", ""))
+        api_key = os.getenv("OPENAI_API_KEY") or os.getenv("ANTHROPIC_API_KEY")
+
+        if not provider or not api_key:
+            return None
+
+        # Only use for short queries (avoid API cost on long inputs)
+        if len(query) > 100:
+            return None
+
+        # Call appropriate LLM
+        if provider.lower() == "openai":
+            return _call_openai_semantic(query, api_key)
+        elif provider.lower() == "anthropic":
+            return _call_anthropic_semantic(query, api_key)
+
+        return None
+    except Exception as e:
+        # Fail silently - LLM is optional enhancement
+        return None
+
+
+def _call_openai_semantic(query: str, api_key: str) -> list[str] | None:
+    """Call OpenAI for semantic query understanding."""
+    try:
+        import requests
+
+        prompt = f"""Given this search query, provide 2-3 alternative queries that clarify the intent:
+Query: "{query}"
+
+Return JSON: {{"alternatives": ["query1", "query2", "query3"]}}`
+
+Be concise, return valid JSON only."""
+
+        response = requests.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers={"Authorization": f"Bearer {api_key}"},
+            json={
+                "model": "gpt-4o-mini",
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": LLM_SEMANTIC_TEMPERATURE,
+                "max_tokens": LLM_SEMANTIC_MAX_TOKENS,
+            },
+            timeout=LLM_API_TIMEOUT_SECONDS,
+        )
+
+        if response.status_code == 200:
+            content = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+            import json
+            parsed = json.loads(content)
+            return parsed.get("alternatives", [])
+        return None
+    except Exception:
+        return None
+
+
+def _call_anthropic_semantic(query: str, api_key: str) -> list[str] | None:
+    """Call Anthropic for semantic query understanding."""
+    try:
+        import requests
+
+        prompt = f"""Given this search query, provide 2-3 alternative queries that clarify the intent:
+Query: "{query}"
+
+Return JSON: {{"alternatives": ["query1", "query2", "query3"]}}
+
+Be concise, return valid JSON only."""
+
+        response = requests.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={"x-api-key": api_key, "anthropic-version": "2023-06-01"},
+            json={
+                "model": "claude-3-haiku-20240307",
+                "max_tokens": LLM_SEMANTIC_MAX_TOKENS,
+                "messages": [{"role": "user", "content": prompt}],
+            },
+            timeout=LLM_API_TIMEOUT_SECONDS,
+        )
+
+        if response.status_code == 200:
+            content = response.json().get("content", [{}])[0].get("text", "")
+            import json
+            parsed = json.loads(content)
+            return parsed.get("alternatives", [])
+        return None
+    except Exception:
+        return None
 
 
 def _normalize_accents_advanced(text: str) -> str:
@@ -1352,12 +1531,23 @@ def run_search_page(
         if corrected_query and _normalize_filter_value(corrected_query) != _normalize_filter_value(cleaned_query):
             query_suggestion = {"correctedQuery": corrected_query}
 
+    # LLM semantic fallback for very sparse results
+    semantic_fallback = None
+    if total < LLM_FALLBACK_THRESHOLD_RESULTS:
+        semantic_suggestions = _call_llm_semantic_fallback(original_query)
+        if semantic_suggestions:
+            semantic_fallback = {
+                "suggestions": semantic_suggestions,
+                "reason": "sparse_results_semantic_fallback",
+            }
+
     return {
         "queryUsed": query_used,
         "queryRewrite": query_rewrite,
         "appliedOperators": get_applied_search_operators(query_used),
         "queryCorrection": query_correction,
         "querySuggestion": query_suggestion,
+        "semanticFallback": semantic_fallback,
         "results": paged_results,
         "total": total,
         "limit": safe_limit,

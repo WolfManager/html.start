@@ -68,6 +68,22 @@
     "querySuggestion": {
       "type": ["object", "null"]
     },
+    "semanticFallback": {
+      "type": ["object", "null"],
+      "properties": {
+        "suggestions": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "sparse_results_semantic_fallback",
+            "no_results_semantic_fallback"
+          ]
+        }
+      }
+    },
     "suggestions": {
       "type": "array",
       "items": {
