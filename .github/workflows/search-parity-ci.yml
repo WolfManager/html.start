@@ -23,6 +23,8 @@ jobs:
       SESSION_COOKIE_SECURE: "true"
       CSRF_COOKIE_SECURE: "true"
       PARITY_MODE: "strict"
+      MAGNETO_NODE_BASE_URL: "http://127.0.0.1:3000"
+      MAGNETO_DJANGO_BASE_URL: "http://127.0.0.1:8000"
 
     steps:
       - name: Checkout

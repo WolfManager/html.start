@@ -2,9 +2,9 @@ const fs = require("fs");
 const path = require("path");
 
 const NODE_BASE_URL =
-  process.env.MAGNETO_NODE_BASE_URL || "http://localhost:3000";
+  process.env.MAGNETO_NODE_BASE_URL || "http://127.0.0.1:3000";
 const DJANGO_BASE_URL =
-  process.env.MAGNETO_DJANGO_BASE_URL || "http://localhost:8000";
+  process.env.MAGNETO_DJANGO_BASE_URL || "http://127.0.0.1:8000";
 
 const DEFAULT_REPORT_PATH = path.join(
   process.cwd(),
