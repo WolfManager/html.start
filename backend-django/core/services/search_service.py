@@ -14,8 +14,10 @@ from django.db.models import Count
 from core.models import SearchDocument, SearchSource
 from .analytics_service import read_analytics
 from .ltr_model_trainer import train_ltr_model, load_model, save_model, compute_ndcg, compute_average_precision
+from .ltr_training_pipeline import run_training_cycle, get_training_summary
 from .ab_testing import ABTest, get_current_ab_test, save_ab_test, start_ab_test, update_traffic_split, should_rollout_to_100_percent
 from .deployment_safeguards import get_deployment_state, should_perform_canary_deployment, should_rollback, should_increase_canary_traffic, initiate_canary_deployment, increase_canary_traffic, rollback_deployment
+from .continuous_deployment import run_continuous_deployment_cycle, get_deployment_readiness
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 SEARCH_INDEX_PATH = BASE_DIR.parent / "data" / "search-index.json"
@@ -2085,3 +2087,159 @@ def check_model_deployment_health() -> None:
         # Silent failure - health check is best-effort
         pass
 
+
+# ==============================================================================
+# TIER 3 PHASE 2B: Advanced Monitoring & Continuous Deployment
+# ==============================================================================
+
+
+def get_ltr_model_status() -> dict[str, Any]:
+    """Get comprehensive LTR model status and metrics."""
+    try:
+        model = load_model()
+        training_summary = get_training_summary()
+
+        return {
+            "status": "active" if model else "inactive",
+            "current_model": {
+                "model_id": model.model_id if model else None,
+                "version": model.version if model else None,
+                "feature_count": len(model.feature_weights) if model else 0,
+            },
+            "training": {
+                "total_runs": training_summary.get("total_training_runs", 0),
+                "successful_runs": training_summary.get("successful_runs", 0),
+                "latest_run": training_summary.get("latest_run"),
+                "current_metrics": training_summary.get("current_model_metrics"),
+                "ndcg_trend": training_summary.get("ndcg_trend", []),
+                "avg_training_duration_seconds": training_summary.get("avg_training_duration_seconds", 0.0),
+            },
+        }
+    except Exception as e:
+        return {"status": "error", "error": str(e)[:100]}
+
+
+def get_ab_test_status() -> dict[str, Any]:
+    """Get current A/B test status and metrics."""
+    try:
+        test = get_current_ab_test()
+        if not test:
+            return {"active": False, "status": "no_active_test"}
+
+        test.check_statistical_significance()
+
+        return {
+            "active": test.status == "active",
+            "test_id": test.test_id,
+            "created_at": test.created_at,
+            "status": test.status,
+            "control": {
+                "name": "control",
+                "traffic_fraction": test.variants["control"].traffic_fraction,
+                "visits": test.variants["control"].metrics.get("visits", 0),
+                "clicks": test.variants["control"].metrics.get("clicks", 0),
+                "ctr": test.variants["control"].metrics.get("ctr", 0.0),
+            },
+            "treatment": {
+                "name": "treatment",
+                "traffic_fraction": test.variants["treatment"].traffic_fraction,
+                "visits": test.variants["treatment"].metrics.get("visits", 0),
+                "clicks": test.variants["treatment"].metrics.get("clicks", 0),
+                "ctr": test.variants["treatment"].metrics.get("ctr", 0.0),
+            },
+            "winner": test.winner,
+            "is_statistically_significant": test.is_statistically_significant,
+        }
+    except Exception as e:
+        return {"active": False, "error": str(e)[:100]}
+
+
+def get_deployment_status() -> dict[str, Any]:
+    """Get current deployment status and canary state."""
+    try:
+        config, events = get_deployment_state()
+
+        return {
+            "model_version": config.model_version,
+            "is_active": config.is_active,
+            "canary_percentage": config.canary_percentage,
+            "auto_rollback_enabled": config.auto_rollback_enabled,
+            "deployment_events": [
+                {
+                    "event_type": e.event_type,
+                    "timestamp": e.timestamp,
+                    "details": e.details,
+                }
+                for e in events[-10:]  # Last 10 events
+            ],
+        }
+    except Exception as e:
+        return {"error": str(e)[:100]}
+
+
+def run_full_deployment_cycle(training_samples: list[dict] | None = None) -> dict[str, Any]:
+    """
+    Execute complete deployment cycle:
+    - Health checks
+    - Model training
+    - A/B test evaluation
+    - Traffic management
+    - Automatic promotion
+
+    Called by background task or admin endpoint.
+    """
+    return run_continuous_deployment_cycle(training_samples)
+
+
+def get_system_readiness_for_production() -> dict[str, Any]:
+    """
+    Check if system is production-ready.
+
+    Returns:
+    - is_ready: bool
+    - readiness_score: 0-100%
+    - checks: detailed status of each component
+    - recommendations: list of actions needed
+    """
+    readiness = get_deployment_readiness()
+
+    checks = readiness.get("checks", {})
+    is_ready = readiness.get("is_ready", False)
+
+    # Compute readiness score
+    score = 0.0
+    max_score = 0.0
+
+    check_weights = {
+        "ab_test_significant": 25,
+        "canary_at_100": 20,
+        "has_successful_training": 20,
+        "model_ndcg_acceptable": 20,
+        "deployment_active": 15,
+    }
+
+    for check_name, weight in check_weights.items():
+        max_score += weight
+        if checks.get(check_name):
+            score += weight
+
+    readiness_percent = (score / max_score * 100) if max_score > 0 else 0.0
+
+    # Generate recommendations
+    recommendations = []
+    if not checks.get("ab_test_significant"):
+        recommendations.append("Wait for A/B test to reach statistical significance")
+    if not checks.get("has_successful_training"):
+        recommendations.append("Need successful model training run first")
+    if not checks.get("model_ndcg_acceptable"):
+        recommendations.append("Model NDCG score is below acceptable threshold")
+    if not checks.get("canary_at_100"):
+        recommendations.append("Gradually increase canary traffic to 100%")
+
+    return {
+        "is_ready": is_ready,
+        "readiness_percent": round(readiness_percent, 1),
+        "checks": checks,
+        "recommendations": recommendations,
+        "timestamp": datetime.utcnow().isoformat(),
+    }
