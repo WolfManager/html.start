@@ -954,6 +954,17 @@ function initAssistantChat() {
   let isAssistantFullscreen = false;
   let assistantPreMinimizePosition = null;
 
+  const clearAssistantSurface = () => {
+    if (assistantThread) {
+      assistantThread.innerHTML = "";
+    }
+    if (assistantSuggestions) {
+      assistantSuggestions.innerHTML = "";
+      assistantSuggestions.hidden = true;
+    }
+    updateAssistantStatus("");
+  };
+
   const setAssistantFullscreen = (enabled) => {
     if (!assistantModal) {
       return;
@@ -1070,6 +1081,7 @@ function initAssistantChat() {
     if (!assistantModal) {
       return;
     }
+    clearAssistantSurface();
     assistantModal.hidden = false;
     setAssistantMinimized(false);
 
@@ -1093,6 +1105,7 @@ function initAssistantChat() {
     if (!assistantModal) {
       return;
     }
+    clearAssistantSurface();
     assistantModal.hidden = true;
   };
 
