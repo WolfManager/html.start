@@ -5105,6 +5105,46 @@
       "provider": "local-fallback",
       "model": "local-fallback",
       "helper": "general"
+    },
+    {
+      "id": "a-1774177347401-883",
+      "ip": "::ffff:127.0.0.1",
+      "message": "contract-test",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "local-hybrid",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-22T11:02:27.401Z"
+    },
+    {
+      "id": "a-1774177347483",
+      "at": "2026-03-22T11:02:27Z",
+      "ip": "127.0.0.1",
+      "message": "contract-test",
+      "reply": "I can help with 'contract-test'. If you want higher-quality AI responses, configure a provider key.",
+      "provider": "local-fallback",
+      "model": "local-fallback",
+      "helper": "general"
+    },
+    {
+      "id": "a-1774177349959-8783",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Good topic. Here are refined search options.",
+      "provider": "local-hybrid",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-22T11:02:29.959Z"
+    },
+    {
+      "id": "a-1774177349971",
+      "at": "2026-03-22T11:02:29Z",
+      "ip": "127.0.0.1",
+      "message": "health check",
+      "reply": "I can help with 'health check'. If you want higher-quality AI responses, configure a provider key.",
+      "provider": "local-fallback",
+      "model": "local-fallback",
+      "helper": "general"
     }
   ]
 }

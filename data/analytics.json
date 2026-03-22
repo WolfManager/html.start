@@ -2121,6 +2121,42 @@
       "reformulatesSearchId": "s-1774175126741-1612",
       "reformulationType": "low-results-refinement",
       "at": "2026-03-22T10:25:31Z"
+    },
+    {
+      "id": "s-1774177347397-7064",
+      "query": "contract-test",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-22T11:02:27.397Z"
+    },
+    {
+      "id": "s-1774177347467-7282",
+      "query": "contract-test",
+      "normalizedQuery": "contract-test",
+      "resultCount": 2,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "reformulatesSearchId": null,
+      "reformulationType": null,
+      "at": "2026-03-22T11:02:27Z"
+    },
+    {
+      "id": "s-1774177349793-5785",
+      "query": "api documentation",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-22T11:02:29.793Z"
+    },
+    {
+      "id": "s-1774177349900-3436",
+      "query": "api documentation",
+      "normalizedQuery": "api documentation",
+      "resultCount": 13,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "reformulatesSearchId": "s-1774177347467-7282",
+      "reformulationType": "low-results-refinement",
+      "at": "2026-03-22T11:02:29Z"
     }
   ],
   "pageViews": [
@@ -3327,6 +3363,34 @@
       "ip": "127.0.0.1",
       "userAgent": "node",
       "at": "2026-03-22T10:25:31Z"
+    },
+    {
+      "id": "p-1774176886548-9910",
+      "page": "index.html",
+      "ip": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+      "at": "2026-03-22T10:54:46.548Z"
+    },
+    {
+      "id": "p-1774177349940-5161",
+      "page": "critical-parity-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-22T11:02:29.940Z"
+    },
+    {
+      "id": "p-1774177349949-9560",
+      "page": "critical-parity-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-22T11:02:29Z"
+    },
+    {
+      "id": "p-1774177470374-2928",
+      "page": "index.html",
+      "ip": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+      "at": "2026-03-22T11:04:30.374Z"
     }
   ],
   "resultClicks": []
