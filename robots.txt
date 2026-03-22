@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /admin.html
 
-Sitemap: https://www.magneto.com/sitemap.xml
+Sitemap: https://www.magneto-ai.com/sitemap.xml
