@@ -1,4 +1,5 @@
 import json
+import os
 from typing import cast
 from unittest.mock import patch
 
@@ -11,9 +12,10 @@ class CoreApiTests(TestCase):
         self.client = APIClient()
 
     def _admin_token(self) -> str:
+        admin_password = str(os.getenv("ADMIN_PASSWORD", "change-this-password"))
         response = self.client.post(
             "/api/auth/login",
-            {"username": "admin", "password": "change-this-password"},
+            {"username": "admin", "password": admin_password},
             format="json",
         )
         self.assertEqual(response.status_code, 200)

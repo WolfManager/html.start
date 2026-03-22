@@ -19,7 +19,7 @@ jobs:
       DJANGO_SECRET_KEY: "ci-django-secret-key-1234567890-abcdef"
       ADMIN_USER: "admin"
       ADMIN_PASSWORD: "ci-admin-password-123"
-      JWT_SECRET: "ci-jwt-secret-1234567890-abcdef"
+      JWT_SECRET: "ci-jwt-secret-1234567890-abcdefghijklmnopqrstuvwxyz"
       SESSION_COOKIE_SECURE: "true"
       CSRF_COOKIE_SECURE: "true"
       PARITY_MODE: "strict"
