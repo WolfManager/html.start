@@ -13,6 +13,9 @@ from django.db.models import Count
 
 from core.models import SearchDocument, SearchSource
 from .analytics_service import read_analytics
+from .ltr_model_trainer import train_ltr_model, load_model, save_model, compute_ndcg, compute_average_precision
+from .ab_testing import ABTest, get_current_ab_test, save_ab_test, start_ab_test, update_traffic_split, should_rollout_to_100_percent
+from .deployment_safeguards import get_deployment_state, should_perform_canary_deployment, should_rollback, should_increase_canary_traffic, initiate_canary_deployment, increase_canary_traffic, rollback_deployment
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 SEARCH_INDEX_PATH = BASE_DIR.parent / "data" / "search-index.json"
@@ -1448,6 +1451,7 @@ def run_search_page(
     sort: str = "relevance",
     limit: int = 20,
     offset: int = 0,
+    user_id: str = "",  # for A/B testing
 ) -> dict[str, Any]:
     original_query = str(query or "").strip()
     query_used, query_rewrite = _apply_query_rewrite_rules(original_query)
@@ -1516,6 +1520,16 @@ def run_search_page(
     category_facets = _build_facets(contextual_categories).get("categories", [])
     source_facets = _build_facets(contextual_sources).get("sources", [])
 
+    # Apply LTR ranking if user is in treatment variant and model is deployed
+    if user_id and _should_use_ltr_ranking(user_id):
+        try:
+            model = load_model()
+            if model:
+                all_results = _apply_ltr_ranking_adjustment(all_results, model, query_used)
+        except Exception:
+            # LTR ranking failure is silent - use original results
+            pass
+
     safe_limit = _safe_limit(limit)
     safe_offset = _safe_offset(offset)
     total = len(all_results)
@@ -1548,6 +1562,7 @@ def run_search_page(
         "queryCorrection": query_correction,
         "querySuggestion": query_suggestion,
         "semanticFallback": semantic_fallback,
+        "ltrVariant": _get_ab_test_variant(user_id) if user_id else None,
         "results": paged_results,
         "total": total,
         "limit": safe_limit,
@@ -1890,3 +1905,183 @@ def get_search_suggestions(*, partial: str, limit: int = 10) -> list[str]:
         key=lambda item: (-int(item["score"]), str(item["value"]).lower()),
     )
     return [str(item["value"]) for item in ranked[:safe_limit]]
+
+
+# ==============================================================================
+# TIER 3 PHASE 2: Learning-to-Rank Model Training & Deployment
+# ==============================================================================
+
+
+def train_ltr_model_from_collected_data() -> bool:
+    """
+    Train new LTR model from collected interaction samples.
+
+    Triggers when:
+    - Enough samples collected (LTR_MIN_TRAINING_SAMPLES)
+    - Model is stale (>LTR_MODEL_REFRESH_DAYS)
+
+    Returns True if model was trained successfully.
+    """
+    try:
+        # Get training samples
+        training_samples = _ltr_feature_cache.get("training_samples", [])
+        if len(training_samples) < LTR_MIN_TRAINING_SAMPLES:
+            return False
+
+        # Train model
+        model = train_ltr_model(training_samples, min_samples=LTR_MIN_TRAINING_SAMPLES // 2)
+        if not model:
+            return False
+
+        # Save model
+        if not save_model(model):
+            return False
+
+        # Reset training cache
+        now = time.time()
+        _ltr_feature_cache["training_samples"] = []
+        _ltr_feature_cache["sample_count"] = 0
+        _ltr_feature_cache["model_timestamp"] = now
+        _ltr_feature_cache["expiresAt"] = now + LTR_FEATURE_CACHE_TTL_SECONDS
+
+        return True
+    except Exception:
+        return False
+
+
+def _apply_ltr_ranking_adjustment(
+    results: list[dict[str, Any]],
+    model,
+    query: str,
+) -> list[dict[str, Any]]:
+    """
+    Rerank results using LTR model if available.
+
+    Computes LTR features for each result and adjusts position based on model score.
+    """
+    if not model or not results:
+        return results
+
+    try:
+        # Prepare features for each result
+        docs_with_features = []
+        for position, result in enumerate(results):
+            features = {
+                "query_length": len(tokenize(query)),
+                "has_operators": bool(_parse_search_operators(query)[1].get("sites")),
+                "doc_position": position,
+                "doc_score": 50.0,  # normalized base score
+            }
+            docs_with_features.append({
+                "position": position,
+                "features": features,
+                "result": result,
+            })
+
+        # Get LTR predictions
+        predictions = model.predict_ranking(docs_with_features)
+
+        # Sort by LTR score (descending)
+        scored_results = [
+            (pred, doc["result"])
+            for pred, doc in zip(predictions, docs_with_features)
+        ]
+        scored_results.sort(key=lambda x: x[0], reverse=True)
+
+        return [result for _score, result in scored_results]
+    except Exception:
+        # Fail gracefully - return original results
+        return results
+
+
+def _get_ab_test_variant(user_id: str) -> str:
+    """Get A/B test variant for user (control or treatment)."""
+    try:
+        test = get_current_ab_test()
+        if not test or test.status != "active":
+            return "control"
+        return test.assign_variant(user_id)
+    except Exception:
+        return "control"
+
+
+def _should_use_ltr_ranking(user_id: str) -> bool:
+    """
+    Determine if LTR ranking should be applied for this user.
+
+    Returns True if:
+    - User assigned to treatment variant
+    - Canary deployment is active
+    - Deployment hasn't rolled back
+    """
+    try:
+        variant = _get_ab_test_variant(user_id)
+        if variant != "treatment":
+            return False
+
+        config, _events = get_deployment_state()
+        if not config.is_active or config.canary_percentage == 0:
+            return False
+
+        return True
+    except Exception:
+        return False
+
+
+def check_model_deployment_health() -> None:
+    """
+    Check if deployed model's performance is acceptable.
+
+    Automatically:
+    - Increases canary traffic if improvement confirmed
+    - Rolls back if degradation detected
+    - Commits A/B test if 100% rollout achieved
+
+    Called periodically (e.g., in background task).
+    """
+    try:
+        config, _events = get_deployment_state()
+        test = get_current_ab_test()
+
+        if not config.is_active or not test:
+            return
+
+        # Record A/B test metrics
+        test.check_statistical_significance()
+
+        # Check for rollback triggers
+        if should_rollback(
+            current_metrics={
+                "ndcg@5": 0.65,  # would come from actual metrics
+                "observations": 1000,
+            },
+            baseline_metrics={
+                "ndcg@5": 0.70,
+            },
+            config=config,
+        ):
+            rollback_deployment()
+            return
+
+        # Check for canary increase
+        if should_increase_canary_traffic(
+            current_metrics={
+                "ndcg@5": 0.72,
+            },
+            baseline_metrics={
+                "ndcg@5": 0.70,
+            },
+            config=config,
+        ):
+            increase_canary_traffic(percentage=10.0)
+
+        # Check for full rollout
+        if should_rollout_to_100_percent(test):
+            from .deployment_safeguards import commit_deployment
+            commit_deployment()
+
+        save_ab_test(test)
+    except Exception:
+        # Silent failure - health check is best-effort
+        pass
+

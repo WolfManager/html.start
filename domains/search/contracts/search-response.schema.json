@@ -84,6 +84,11 @@
         }
       }
     },
+    "ltrVariant": {
+      "type": ["string", "null"],
+      "enum": ["control", "treatment", null],
+      "description": "A/B test variant for learning-to-rank ranking algorithm"
+    },
     "suggestions": {
       "type": "array",
       "items": {
