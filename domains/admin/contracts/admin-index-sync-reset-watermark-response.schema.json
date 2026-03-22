@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "magneto/domains/admin/contracts/admin-index-sync-reset-watermark-response.schema.json",
+  "title": "AdminIndexSyncResetWatermarkResponse",
+  "type": "object",
+  "required": ["ok", "generatedAt", "state"],
+  "properties": {
+    "ok": {
+      "type": "boolean"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "state": {
+      "type": "object",
+      "required": ["updatedSince", "lastRunAt", "lastSuccessAt", "lastError"],
+      "properties": {
+        "updatedSince": { "type": "string" },
+        "lastRunAt": { "type": "string" },
+        "lastSuccessAt": { "type": "string" },
+        "lastError": { "type": "string" }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

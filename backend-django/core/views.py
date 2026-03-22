@@ -48,6 +48,13 @@ from .services.index_backups_service import (
 )
 from .services.index_refresh_service import rebuild_search_index
 from .services.index_status_service import build_index_status_payload
+from .services.search_status_service import build_search_status_payload
+from .services.search_sync_service import (
+    read_django_sync_state,
+    update_django_sync_state,
+    reset_watermark,
+    build_sync_state_payload,
+)
 from .services.assistant_service import generate_assistant_response, probe_providers_health
 from .services.location_service import resolve_approx_location
 from .services.runtime_metrics_service import get_runtime_metrics
@@ -856,6 +863,65 @@ def admin_index_sync_status(request):
             **payload,
         }
     )
+
+
+@api_view(["GET"])
+def admin_search_status(request):
+    auth_error = _admin_auth_error(request)
+    if auth_error is not None:
+        return auth_error
+
+    return Response(
+        {
+            "ok": True,
+            "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "search": build_search_status_payload(),
+        }
+    )
+
+
+@api_view(["POST"])
+def admin_index_sync_django(request):
+    auth_error = _admin_auth_error(request)
+    if auth_error is not None:
+        return auth_error
+
+    payload = request.data or {}
+
+    # TODO: Implement sync from Django backend
+    # For now, return a placeholder response
+    return Response(
+        {
+            "ok": False,
+            "error": "Not yet implemented",
+        },
+        status=status.HTTP_501_NOT_IMPLEMENTED,
+    )
+
+
+@api_view(["POST"])
+def admin_index_sync_reset_watermark(request):
+    auth_error = _admin_auth_error(request)
+    if auth_error is not None:
+        return auth_error
+
+    payload = request.data or {}
+    updated_since = str(payload.get("updatedSince") or "").strip()
+
+    try:
+        new_state = reset_watermark(updated_since=updated_since if updated_since else "")
+        return Response(
+            {
+                "ok": True,
+                "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "state": build_sync_state_payload(new_state),
+            }
+        )
+    except ValueError as e:
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
 
 @api_view(["POST"])

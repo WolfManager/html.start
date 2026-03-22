@@ -834,6 +834,105 @@ class CoreApiTests(TestCase):
         self.assertIn("level", health)
         self.assertIn(health.get("level"), {"ok", "warning", "critical"})
 
+    def test_admin_search_status_requires_admin_auth(self) -> None:
+        response = self.client.get("/api/admin/search/status")
+        self.assertEqual(response.status_code, 401)
+
+    def test_admin_search_status_returns_expected_shape_for_admin(self) -> None:
+        token = self._admin_token()
+        response = self.client.get(
+            "/api/admin/search/status",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        payload = self._json(response)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(payload.get("ok"), True)
+        self.assertIn("generatedAt", payload)
+
+        search = payload.get("search") or {}
+        self.assertIn("sources", search)
+        self.assertIn("documents", search)
+        self.assertIn("blockRules", search)
+        self.assertIn("latestRun", search)
+        self.assertIn("recentRuns", search)
+        self.assertIn("rankingConfig", search)
+        self.assertIn("rewriteRules", search)
+
+        # Verify nested structure
+        sources = search.get("sources") or {}
+        self.assertIn("active", sources)
+        self.assertIn("total", sources)
+
+        docs = search.get("documents") or {}
+        self.assertIn("indexed", docs)
+        self.assertIn("blocked", docs)
+        self.assertIn("errors", docs)
+
+    def test_admin_index_sync_reset_watermark_requires_admin_auth(self) -> None:
+        response = self.client.post(
+            "/api/admin/index/sync-reset-watermark",
+            {},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 401)
+
+    def test_admin_index_sync_reset_watermark_clears_error_for_admin(self) -> None:
+        token = self._admin_token()
+        response = self.client.post(
+            "/api/admin/index/sync-reset-watermark",
+            {"updatedSince": ""},
+            format="json",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        payload = self._json(response)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(payload.get("ok"), True)
+        self.assertIn("generatedAt", payload)
+
+        state = payload.get("state") or {}
+        self.assertIn("updatedSince", state)
+        self.assertIn("lastRunAt", state)
+        self.assertIn("lastSuccessAt", state)
+        self.assertIn("lastError", state)
+        self.assertEqual(state.get("lastError"), "")
+
+    def test_admin_index_sync_reset_watermark_rejects_invalid_datetime(self) -> None:
+        token = self._admin_token()
+        response = self.client.post(
+            "/api/admin/index/sync-reset-watermark",
+            {"updatedSince": "invalid-date"},
+            format="json",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        payload = self._json(response)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("error", payload)
+
+    def test_admin_overview_with_range_parameter_for_admin(self) -> None:
+        token = self._admin_token()
+        response = self.client.get(
+            "/api/admin/overview?range=24h",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        payload = self._json(response)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(payload.get("range"), "24h")
+        self.assertIn("generatedAt", payload)
+        self.assertIn("comparison", payload)
+        self.assertIn("totals", payload)
+        self.assertIn("topQueries", payload)
+        self.assertIn("trafficByPage", payload)
+        self.assertIn("latestSearches", payload)
+
+        totals = payload.get("totals") or {}
+        self.assertIn("totalSearches", totals)
+        self.assertIn("totalPageViews", totals)
+        self.assertIn("uniqueQueries", totals)
+
     # ── Routing Control ────────────────────────────────────────────────────────
 
     def test_admin_routing_requires_admin_auth(self) -> None:

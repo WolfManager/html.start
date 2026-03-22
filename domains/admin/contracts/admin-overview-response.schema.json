@@ -1,0 +1,206 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "magneto/domains/admin/contracts/admin-overview-response.schema.json",
+  "title": "AdminOverviewResponse",
+  "type": "object",
+  "required": [
+    "ok",
+    "generatedAt",
+    "range",
+    "comparison",
+    "clickSignalConfig",
+    "clickSignalTelemetry",
+    "totals",
+    "topQueries",
+    "topClickedResults",
+    "topClickPairs",
+    "trafficByPage",
+    "latestSearches",
+    "trends"
+  ],
+  "properties": {
+    "ok": {
+      "type": "boolean"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "range": {
+      "type": "string",
+      "enum": ["all", "24h", "7d", "30d"]
+    },
+    "comparison": {
+      "type": "object",
+      "required": ["previousTotals", "deltaPercent"],
+      "properties": {
+        "previousTotals": {
+          "type": "object",
+          "required": [
+            "totalSearches",
+            "totalPageViews",
+            "uniqueQueries",
+            "totalResultClicks"
+          ],
+          "properties": {
+            "totalSearches": { "type": "integer", "minimum": 0 },
+            "totalPageViews": { "type": "integer", "minimum": 0 },
+            "uniqueQueries": { "type": "integer", "minimum": 0 },
+            "totalResultClicks": { "type": "integer", "minimum": 0 }
+          },
+          "additionalProperties": true
+        },
+        "deltaPercent": {
+          "type": "object",
+          "required": [
+            "totalSearches",
+            "totalPageViews",
+            "uniqueQueries",
+            "totalResultClicks"
+          ],
+          "properties": {
+            "totalSearches": { "type": ["number", "null"] },
+            "totalPageViews": { "type": ["number", "null"] },
+            "uniqueQueries": { "type": ["number", "null"] },
+            "totalResultClicks": { "type": ["number", "null"] }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "clickSignalConfig": {
+      "type": "object",
+      "properties": {
+        "windowDays": { "type": "integer" },
+        "decayHalfLifeDays": { "type": "integer" },
+        "decayMinWeight": { "type": "number" },
+        "maxBoost": { "type": "number" },
+        "ctrMaxBoost": { "type": "number" },
+        "guardrailMinBaseScore": { "type": "number" },
+        "guardrailMaxShare": { "type": "number" },
+        "dedupSeconds": { "type": "integer" },
+        "rangeStartAt": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "clickSignalTelemetry": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "totals": {
+      "type": "object",
+      "required": [
+        "totalSearches",
+        "totalPageViews",
+        "uniqueQueries",
+        "totalResultClicks",
+        "uniqueClickedUrls",
+        "clickThroughRate"
+      ],
+      "properties": {
+        "totalSearches": { "type": "integer", "minimum": 0 },
+        "totalPageViews": { "type": "integer", "minimum": 0 },
+        "uniqueQueries": { "type": "integer", "minimum": 0 },
+        "totalResultClicks": { "type": "integer", "minimum": 0 },
+        "uniqueClickedUrls": { "type": "integer", "minimum": 0 },
+        "clickThroughRate": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "topQueries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["query", "count", "percent"],
+        "properties": {
+          "query": { "type": "string" },
+          "count": { "type": "integer", "minimum": 0 },
+          "percent": { "type": "number", "minimum": 0 }
+        },
+        "additionalProperties": true
+      }
+    },
+    "topClickedResults": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["url", "title", "lastQuery", "count", "percent", "lastAt"],
+        "properties": {
+          "url": { "type": "string" },
+          "title": { "type": "string" },
+          "lastQuery": { "type": "string" },
+          "count": { "type": "integer", "minimum": 0 },
+          "percent": { "type": "number", "minimum": 0 },
+          "lastAt": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "topClickPairs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "query",
+          "url",
+          "title",
+          "count",
+          "percent",
+          "queryTotalClicks",
+          "ctrPercent",
+          "lastAt"
+        ],
+        "properties": {
+          "query": { "type": "string" },
+          "url": { "type": "string" },
+          "title": { "type": "string" },
+          "count": { "type": "integer", "minimum": 0 },
+          "percent": { "type": "number", "minimum": 0 },
+          "queryTotalClicks": { "type": "integer", "minimum": 0 },
+          "ctrPercent": { "type": "number", "minimum": 0 },
+          "lastAt": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "trafficByPage": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["page", "count", "percent"],
+        "properties": {
+          "page": { "type": "string" },
+          "count": { "type": "integer", "minimum": 0 },
+          "percent": { "type": "number", "minimum": 0 }
+        },
+        "additionalProperties": true
+      }
+    },
+    "latestSearches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "query", "resultCount", "ip", "at"],
+        "properties": {
+          "id": { "type": "string" },
+          "query": { "type": "string" },
+          "resultCount": { "type": "integer", "minimum": 0 },
+          "ip": { "type": "string" },
+          "at": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "trends": {
+      "type": "object",
+      "required": ["daily", "weekly"],
+      "properties": {
+        "daily": { "type": "array" },
+        "weekly": { "type": "array" }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

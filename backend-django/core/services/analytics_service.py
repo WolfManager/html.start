@@ -203,3 +203,400 @@ def log_result_click(*, url: str, title: str, query: str, ip: str) -> None:
     analytics.setdefault("pageViews", [])
     analytics["resultClicks"] = _trim_list(result_clicks, 50000)
     write_analytics(analytics)
+
+
+def build_overview_payload(range_type: str = "all") -> dict[str, Any]:
+    """
+    Build comprehensive analytics overview for admin dashboard.
+
+    Args:
+        range_type: "all", "24h", "7d", or "30d"
+
+    Returns:
+        Dict with overview analytics including totals, top queries, clicked results, trends, etc.
+    """
+    from datetime import timedelta
+    from collections import Counter, defaultdict
+
+    analytics_data = read_analytics()
+
+    # Determine time range
+    now = datetime.now(timezone.utc)
+    cutoff_time = _get_cutoff_time(now, range_type)
+
+    # Filter events by time range
+    searches = _filter_by_time(analytics_data.get("searches", []), cutoff_time)
+    page_views = _filter_by_time(analytics_data.get("pageViews", []), cutoff_time)
+    result_clicks = _filter_by_time(analytics_data.get("resultClicks", []), cutoff_time)
+
+    # Get previous period for comparison
+    prev_cutoff = _get_previous_period_cutoff(cutoff_time, range_type)
+    prev_searches = _filter_by_time_range(
+        analytics_data.get("searches", []), prev_cutoff, cutoff_time
+    )
+    prev_page_views = _filter_by_time_range(
+        analytics_data.get("pageViews", []), prev_cutoff, cutoff_time
+    )
+    prev_clicks = _filter_by_time_range(
+        analytics_data.get("resultClicks", []), prev_cutoff, cutoff_time
+    )
+
+    # Compute metrics
+    totals = _compute_totals(searches, page_views, result_clicks)
+    prev_totals = _compute_totals(prev_searches, prev_page_views, prev_clicks)
+
+    # Compute comparisons
+    deltas = _compute_delta_percent(totals, prev_totals)
+
+    # Get click signal config
+    click_signal_config = _get_click_signal_config(cutoff_time)
+
+    # Get top items
+    top_queries = _get_top_queries(searches, limit=10)
+    top_clicked_results = _get_top_clicked_results(result_clicks, limit=12)
+    top_click_pairs = _get_top_click_pairs(result_clicks, searches, limit=12)
+
+    # Get traffic by page
+    traffic_by_page = _get_traffic_by_page(page_views, limit=20)
+
+    # Get latest searches
+    latest_searches = _get_latest_searches(searches, limit=20)
+
+    # Build trends
+    trends = _build_trends(searches, page_views, result_clicks, range_type)
+
+    return {
+        "range": range_type,
+        "comparison": {
+            "previousTotals": prev_totals,
+            "deltaPercent": deltas,
+        },
+        "clickSignalConfig": click_signal_config,
+        "clickSignalTelemetry": {},
+        "totals": totals,
+        "topQueries": top_queries,
+        "topClickedResults": top_clicked_results,
+        "topClickPairs": top_click_pairs,
+        "trafficByPage": traffic_by_page,
+        "latestSearches": latest_searches,
+        "trends": trends,
+    }
+
+
+def _get_cutoff_time(now: datetime, range_type: str) -> datetime:
+    """Get cutoff time for the given range type."""
+    from datetime import timedelta
+
+    if range_type == "24h":
+        return now - timedelta(hours=24)
+    elif range_type == "7d":
+        return now - timedelta(days=7)
+    elif range_type == "30d":
+        return now - timedelta(days=30)
+    else:  # "all"
+        return datetime.min.replace(tzinfo=timezone.utc)
+
+
+def _get_previous_period_cutoff(cutoff_time: datetime, range_type: str) -> datetime:
+    """Get cutoff time for the previous period of same length."""
+    from datetime import timedelta
+
+    now = datetime.now(timezone.utc)
+
+    if range_type == "24h":
+        period_length = timedelta(hours=24)
+    elif range_type == "7d":
+        period_length = timedelta(days=7)
+    elif range_type == "30d":
+        period_length = timedelta(days=30)
+    else:  # "all"
+        return datetime.min.replace(tzinfo=timezone.utc)
+
+    # Previous period cutoff is 2 * period_length before now
+    return now - (2 * period_length)
+
+
+def _filter_by_time(events: list[dict[str, Any]], cutoff_time: datetime) -> list[dict[str, Any]]:
+    """Filter events that occurred after cutoff_time."""
+    result = []
+    for event in events:
+        event_time = _parse_timestamp_iso(event.get("at"))
+        if event_time and event_time >= cutoff_time:
+            result.append(event)
+    return result
+
+
+def _filter_by_time_range(
+    events: list[dict[str, Any]], start_time: datetime, end_time: datetime
+) -> list[dict[str, Any]]:
+    """Filter events within time range [start_time, end_time)."""
+    result = []
+    for event in events:
+        event_time = _parse_timestamp_iso(event.get("at"))
+        if event_time and start_time <= event_time < end_time:
+            result.append(event)
+    return result
+
+
+def _parse_timestamp_iso(timestamp_str: str | None) -> datetime | None:
+    """Parse ISO timestamp string to datetime."""
+    if not timestamp_str:
+        return None
+    try:
+        text = str(timestamp_str).strip()
+        if text.endswith("Z"):
+            text = text[:-1] + "+00:00"
+        return datetime.fromisoformat(text)
+    except (ValueError, AttributeError):
+        return None
+
+
+def _compute_totals(
+    searches: list[dict[str, Any]],
+    page_views: list[dict[str, Any]],
+    clicks: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Compute aggregate metrics."""
+    from collections import Counter
+
+    total_searches = len(searches)
+    total_page_views = len(page_views)
+    total_clicks = len(clicks)
+
+    # Unique queries and URLs
+    unique_queries = set()
+    for search in searches:
+        query = str(search.get("query") or "").strip().lower()
+        if query:
+            unique_queries.add(query)
+
+    unique_clicked_urls = set()
+    for click in clicks:
+        url = str(click.get("url") or "").strip().lower()
+        if url:
+            unique_clicked_urls.add(url)
+
+    # CTR
+    ctr = (total_clicks / total_searches * 100) if total_searches > 0 else 0
+
+    return {
+        "totalSearches": total_searches,
+        "totalPageViews": total_page_views,
+        "uniqueQueries": len(unique_queries),
+        "totalResultClicks": total_clicks,
+        "uniqueClickedUrls": len(unique_clicked_urls),
+        "clickThroughRate": round(ctr, 2),
+    }
+
+
+def _compute_delta_percent(current: dict[str, Any], previous: dict[str, Any]) -> dict[str, Any]:
+    """Compute percentage change from previous period."""
+    return {
+        "totalSearches": _delta_percent(
+            current["totalSearches"], previous["totalSearches"]
+        ),
+        "totalPageViews": _delta_percent(
+            current["totalPageViews"], previous["totalPageViews"]
+        ),
+        "uniqueQueries": _delta_percent(
+            current["uniqueQueries"], previous["uniqueQueries"]
+        ),
+        "totalResultClicks": _delta_percent(
+            current["totalResultClicks"], previous["totalResultClicks"]
+        ),
+    }
+
+
+def _delta_percent(current: int, previous: int) -> float | None:
+    """Compute delta percentage."""
+    if previous == 0:
+        return None if current == 0 else 100.0
+    return round(((current - previous) / previous) * 100, 2)
+
+
+def _get_click_signal_config(range_start: datetime) -> dict[str, Any]:
+    """Get click signal configuration for overview."""
+    return {
+        "windowDays": 90,
+        "decayHalfLifeDays": 30,
+        "decayMinWeight": 0.1,
+        "maxBoost": 2.0,
+        "ctrMaxBoost": 1.5,
+        "guardrailMinBaseScore": 0.3,
+        "guardrailMaxShare": 0.3,
+        "dedupSeconds": 3600,
+        "rangeStartAt": range_start.isoformat().replace("+00:00", "Z"),
+    }
+
+
+def _get_top_queries(searches: list[dict[str, Any]], limit: int = 10) -> list[dict[str, Any]]:
+    """Get top queries by count."""
+    from collections import Counter
+
+    query_counts = Counter()
+    for search in searches:
+        query = str(search.get("query") or "").strip().lower()
+        if query:
+            query_counts[query] += 1
+
+    total = sum(query_counts.values())
+    result = []
+    for query, count in query_counts.most_common(limit):
+        result.append({
+            "query": query,
+            "count": count,
+            "percent": round((count / total * 100), 2) if total > 0 else 0,
+        })
+    return result
+
+
+def _get_top_clicked_results(clicks: list[dict[str, Any]], limit: int = 12) -> list[dict[str, Any]]:
+    """Get top clicked URLs."""
+    from collections import defaultdict
+
+    url_data = defaultdict(lambda: {"count": 0, "last_at": None})
+
+    for click in clicks:
+        url = str(click.get("url") or "").strip().lower()
+        if url:
+            url_data[url]["count"] += 1
+            click_time = _parse_timestamp_iso(click.get("at"))
+            if click_time and (url_data[url]["last_at"] is None or click_time > url_data[url]["last_at"]):
+                url_data[url]["last_at"] = click_time
+                url_data[url]["title"] = str(click.get("title") or "").strip()
+                url_data[url]["last_query"] = str(click.get("query") or "").strip()
+
+    total = sum(item["count"] for item in url_data.values())
+    result = []
+
+    # Sort by count descending
+    sorted_urls = sorted(url_data.items(), key=lambda x: x[1]["count"], reverse=True)
+
+    for url, data in sorted_urls[:limit]:
+        last_at = (
+            data["last_at"].isoformat().replace("+00:00", "Z")
+            if data["last_at"]
+            else ""
+        )
+        result.append({
+            "url": url,
+            "title": data.get("title", ""),
+            "lastQuery": data.get("last_query", ""),
+            "count": data["count"],
+            "percent": round((data["count"] / total * 100), 2) if total > 0 else 0,
+            "lastAt": last_at,
+        })
+    return result
+
+
+def _get_top_click_pairs(
+    clicks: list[dict[str, Any]], searches: list[dict[str, Any]], limit: int = 12
+) -> list[dict[str, Any]]:
+    """Get top query-URL click pairs."""
+    from collections import Counter, defaultdict
+
+    pair_data = defaultdict(lambda: {"count": 0, "last_at": None})
+
+    # Count clicks by (query, url) pair
+    for click in clicks:
+        query = str(click.get("query") or "").strip().lower()
+        url = str(click.get("url") or "").strip().lower()
+        if query and url:
+            key = (query, url)
+            pair_data[key]["count"] += 1
+            click_time = _parse_timestamp_iso(click.get("at"))
+            if click_time and (pair_data[key]["last_at"] is None or click_time > pair_data[key]["last_at"]):
+                pair_data[key]["last_at"] = click_time
+                pair_data[key]["title"] = str(click.get("title") or "").strip()
+
+    # Count searches by query
+    search_counts = Counter()
+    for search in searches:
+        query = str(search.get("query") or "").strip().lower()
+        if query:
+            search_counts[query] += 1
+
+    total_clicks = sum(item["count"] for item in pair_data.values())
+    result = []
+
+    # Sort by count descending
+    sorted_pairs = sorted(pair_data.items(), key=lambda x: x[1]["count"], reverse=True)
+
+    for (query, url), data in sorted_pairs[:limit]:
+        query_total = search_counts.get(query, 0)
+        ctr_percent = round(
+            (data["count"] / query_total * 100), 2
+        ) if query_total > 0 else 0
+        last_at = (
+            data["last_at"].isoformat().replace("+00:00", "Z")
+            if data["last_at"]
+            else ""
+        )
+        result.append({
+            "query": query,
+            "url": url,
+            "title": data.get("title", ""),
+            "count": data["count"],
+            "percent": round((data["count"] / total_clicks * 100), 2) if total_clicks > 0 else 0,
+            "queryTotalClicks": query_total,
+            "ctrPercent": ctr_percent,
+            "lastAt": last_at,
+        })
+    return result
+
+
+def _get_traffic_by_page(page_views: list[dict[str, Any]], limit: int = 20) -> list[dict[str, Any]]:
+    """Get page view counts by page."""
+    from collections import Counter
+
+    page_counts = Counter()
+    for pv in page_views:
+        page = str(pv.get("page") or "").strip()
+        if page:
+            page_counts[page] += 1
+
+    total = sum(page_counts.values())
+    result = []
+    for page, count in page_counts.most_common(limit):
+        result.append({
+            "page": page,
+            "count": count,
+            "percent": round((count / total * 100), 2) if total > 0 else 0,
+        })
+    return result
+
+
+def _get_latest_searches(searches: list[dict[str, Any]], limit: int = 20) -> list[dict[str, Any]]:
+    """Get latest searches."""
+    # Sort by timestamp descending
+    sorted_searches = sorted(
+        searches,
+        key=lambda s: _parse_timestamp_iso(s.get("at")) or datetime.min,
+        reverse=True,
+    )
+
+    result = []
+    for search in sorted_searches[:limit]:
+        result.append({
+            "id": str(search.get("id") or "").strip(),
+            "query": str(search.get("query") or "").strip(),
+            "resultCount": int(search.get("resultCount") or 0),
+            "ip": str(search.get("ip") or "").strip(),
+            "at": str(search.get("at") or "").strip(),
+        })
+    return result
+
+
+def _build_trends(
+    searches: list[dict[str, Any]],
+    page_views: list[dict[str, Any]],
+    clicks: list[dict[str, Any]],
+    range_type: str,
+) -> dict[str, Any]:
+    """Build daily and weekly trends."""
+    if range_type == "all":
+        # Can't compute meaningful trends for "all"
+        return {"daily": [], "weekly": []}
+
+    # For now, return empty trends (can be extended later)
+    return {"daily": [], "weekly": []}

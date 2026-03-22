@@ -11,6 +11,8 @@ from .views import (
     admin_index_restore,
     admin_index_status,
     admin_index_sync_status,
+    admin_index_sync_django,
+    admin_index_sync_reset_watermark,
     admin_assistant_status,
     admin_search_crawl,
     admin_search_export,
@@ -68,4 +70,6 @@ urlpatterns = [
     path("admin/index/restore", admin_index_restore, name="admin-index-restore"),
     path("admin/index/status", admin_index_status, name="admin-index-status"),
     path("admin/index/sync-status", admin_index_sync_status, name="admin-index-sync-status"),
+    path("admin/index/sync-django", admin_index_sync_django, name="admin-index-sync-django"),
+    path("admin/index/sync-reset-watermark", admin_index_sync_reset_watermark, name="admin-index-sync-reset-watermark"),
 ]

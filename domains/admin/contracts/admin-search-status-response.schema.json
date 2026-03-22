@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "magneto/domains/admin/contracts/admin-search-status-response.schema.json",
+  "title": "AdminSearchStatusResponse",
+  "type": "object",
+  "required": ["ok", "generatedAt", "search"],
+  "properties": {
+    "ok": {
+      "type": "boolean"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "search": {
+      "type": "object",
+      "required": [
+        "sources",
+        "documents",
+        "blockRules",
+        "latestRun",
+        "recentRuns",
+        "rankingConfig",
+        "rewriteRules"
+      ],
+      "properties": {
+        "sources": {
+          "type": "object",
+          "required": ["active", "total"],
+          "properties": {
+            "active": { "type": "integer", "minimum": 0 },
+            "total": { "type": "integer", "minimum": 0 }
+          },
+          "additionalProperties": true
+        },
+        "documents": {
+          "type": "object",
+          "required": ["indexed", "blocked", "errors"],
+          "properties": {
+            "indexed": { "type": "integer", "minimum": 0 },
+            "blocked": { "type": "integer", "minimum": 0 },
+            "errors": { "type": "integer", "minimum": 0 }
+          },
+          "additionalProperties": true
+        },
+        "blockRules": { "type": "integer", "minimum": 0 },
+        "latestRun": {
+          "type": "object",
+          "required": [
+            "id",
+            "status",
+            "startedAt",
+            "finishedAt",
+            "pagesSeen",
+            "pagesIndexed",
+            "pagesUpdated",
+            "pagesFailed",
+            "pagesBlocked",
+            "source",
+            "durationMs",
+            "lastError"
+          ],
+          "properties": {
+            "id": { "type": "string" },
+            "status": {
+              "type": "string",
+              "enum": ["running", "error", "success", "idle"]
+            },
+            "startedAt": { "type": "string" },
+            "finishedAt": { "type": "string" },
+            "pagesSeen": { "type": "integer", "minimum": 0 },
+            "pagesIndexed": { "type": "integer", "minimum": 0 },
+            "pagesUpdated": { "type": "integer", "minimum": 0 },
+            "pagesFailed": { "type": "integer", "minimum": 0 },
+            "pagesBlocked": { "type": "integer", "minimum": 0 },
+            "source": { "type": "string" },
+            "durationMs": { "type": "integer", "minimum": 0 },
+            "lastError": { "type": "string" }
+          },
+          "additionalProperties": true
+        },
+        "recentRuns": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "rankingConfig": {
+          "type": "object",
+          "required": [
+            "coverageThresholdByIntent",
+            "sourceAuthorityBoosts",
+            "optionalQueryTokens"
+          ],
+          "properties": {
+            "coverageThresholdByIntent": { "type": "object" },
+            "sourceAuthorityBoosts": { "type": "object" },
+            "optionalQueryTokens": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          },
+          "additionalProperties": true
+        },
+        "rewriteRules": {
+          "type": "object",
+          "required": ["enabled", "total"],
+          "properties": {
+            "enabled": { "type": "integer", "minimum": 0 },
+            "total": { "type": "integer", "minimum": 0 }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}
