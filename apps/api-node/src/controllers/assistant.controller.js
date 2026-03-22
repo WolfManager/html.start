@@ -114,29 +114,38 @@ function createAssistantChatController({
 
     const cached = getAssistantCacheEntry(cacheKey);
     if (cached) {
-      assistantMetrics.cacheHits += 1;
-      storeAssistantMemory({
-        ip,
-        message,
-        reply: cached.reply,
-        provider: "cache",
-        helper: cached.helper || helper,
-        model: cached.model || "hybrid",
-      });
-      incrementMetricCounter(assistantMetrics.providerCounts, "cache");
-      incrementMetricCounter(
-        assistantMetrics.helperCounts,
-        cached.helper || helper,
-      );
-      res.json({
-        ok: true,
-        provider: "cache",
-        model: cached.model || "hybrid",
-        helper: cached.helper || helper,
-        reply: cached.reply,
-        suggestions: cached.suggestions,
-      });
-      return;
+      const isStaleGenericRuleReply =
+        String(cached.model || "") === "rule-based" &&
+        String(cached.reply || "").trim() ===
+          "Good topic. Here are refined search options.";
+
+      if (isStaleGenericRuleReply) {
+        // Ignore stale legacy fallback cache entries and regenerate response.
+      } else {
+        assistantMetrics.cacheHits += 1;
+        storeAssistantMemory({
+          ip,
+          message,
+          reply: cached.reply,
+          provider: "cache",
+          helper: cached.helper || helper,
+          model: cached.model || "hybrid",
+        });
+        incrementMetricCounter(assistantMetrics.providerCounts, "cache");
+        incrementMetricCounter(
+          assistantMetrics.helperCounts,
+          cached.helper || helper,
+        );
+        res.json({
+          ok: true,
+          provider: "cache",
+          model: cached.model || "hybrid",
+          helper: cached.helper || helper,
+          reply: cached.reply,
+          suggestions: cached.suggestions,
+        });
+        return;
+      }
     }
 
     if (isSimpleAssistantQuery(message)) {

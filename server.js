@@ -2176,13 +2176,22 @@ function isSimpleAssistantQuery(message) {
   }
 
   const wordCount = normalized.split(/\s+/).filter(Boolean).length;
-  if (wordCount <= ASSISTANT_SIMPLE_QUERY_WORDS) {
+  const knownSimpleIntent =
+    /^(help|ajutor|hello|hi|salut|buna|weather|news|jobs?|career|cv|time|date)\b/.test(
+      normalized,
+    );
+
+  // Keep very short prompts local for speed, but avoid routing every
+  // short question to the generic rule-based fallback.
+  if (wordCount <= 2) {
     return true;
   }
 
-  return /^(help|ajutor|hello|hi|salut|buna|weather|news|jobs?|career|cv|time|date)\b/.test(
-    normalized,
-  );
+  if (wordCount <= ASSISTANT_SIMPLE_QUERY_WORDS && knownSimpleIntent) {
+    return true;
+  }
+
+  return knownSimpleIntent;
 }
 
 function buildRuleBasedAssistantResponse(message) {
@@ -2196,6 +2205,18 @@ function buildRuleBasedAssistantResponse(message) {
         "latest tech news",
         "weather this weekend",
         "improve my CV summary",
+      ],
+    };
+  }
+
+  if (/^(ce faci|ce mai faci|esti acolo|ești acolo|nu spui nimic)\b/.test(q)) {
+    return {
+      reply:
+        "Sunt aici. Spune-mi exact ce vrei sa rezolvi si iti raspund direct, in pasi clari.",
+      suggestions: [
+        "explica pe scurt subiectul",
+        "fa-mi un plan in 3 pasi",
+        "compara doua optiuni",
       ],
     };
   }
@@ -2242,7 +2263,8 @@ function buildRuleBasedAssistantResponse(message) {
   }
 
   return {
-    reply: "Good topic. Here are refined search options.",
+    reply:
+      "Pot sa te ajut mai bine daca imi spui rezultatul dorit: explicatie, pasi practici, comparatie sau rezumat.",
     suggestions: [`${raw} guide`, `${raw} 2026`, `${raw} explained`],
   };
 }
