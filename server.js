@@ -2715,8 +2715,36 @@ function buildAssistantSystemPrompt(helper) {
     'Respond naturally in plain text. JSON format is optional: {"reply": string, "suggestions": string[]}. ' +
     "Provide complete, useful answers with clear structure when needed. Match the user's language by default. " +
     "If user asks to change language, switch immediately and continue in that language. " +
+    "Never return placeholder replies or vague generic lines. If intent is unclear, ask one concise clarifying question and offer one concrete next step. " +
     "Suggestions, if included, should be concise and useful next prompts in the same language as your reply unless the user requests another language."
   );
+}
+
+function isLowQualityAssistantReply(message, reply) {
+  const normalizedReply = normalizeAssistantQueryKey(reply);
+  const normalizedMessage = normalizeAssistantQueryKey(message);
+
+  if (!normalizedReply || normalizedReply.length < 12) {
+    return true;
+  }
+
+  const blockedGenericReplies = new Set([
+    "good topic here are refined search options",
+    "try a narrower follow-up prompt",
+    "try a narrower follow up prompt",
+    "i can help with that",
+    "can you clarify",
+  ]);
+
+  if (blockedGenericReplies.has(normalizedReply)) {
+    return true;
+  }
+
+  if (normalizedMessage && normalizedReply === normalizedMessage) {
+    return true;
+  }
+
+  return false;
 }
 
 function buildSafeAssistantHistory(history) {
@@ -3104,6 +3132,9 @@ async function generateAssistantResponse({ message, history, helper }) {
           history,
           helper,
         });
+        if (isLowQualityAssistantReply(message, result.reply)) {
+          throw new Error("OpenAI returned low-quality reply.");
+        }
         markProviderSuccess(provider);
         return result;
       }
@@ -3114,6 +3145,9 @@ async function generateAssistantResponse({ message, history, helper }) {
           history,
           helper,
         });
+        if (isLowQualityAssistantReply(message, result.reply)) {
+          throw new Error("Anthropic returned low-quality reply.");
+        }
         markProviderSuccess(provider);
         return result;
       }
@@ -3124,6 +3158,9 @@ async function generateAssistantResponse({ message, history, helper }) {
           history,
           helper,
         });
+        if (isLowQualityAssistantReply(message, result.reply)) {
+          throw new Error("Gemini returned low-quality reply.");
+        }
         markProviderSuccess(provider);
         return result;
       }
@@ -3138,6 +3175,9 @@ async function generateAssistantResponse({ message, history, helper }) {
                 history,
                 helper,
               });
+              if (isLowQualityAssistantReply(message, retryOpenAi.reply)) {
+                throw new Error("OpenAI retry returned low-quality reply.");
+              }
               markProviderSuccess(provider);
               return retryOpenAi;
             }
@@ -3148,6 +3188,9 @@ async function generateAssistantResponse({ message, history, helper }) {
                 history,
                 helper,
               });
+              if (isLowQualityAssistantReply(message, retryAnthropic.reply)) {
+                throw new Error("Anthropic retry returned low-quality reply.");
+              }
               markProviderSuccess(provider);
               return retryAnthropic;
             }
@@ -3158,6 +3201,9 @@ async function generateAssistantResponse({ message, history, helper }) {
                 history,
                 helper,
               });
+              if (isLowQualityAssistantReply(message, retryGemini.reply)) {
+                throw new Error("Gemini retry returned low-quality reply.");
+              }
               markProviderSuccess(provider);
               return retryGemini;
             }
