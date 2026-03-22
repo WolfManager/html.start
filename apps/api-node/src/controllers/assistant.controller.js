@@ -118,8 +118,11 @@ function createAssistantChatController({
         String(cached.model || "") === "rule-based" &&
         String(cached.reply || "").trim() ===
           "Good topic. Here are refined search options.";
+      const isRuleBasedForNonSimplePrompt =
+        String(cached.model || "") === "rule-based" &&
+        !isSimpleAssistantQuery(message);
 
-      if (isStaleGenericRuleReply) {
+      if (isStaleGenericRuleReply || isRuleBasedForNonSimplePrompt) {
         // Ignore stale legacy fallback cache entries and regenerate response.
       } else {
         assistantMetrics.cacheHits += 1;
@@ -228,12 +231,6 @@ function createAssistantChatController({
       assistantMetrics.lastProviderErrorAt = new Date().toISOString();
 
       const fallback = buildRuleBasedAssistantResponse(message);
-      setAssistantCacheEntry(cacheKey, {
-        model: "rule-based",
-        helper,
-        reply: fallback.reply,
-        suggestions: fallback.suggestions,
-      });
       storeAssistantMemory({
         ip,
         message,

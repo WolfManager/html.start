@@ -2181,10 +2181,9 @@ function isSimpleAssistantQuery(message) {
       normalized,
     );
 
-  // Keep very short prompts local for speed, but avoid routing every
-  // short question to the generic rule-based fallback.
+  // Keep only clearly-known intents local; route everything else to AI.
   if (wordCount <= 2) {
-    return true;
+    return knownSimpleIntent;
   }
 
   if (wordCount <= ASSISTANT_SIMPLE_QUERY_WORDS && knownSimpleIntent) {
