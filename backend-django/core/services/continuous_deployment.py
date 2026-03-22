@@ -68,11 +68,13 @@ class DeploymentMonitor:
             test = get_current_ab_test()
             if test:
                 test.check_statistical_significance()
+                control_metrics = self._extract_variant_metrics(test.variants.get("control"))
+                treatment_metrics = self._extract_variant_metrics(test.variants.get("treatment"))
                 result["ab_test_status"] = {
                     "active": test.status == "active",
                     "test_id": test.test_id,
-                    "control": test.variants.get("control", {}).metrics if "control" in test.variants else {},
-                    "treatment": test.variants.get("treatment", {}).metrics if "treatment" in test.variants else {},
+                    "control": control_metrics,
+                    "treatment": treatment_metrics,
                     "winner": test.winner,
                     "is_significant": test.is_statistically_significant,
                 }
@@ -112,6 +114,16 @@ class DeploymentMonitor:
 
         self.last_check = time.time()
         return result
+
+    def _extract_variant_metrics(self, variant: Any) -> dict[str, Any]:
+        """Return metrics for a variant represented either as object or dictionary."""
+        if variant is None:
+            return {}
+        if isinstance(variant, dict):
+            metrics = variant.get("metrics")
+            return metrics if isinstance(metrics, dict) else {}
+        metrics = getattr(variant, "metrics", None)
+        return metrics if isinstance(metrics, dict) else {}
 
     def _generate_recommendations(self, health_check: dict[str, Any]) -> list[str]:
         """Generate recommended actions based on health check."""
