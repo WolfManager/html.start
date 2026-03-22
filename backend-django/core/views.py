@@ -26,7 +26,14 @@ from .services.admin_backup_service import (
     sanitize_backup_file_name,
 )
 from .services.admin_overview_service import build_admin_overview
-from .services.analytics_service import log_page_view, log_result_click, log_search, read_analytics
+from .services.analytics_service import (
+    get_popular_searches_payload,
+    get_trending_searches_payload,
+    log_page_view,
+    log_result_click,
+    log_search,
+    read_analytics,
+)
 from .services.assistant_runtime_service import (
     build_status_snapshot,
     check_rate_limit,
@@ -58,20 +65,31 @@ from .services.search_sync_service import (
 from .services.assistant_service import generate_assistant_response, probe_providers_health
 from .services.location_service import resolve_approx_location
 from .services.runtime_metrics_service import get_runtime_metrics
-from .services.search_crawler_service import crawl_due_sources
-from .services.search_index_service import seed_default_sources
+from .services.search_admin_sync_service import execute_crawl_sync, execute_seed_sync
 from .services.search_ranking_config_service import (
     get_search_ranking_config,
     reset_search_ranking_config,
     write_search_ranking_config,
 )
 from .services.search_service import (
+    CLICK_SIGNAL_CTR_MAX_BOOST,
+    CLICK_SIGNAL_DECAY_HALFLIFE_DAYS,
+    CLICK_SIGNAL_DECAY_MIN_WEIGHT,
+    CLICK_SIGNAL_GUARDRAIL_MAX_SHARE,
+    CLICK_SIGNAL_GUARDRAIL_MIN_BASE_SCORE,
+    CLICK_SIGNAL_MAX_BOOST,
+    CLICK_SIGNAL_WINDOW_DAYS,
+    create_click_signal_telemetry_state,
+    get_applied_search_operators,
+    get_click_signal_telemetry,
+    get_related_queries,
     get_query_rewrite_rules,
     get_search_sources,
     get_search_suggestions,
     invalidate_click_signal_cache,
     reset_query_rewrite_rules,
     run_search_page,
+    set_click_signal_telemetry,
     write_query_rewrite_rules,
 )
 
@@ -159,7 +177,16 @@ def search(request):
             "engine": "MAGNETO Core",
             "query": query,
             "queryUsed": payload.get("queryUsed") or query,
+            "appliedOperators": payload.get("appliedOperators") or get_applied_search_operators(
+                payload.get("queryUsed") or query
+            ),
             "queryRewrite": payload.get("queryRewrite"),
+            "queryCorrection": payload.get("queryCorrection"),
+            "querySuggestion": payload.get("querySuggestion"),
+            "suggestions": []
+            if total > 0
+            else get_search_suggestions(partial=payload.get("queryUsed") or query, limit=8),
+            "relatedQueries": get_related_queries(query, 6),
             "total": total,
             "appliedFilters": {
                 "language": language,
@@ -186,6 +213,7 @@ def search(request):
                 "sources": [],
             },
             "results": payload.get("results") or [],
+            "servedBy": "django",
         }
     )
 
@@ -201,6 +229,50 @@ def search_sources(request):
             "ok": True,
             "total": len(sources),
             "sources": sources,
+        }
+    )
+
+
+@api_view(["GET"])
+def search_trending(request):
+    period = str(request.query_params.get("period") or "weekly").strip()
+    query = str(request.query_params.get("q") or "").strip()
+    limit_raw = str(request.query_params.get("limit") or "10").strip()
+    limit = int(limit_raw) if limit_raw.isdigit() else 10
+    include_zero = str(request.query_params.get("includeZero") or "false").strip().lower() == "true"
+
+    payload = get_trending_searches_payload(
+        period=period,
+        limit=limit,
+        include_zero=include_zero,
+        query=query,
+    )
+    return Response({
+        **payload,
+        "servedBy": "django",
+    })
+
+
+@api_view(["GET"])
+def search_related(request):
+    query = str(request.query_params.get("q") or "").strip()
+    if not query:
+        return Response(
+            {"error": "Query is required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    limit_raw = str(request.query_params.get("limit") or "6").strip()
+    limit = int(limit_raw) if limit_raw.isdigit() else 6
+    related = get_related_queries(query, limit)
+
+    return Response(
+        {
+            "ok": True,
+            "query": query,
+            "related": related,
+            "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "servedBy": "django",
         }
     )
 
@@ -231,6 +303,11 @@ def search_suggest(request):
             "suggestions": suggestions,
         }
     )
+
+
+@api_view(["GET"])
+def analytics_popular_searches(_request):
+    return Response(get_popular_searches_payload())
 
 
 def _search_admin_payload() -> dict:
@@ -459,14 +536,27 @@ def admin_search_seed(request):
     if auth_error is not None:
         return auth_error
 
-    force = bool((request.data or {}).get("force"))
-    created, updated = seed_default_sources(force=force)
+    authorization_header = str(request.META.get("HTTP_AUTHORIZATION") or "")
+    try:
+        sync_result = execute_seed_sync(authorization_header=authorization_header)
+    except ValueError as exc:
+        return Response(
+            {"error": str(exc)},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    except RuntimeError as exc:
+        return Response(
+            {"error": str(exc)},
+            status=status.HTTP_502_BAD_GATEWAY,
+        )
+
     return Response(
         {
             "ok": True,
-            "created": created,
-            "updated": updated,
-            "search": _search_admin_payload(),
+            "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "seed": sync_result["summary"],
+            "refresh": sync_result["refresh"],
+            "index": sync_result["index"],
         }
     )
 
@@ -477,33 +567,31 @@ def admin_search_crawl(request):
     if auth_error is not None:
         return auth_error
 
-    raw_source_ids = (request.data or {}).get("sourceIds") or []
-    source_ids = [int(item) for item in raw_source_ids if str(item).isdigit()]
-    max_pages_raw = str((request.data or {}).get("maxPages") or "").strip()
-    max_pages = int(max_pages_raw) if max_pages_raw.isdigit() else None
-    runs = crawl_due_sources(
-        trigger="admin-api",
-        source_ids=source_ids or None,
-        max_pages=max_pages,
-    )
+    authorization_header = str(request.META.get("HTTP_AUTHORIZATION") or "")
+    max_pages_value = (request.data or {}).get("maxPages")
+    try:
+        sync_result = execute_crawl_sync(
+            authorization_header=authorization_header,
+            max_pages_value=max_pages_value,
+        )
+    except ValueError as exc:
+        return Response(
+            {"error": str(exc)},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    except RuntimeError as exc:
+        return Response(
+            {"error": str(exc)},
+            status=status.HTTP_502_BAD_GATEWAY,
+        )
+
     return Response(
         {
             "ok": True,
-            "runs": [
-                {
-                    "id": run.pk,
-                    "source": run.source.slug if run.source else "all",
-                    "status": run.status,
-                    "pagesSeen": run.pages_seen,
-                    "pagesIndexed": run.pages_indexed,
-                    "pagesUpdated": run.pages_updated,
-                    "pagesFailed": run.pages_failed,
-                    "pagesBlocked": run.pages_blocked,
-                    "notes": run.notes,
-                }
-                for run in runs
-            ],
-            "search": _search_admin_payload(),
+            "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "crawl": sync_result["summary"],
+            "refresh": sync_result["refresh"],
+            "index": sync_result["index"],
         }
     )
 
@@ -1143,6 +1231,59 @@ def admin_overview(request):
     range_value = str(request.query_params.get("range") or "all")
     payload = build_admin_overview(range_value)
     return Response(payload)
+
+
+@api_view(["POST"])
+def admin_click_signal_reset(request):
+    auth_error = _admin_auth_error(request)
+    if auth_error is not None:
+        return auth_error
+
+    next_telemetry = create_click_signal_telemetry_state()
+    set_click_signal_telemetry(next_telemetry)
+
+    return Response(
+        {
+            "ok": True,
+            "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "clickSignalTelemetry": next_telemetry,
+        }
+    )
+
+
+@api_view(["POST"])
+def admin_click_signal_snapshot_reset(request):
+    auth_error = _admin_auth_error(request)
+    if auth_error is not None:
+        return auth_error
+
+    generated_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    snapshot = {
+        "generatedAt": generated_at,
+        "clickSignalConfig": {
+            "windowDays": CLICK_SIGNAL_WINDOW_DAYS,
+            "decayHalfLifeDays": CLICK_SIGNAL_DECAY_HALFLIFE_DAYS,
+            "decayMinWeight": CLICK_SIGNAL_DECAY_MIN_WEIGHT,
+            "maxBoost": CLICK_SIGNAL_MAX_BOOST,
+            "ctrMaxBoost": CLICK_SIGNAL_CTR_MAX_BOOST,
+            "guardrailMinBaseScore": CLICK_SIGNAL_GUARDRAIL_MIN_BASE_SCORE,
+            "guardrailMaxShare": CLICK_SIGNAL_GUARDRAIL_MAX_SHARE,
+            "dedupSeconds": 3600,
+        },
+        "clickSignalTelemetry": get_click_signal_telemetry(),
+    }
+
+    next_telemetry = create_click_signal_telemetry_state()
+    set_click_signal_telemetry(next_telemetry)
+
+    return Response(
+        {
+            "ok": True,
+            "generatedAt": generated_at,
+            "snapshot": snapshot,
+            "clickSignalTelemetry": next_telemetry,
+        }
+    )
 
 
 @api_view(["GET"])

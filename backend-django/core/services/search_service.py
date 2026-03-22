@@ -88,6 +88,40 @@ _click_signal_cache: dict[str, Any] = {
 }
 
 
+def create_click_signal_telemetry_state() -> dict[str, Any]:
+    return {
+        "searchesEvaluated": 0,
+        "docsEvaluated": 0,
+        "boostApplied": 0,
+        "suppressedMinBase": 0,
+        "suppressedNoSignal": 0,
+        "cappedByGuardrail": 0,
+        "totalBoost": 0,
+        "lastUpdatedAt": "",
+        "lastRun": None,
+    }
+
+
+_click_signal_telemetry: dict[str, Any] = create_click_signal_telemetry_state()
+
+
+def get_click_signal_telemetry() -> dict[str, Any]:
+    return dict(_click_signal_telemetry)
+
+
+def set_click_signal_telemetry(next_telemetry: Any) -> dict[str, Any]:
+    global _click_signal_telemetry
+
+    payload = next_telemetry if isinstance(next_telemetry, dict) else {}
+    merged = create_click_signal_telemetry_state()
+    for key in merged:
+        if key in payload:
+            merged[key] = payload[key]
+
+    _click_signal_telemetry = merged
+    return dict(_click_signal_telemetry)
+
+
 def invalidate_click_signal_cache() -> None:
     _click_signal_cache["expiresAt"] = 0.0
     _click_signal_cache["queryUrlCounts"] = {}
@@ -405,6 +439,145 @@ def _parse_search_operators(query: str) -> tuple[str, dict[str, list[str]]]:
 
 def _has_operator_constraints(operators: dict[str, list[str]]) -> bool:
     return any(bool(values) for values in operators.values())
+
+
+def _bounded_levenshtein(left: str, right: str, max_distance: int = 2) -> int:
+    if left == right:
+        return 0
+    if abs(len(left) - len(right)) > max_distance:
+        return max_distance + 1
+
+    previous = list(range(len(right) + 1))
+    for left_index, left_char in enumerate(left, start=1):
+        current = [left_index]
+        row_min = current[0]
+
+        for right_index, right_char in enumerate(right, start=1):
+            insertion = current[right_index - 1] + 1
+            deletion = previous[right_index] + 1
+            substitution = previous[right_index - 1] + (0 if left_char == right_char else 1)
+            value = min(insertion, deletion, substitution)
+            current.append(value)
+            row_min = min(row_min, value)
+
+        if row_min > max_distance:
+            return max_distance + 1
+        previous = current
+
+    return previous[-1]
+
+
+def _build_search_vocabulary() -> list[str]:
+    vocabulary: set[str] = set()
+
+    for doc in _read_search_index():
+        for token in tokenize(str(doc.get("title") or "")):
+            if len(token) >= 3:
+                vocabulary.add(token)
+        for token in tokenize(str(doc.get("summary") or "")):
+            if len(token) >= 3:
+                vocabulary.add(token)
+        for token in tokenize(str(doc.get("category") or "")):
+            if len(token) >= 3:
+                vocabulary.add(token)
+        for token in tokenize(
+            str(doc.get("url") or "").replace("https://", "").replace("http://", "")
+        ):
+            if len(token) >= 3:
+                vocabulary.add(token)
+
+        raw_tags = doc.get("tags")
+        if isinstance(raw_tags, list):
+            for tag in raw_tags:
+                for token in tokenize(str(tag or "")):
+                    if len(token) >= 3:
+                        vocabulary.add(token)
+
+    return sorted(vocabulary)
+
+
+def _suggest_query_correction(query: str, vocabulary: list[str] | None = None) -> dict[str, str] | None:
+    raw_query = str(query or "").strip()
+    tokens = tokenize(raw_query)
+    if not tokens:
+        return None
+
+    candidates = vocabulary or _build_search_vocabulary()
+    if not candidates:
+        return None
+
+    changed = False
+    corrected_tokens: list[str] = []
+
+    for token in tokens:
+        if len(token) < 4:
+            corrected_tokens.append(token)
+            continue
+
+        best_candidate = token
+        best_distance = 3
+
+        for candidate in candidates:
+            if candidate == token:
+                best_candidate = token
+                best_distance = 0
+                break
+            if abs(len(candidate) - len(token)) > 2:
+                continue
+
+            distance = _bounded_levenshtein(token, candidate, 2)
+            if distance < best_distance:
+                best_candidate = candidate
+                best_distance = distance
+            if best_distance == 1:
+                break
+
+        if best_candidate != token and best_distance <= 2:
+            changed = True
+            corrected_tokens.append(best_candidate)
+        else:
+            corrected_tokens.append(token)
+
+    corrected_query = " ".join(corrected_tokens).strip()
+    if not changed or not corrected_query or corrected_query == " ".join(tokens):
+        return None
+
+    return {
+        "originalQuery": raw_query,
+        "correctedQuery": corrected_query,
+    }
+
+
+def _rebuild_query_with_operators(cleaned_query: str, operators: dict[str, list[str]]) -> str:
+    parts: list[str] = []
+    normalized_cleaned_query = str(cleaned_query or "").strip()
+    if normalized_cleaned_query:
+        parts.append(normalized_cleaned_query)
+
+    for site in operators.get("sites") or []:
+        parts.append(f"site:{site}")
+    for site in operators.get("excluded_sites") or []:
+        parts.append(f"-site:{site}")
+    for filetype in operators.get("filetypes") or []:
+        parts.append(f"filetype:{filetype}")
+    for token in operators.get("inurl") or []:
+        parts.append(f"inurl:{token}")
+    for token in operators.get("intitle") or []:
+        parts.append(f"intitle:{token}")
+
+    return " ".join(part for part in parts if part).strip()
+
+
+def get_applied_search_operators(query: str) -> dict[str, Any]:
+    cleaned_query, operators = _parse_search_operators(query)
+    return {
+        "site": list(operators.get("sites") or []),
+        "excludedSite": list(operators.get("excluded_sites") or []),
+        "filetype": list(operators.get("filetypes") or []),
+        "inurl": list(operators.get("inurl") or []),
+        "intitle": list(operators.get("intitle") or []),
+        "cleanedQuery": cleaned_query,
+    }
 
 
 def _doc_matches_site_operator(url: str, operators: dict[str, list[str]]) -> bool:
@@ -984,6 +1157,7 @@ def run_search_page(
 ) -> dict[str, Any]:
     original_query = str(query or "").strip()
     query_used, query_rewrite = _apply_query_rewrite_rules(original_query)
+    query_correction = None
 
     all_results = _run_search_all(
         query_used,
@@ -993,6 +1167,31 @@ def run_search_page(
         sort=sort,
         limit=limit,
     )
+
+    if not all_results:
+        cleaned_query, operators = _parse_search_operators(query_used)
+        correction = _suggest_query_correction(cleaned_query)
+        if correction and correction.get("correctedQuery"):
+            corrected_query_with_operators = _rebuild_query_with_operators(
+                str(correction.get("correctedQuery") or "").strip(),
+                operators,
+            )
+            corrected_results = _run_search_all(
+                corrected_query_with_operators,
+                language=language,
+                category=category,
+                source=source,
+                sort=sort,
+                limit=limit,
+            )
+            if corrected_results:
+                query_used = corrected_query_with_operators
+                query_correction = {
+                    "originalQuery": correction["originalQuery"],
+                    "correctedQuery": correction["correctedQuery"],
+                    "autoApplied": True,
+                }
+                all_results = corrected_results
 
     contextual_languages = _run_search_all(
         query_used,
@@ -1029,10 +1228,21 @@ def run_search_page(
     paged_results = all_results[safe_offset : safe_offset + safe_limit]
     total_pages = ceil(total / safe_limit) if total else 0
     current_page = (safe_offset // safe_limit) + 1 if total else 1
+    query_suggestion = None
+
+    if 0 < total < 5 and query_correction is None:
+        cleaned_query, _operators = _parse_search_operators(query_used)
+        suggestion = _suggest_query_correction(cleaned_query)
+        corrected_query = str((suggestion or {}).get("correctedQuery") or "").strip()
+        if corrected_query and _normalize_filter_value(corrected_query) != _normalize_filter_value(cleaned_query):
+            query_suggestion = {"correctedQuery": corrected_query}
 
     return {
         "queryUsed": query_used,
         "queryRewrite": query_rewrite,
+        "appliedOperators": get_applied_search_operators(query_used),
+        "queryCorrection": query_correction,
+        "querySuggestion": query_suggestion,
         "results": paged_results,
         "total": total,
         "limit": safe_limit,
@@ -1102,6 +1312,113 @@ def get_search_sources(*, query: str = "", limit: int = 20) -> list[dict[str, An
         }
         for source in queryset[:safe_limit]
     ]
+
+
+def get_related_queries(query: str, limit: int = 6) -> list[str]:
+    normalized_query = _normalize_filter_value(query)
+    if len(normalized_query) < 2:
+        return []
+
+    safe_limit = max(1, min(10, int(limit or 6)))
+    searches = list(read_analytics().get("searches") or [])
+    searches_with_time: list[dict[str, Any]] = []
+    search_by_id: dict[str, dict[str, Any]] = {}
+
+    for item in searches:
+        parsed_at = None
+        try:
+            parsed_at = datetime.fromisoformat(str(item.get("at") or "").replace("Z", "+00:00"))
+        except Exception:
+            parsed_at = None
+
+        enriched = {
+            **item,
+            "_normalizedQuery": _normalize_filter_value(str(item.get("query") or "")),
+            "_parsedAt": parsed_at,
+            "_ip": str(item.get("ip") or "").strip(),
+        }
+        searches_with_time.append(enriched)
+
+        item_id = str(item.get("id") or "").strip()
+        if item_id:
+            search_by_id[item_id] = enriched
+
+    scores: dict[str, dict[str, Any]] = {}
+
+    def add_candidate(raw_value: str, score: int, parsed_at: Any) -> None:
+        normalized_value = _normalize_filter_value(raw_value)
+        if len(normalized_value) < 2 or normalized_value == normalized_query:
+            return
+        if any(token in normalized_value for token in ("site:", "inurl:", "intitle:")):
+            return
+
+        current = scores.get(normalized_value)
+        if current is None:
+            scores[normalized_value] = {
+                "value": str(raw_value or "").strip(),
+                "score": score,
+                "lastAt": parsed_at,
+            }
+            return
+
+        current["score"] = int(current.get("score") or 0) + score
+        if parsed_at and (current.get("lastAt") is None or parsed_at > current.get("lastAt")):
+            current["lastAt"] = parsed_at
+            current["value"] = str(raw_value or "").strip()
+
+    for item in searches_with_time:
+        item_query = str(item.get("query") or "").strip()
+        parsed_at = item.get("_parsedAt")
+        parent_id = str(item.get("reformulatesSearchId") or "").strip()
+
+        if item.get("_normalizedQuery") == normalized_query and parent_id:
+            parent = search_by_id.get(parent_id)
+            if parent:
+                add_candidate(str(parent.get("query") or ""), 3, parsed_at)
+
+        parent = search_by_id.get(parent_id) if parent_id else None
+        if parent and parent.get("_normalizedQuery") == normalized_query:
+            result_count = int(item.get("resultCount") or 0)
+            add_candidate(item_query, 4 if result_count > 0 else 2, parsed_at)
+
+    grouped_by_ip: dict[str, list[dict[str, Any]]] = {}
+    for item in searches_with_time:
+        ip = str(item.get("_ip") or "")
+        if not ip or item.get("_parsedAt") is None:
+            continue
+        grouped_by_ip.setdefault(ip, []).append(item)
+
+    session_window_seconds = 10 * 60
+    for items in grouped_by_ip.values():
+        items.sort(key=lambda item: item.get("_parsedAt") or datetime.min)
+        for index, item in enumerate(items):
+            if item.get("_normalizedQuery") != normalized_query:
+                continue
+
+            item_time = item.get("_parsedAt")
+            if item_time is None:
+                continue
+
+            for neighbor_index in range(max(0, index - 3), min(len(items), index + 4)):
+                if neighbor_index == index:
+                    continue
+                neighbor = items[neighbor_index]
+                neighbor_time = neighbor.get("_parsedAt")
+                if neighbor_time is None:
+                    continue
+                if abs((neighbor_time - item_time).total_seconds()) > session_window_seconds:
+                    continue
+                add_candidate(str(neighbor.get("query") or ""), 1, neighbor_time)
+
+    ranked = sorted(
+        scores.values(),
+        key=lambda item: (
+            -int(item.get("score") or 0),
+            -int((item.get("lastAt") or datetime.min.replace(tzinfo=timezone.utc)).timestamp()),
+            str(item.get("value") or "").lower(),
+        ),
+    )
+    return [str(item.get("value") or "").strip() for item in ranked[:safe_limit]]
 
 
 def _get_popular_query_suggestions(partial: str, limit: int) -> list[dict[str, Any]]:

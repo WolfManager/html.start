@@ -3,7 +3,18 @@
   "$id": "magneto/domains/search/contracts/search-response.schema.json",
   "title": "SearchResponse",
   "type": "object",
-  "required": ["query", "total", "results"],
+  "required": [
+    "query",
+    "queryUsed",
+    "appliedOperators",
+    "queryCorrection",
+    "querySuggestion",
+    "suggestions",
+    "relatedQueries",
+    "total",
+    "results",
+    "servedBy"
+  ],
   "properties": {
     "engine": {
       "type": "string"
@@ -14,11 +25,54 @@
     "queryUsed": {
       "type": "string"
     },
+    "appliedOperators": {
+      "type": "object",
+      "required": [
+        "site",
+        "excludedSite",
+        "filetype",
+        "inurl",
+        "intitle",
+        "cleanedQuery"
+      ],
+      "properties": {
+        "site": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "excludedSite": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "filetype": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "inurl": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "intitle": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "cleanedQuery": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
     "queryCorrection": {
       "type": ["object", "null"]
     },
     "querySuggestion": {
       "type": ["object", "null"]
+    },
+    "suggestions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
     "relatedQueries": {
       "type": "array",

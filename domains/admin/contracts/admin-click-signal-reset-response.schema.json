@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "magneto/domains/admin/contracts/admin-click-signal-reset-response.schema.json",
+  "title": "AdminClickSignalResetResponse",
+  "type": "object",
+  "required": ["ok", "generatedAt", "clickSignalTelemetry"],
+  "properties": {
+    "ok": {
+      "type": "boolean"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "clickSignalTelemetry": {
+      "type": "object",
+      "required": [
+        "searchesEvaluated",
+        "docsEvaluated",
+        "boostApplied",
+        "suppressedMinBase",
+        "suppressedNoSignal",
+        "cappedByGuardrail",
+        "totalBoost",
+        "lastUpdatedAt",
+        "lastRun"
+      ],
+      "properties": {
+        "searchesEvaluated": { "type": "integer", "minimum": 0 },
+        "docsEvaluated": { "type": "integer", "minimum": 0 },
+        "boostApplied": { "type": "integer", "minimum": 0 },
+        "suppressedMinBase": { "type": "integer", "minimum": 0 },
+        "suppressedNoSignal": { "type": "integer", "minimum": 0 },
+        "cappedByGuardrail": { "type": "integer", "minimum": 0 },
+        "totalBoost": { "type": "number" },
+        "lastUpdatedAt": { "type": "string" },
+        "lastRun": { "type": ["object", "null"] }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

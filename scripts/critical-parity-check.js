@@ -165,10 +165,58 @@ function validateSearch(body) {
   return Boolean(
     body &&
     typeof body.query === "string" &&
+    typeof body.queryUsed === "string" &&
+    body.appliedOperators &&
+    typeof body.appliedOperators === "object" &&
+    Array.isArray(body.appliedOperators.site) &&
+    Array.isArray(body.appliedOperators.excludedSite) &&
+    Array.isArray(body.appliedOperators.filetype) &&
+    Array.isArray(body.appliedOperators.inurl) &&
+    Array.isArray(body.appliedOperators.intitle) &&
+    typeof body.appliedOperators.cleanedQuery === "string" &&
+    (body.queryCorrection === null ||
+      typeof body.queryCorrection === "object") &&
+    (body.querySuggestion === null ||
+      typeof body.querySuggestion === "object") &&
+    Array.isArray(body.suggestions) &&
+    Array.isArray(body.relatedQueries) &&
     Number.isFinite(Number(body.total)) &&
     Array.isArray(body.results) &&
     body.pagination &&
-    typeof body.pagination === "object",
+    typeof body.pagination === "object" &&
+    (body.servedBy === "node" || body.servedBy === "django"),
+  );
+}
+
+function validateSearchTrending(body) {
+  return Boolean(
+    body &&
+    body.ok === true &&
+    typeof body.generatedAt === "string" &&
+    typeof body.period === "string" &&
+    Number.isInteger(body.windowDays) &&
+    Number.isInteger(body.total) &&
+    Array.isArray(body.items) &&
+    Array.isArray(body.buckets),
+  );
+}
+
+function validateSearchRelated(body) {
+  return Boolean(
+    body &&
+    body.ok === true &&
+    typeof body.query === "string" &&
+    Array.isArray(body.related) &&
+    typeof body.generatedAt === "string",
+  );
+}
+
+function validatePopularSearches(body) {
+  return Boolean(
+    body &&
+    body.ok === true &&
+    Array.isArray(body.queries) &&
+    typeof body.generatedAt === "string",
   );
 }
 
@@ -251,6 +299,44 @@ function validateRankingConfig(body) {
   );
 }
 
+function validateClickSignalTelemetry(value) {
+  return Boolean(
+    value &&
+    Number.isInteger(value.searchesEvaluated) &&
+    Number.isInteger(value.docsEvaluated) &&
+    Number.isInteger(value.boostApplied) &&
+    Number.isInteger(value.suppressedMinBase) &&
+    Number.isInteger(value.suppressedNoSignal) &&
+    Number.isInteger(value.cappedByGuardrail) &&
+    Number.isFinite(Number(value.totalBoost)) &&
+    typeof value.lastUpdatedAt === "string" &&
+    (value.lastRun === null || typeof value.lastRun === "object"),
+  );
+}
+
+function validateClickSignalReset(body) {
+  return Boolean(
+    body &&
+    body.ok === true &&
+    typeof body.generatedAt === "string" &&
+    validateClickSignalTelemetry(body.clickSignalTelemetry),
+  );
+}
+
+function validateClickSignalSnapshotReset(body) {
+  return Boolean(
+    body &&
+    body.ok === true &&
+    typeof body.generatedAt === "string" &&
+    body.snapshot &&
+    typeof body.snapshot.generatedAt === "string" &&
+    body.snapshot.clickSignalConfig &&
+    typeof body.snapshot.clickSignalConfig === "object" &&
+    validateClickSignalTelemetry(body.snapshot.clickSignalTelemetry) &&
+    validateClickSignalTelemetry(body.clickSignalTelemetry),
+  );
+}
+
 function validateIndexSyncStatus(body) {
   return Boolean(
     body &&
@@ -308,6 +394,13 @@ function buildParityDiffForSearch(nodeBody, djangoBody) {
     totalNode: Number(nodeBody?.total || 0),
     totalDjango: Number(djangoBody?.total || 0),
     topUrlOverlap: overlapCount(nodeTop, djangoTop),
+    relatedQueryOverlap: overlapCount(
+      uniqueNormalized(nodeBody?.relatedQueries || []),
+      uniqueNormalized(djangoBody?.relatedQueries || []),
+    ),
+    operatorCleanedQueryMatches:
+      normalizeText(nodeBody?.appliedOperators?.cleanedQuery) ===
+      normalizeText(djangoBody?.appliedOperators?.cleanedQuery),
   };
 }
 
@@ -373,6 +466,77 @@ async function runPublicChecks() {
       validateSearch(searchNode.body) &&
       validateSearch(searchDjango.body),
     parityDetails: searchDiff,
+  });
+
+  const trendingNode = await fetchJson(
+    `${nodeBase}/api/search/trending?period=weekly&limit=3`,
+  );
+  const trendingDjango = await fetchJson(
+    `${djangoBase}/api/search/trending?period=weekly&limit=3`,
+  );
+  checks.push({
+    name: "search:trending",
+    node: trendingNode,
+    django: trendingDjango,
+    parityOk:
+      trendingNode.ok &&
+      trendingDjango.ok &&
+      validateSearchTrending(trendingNode.body) &&
+      validateSearchTrending(trendingDjango.body),
+    parityDetails: {
+      totalItemsMatch:
+        Number(trendingNode.body?.total || 0) ===
+        Number(trendingDjango.body?.total || 0),
+      bucketCountMatch:
+        Number((trendingNode.body?.buckets || []).length) ===
+        Number((trendingDjango.body?.buckets || []).length),
+    },
+  });
+
+  const relatedNode = await fetchJson(
+    `${nodeBase}/api/search/related?q=api%20documentation&limit=4`,
+  );
+  const relatedDjango = await fetchJson(
+    `${djangoBase}/api/search/related?q=api%20documentation&limit=4`,
+  );
+  checks.push({
+    name: "search:related",
+    node: relatedNode,
+    django: relatedDjango,
+    parityOk:
+      relatedNode.ok &&
+      relatedDjango.ok &&
+      validateSearchRelated(relatedNode.body) &&
+      validateSearchRelated(relatedDjango.body),
+    parityDetails: {
+      overlap: overlapCount(
+        uniqueNormalized(relatedNode.body?.related || []),
+        uniqueNormalized(relatedDjango.body?.related || []),
+      ),
+    },
+  });
+
+  const popularNode = await fetchJson(
+    `${nodeBase}/api/analytics/popular-searches`,
+  );
+  const popularDjango = await fetchJson(
+    `${djangoBase}/api/analytics/popular-searches`,
+  );
+  checks.push({
+    name: "analytics:popular-searches",
+    node: popularNode,
+    django: popularDjango,
+    parityOk:
+      popularNode.ok &&
+      popularDjango.ok &&
+      validatePopularSearches(popularNode.body) &&
+      validatePopularSearches(popularDjango.body),
+    parityDetails: {
+      overlap: overlapCount(
+        uniqueNormalized(popularNode.body?.queries || []),
+        uniqueNormalized(popularDjango.body?.queries || []),
+      ),
+    },
   });
 
   const eventBody = JSON.stringify({ page: "critical-parity-check" });
@@ -492,6 +656,131 @@ async function runAdminChecks() {
       djangoOverview.ok &&
       validateOverview(nodeOverview.body) &&
       validateOverview(djangoOverview.body),
+  });
+
+  const emptyPostBody = JSON.stringify({});
+  const nodeClickSignalReset = nodeToken
+    ? await fetchJson(`${nodeBase}/api/admin/click-signal/reset`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${nodeToken}`,
+          "Content-Type": "application/json",
+        },
+        body: emptyPostBody,
+      })
+    : {
+        ok: false,
+        status: 0,
+        ms: 0,
+        body: null,
+        error: "Missing Node admin token.",
+      };
+
+  const djangoClickSignalReset = djangoToken
+    ? await fetchJson(`${djangoBase}/api/admin/click-signal/reset`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${djangoToken}`,
+          "Content-Type": "application/json",
+        },
+        body: emptyPostBody,
+      })
+    : {
+        ok: false,
+        status: 0,
+        ms: 0,
+        body: null,
+        error: "Missing Django admin token.",
+      };
+
+  checks.push({
+    name: "admin:click-signal:reset",
+    node: nodeClickSignalReset,
+    django: djangoClickSignalReset,
+    parityOk:
+      nodeClickSignalReset.ok &&
+      djangoClickSignalReset.ok &&
+      validateClickSignalReset(nodeClickSignalReset.body) &&
+      validateClickSignalReset(djangoClickSignalReset.body),
+    parityDetails: {
+      telemetryKeysMatch:
+        Object.keys(nodeClickSignalReset.body?.clickSignalTelemetry || {})
+          .length ===
+        Object.keys(djangoClickSignalReset.body?.clickSignalTelemetry || {})
+          .length,
+      telemetryResetToZero:
+        Number(
+          djangoClickSignalReset.body?.clickSignalTelemetry
+            ?.searchesEvaluated || 0,
+        ) === 0 &&
+        Number(
+          djangoClickSignalReset.body?.clickSignalTelemetry?.docsEvaluated || 0,
+        ) === 0,
+    },
+  });
+
+  const nodeClickSignalSnapshotReset = nodeToken
+    ? await fetchJson(`${nodeBase}/api/admin/click-signal/snapshot-reset`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${nodeToken}`,
+          "Content-Type": "application/json",
+        },
+        body: emptyPostBody,
+      })
+    : {
+        ok: false,
+        status: 0,
+        ms: 0,
+        body: null,
+        error: "Missing Node admin token.",
+      };
+
+  const djangoClickSignalSnapshotReset = djangoToken
+    ? await fetchJson(`${djangoBase}/api/admin/click-signal/snapshot-reset`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${djangoToken}`,
+          "Content-Type": "application/json",
+        },
+        body: emptyPostBody,
+      })
+    : {
+        ok: false,
+        status: 0,
+        ms: 0,
+        body: null,
+        error: "Missing Django admin token.",
+      };
+
+  checks.push({
+    name: "admin:click-signal:snapshot-reset",
+    node: nodeClickSignalSnapshotReset,
+    django: djangoClickSignalSnapshotReset,
+    parityOk:
+      nodeClickSignalSnapshotReset.ok &&
+      djangoClickSignalSnapshotReset.ok &&
+      validateClickSignalSnapshotReset(nodeClickSignalSnapshotReset.body) &&
+      validateClickSignalSnapshotReset(djangoClickSignalSnapshotReset.body),
+    parityDetails: {
+      snapshotConfigKeysMatch:
+        Object.keys(
+          nodeClickSignalSnapshotReset.body?.snapshot?.clickSignalConfig || {},
+        ).length ===
+        Object.keys(
+          djangoClickSignalSnapshotReset.body?.snapshot?.clickSignalConfig ||
+            {},
+        ).length,
+      resetTelemetryZero:
+        Number(
+          djangoClickSignalSnapshotReset.body?.clickSignalTelemetry
+            ?.searchesEvaluated || 0,
+        ) === 0 &&
+        Number(
+          djangoClickSignalSnapshotReset.body?.clickSignalTelemetry
+            ?.docsEvaluated || 0,
+        ) === 0,
+    },
   });
 
   const nodeRuntimeMetrics = nodeToken

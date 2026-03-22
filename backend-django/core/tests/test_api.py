@@ -96,6 +96,114 @@ class CoreApiTests(TestCase):
         self.assertIn("memory", assistant)
         self.assertIn("billing", assistant)
 
+    def test_admin_click_signal_reset_requires_admin_auth(self) -> None:
+        response = self.client.post("/api/admin/click-signal/reset", {}, format="json")
+        self.assertEqual(response.status_code, 401)
+
+    @patch(
+        "core.views.set_click_signal_telemetry",
+    )
+    @patch(
+        "core.views.create_click_signal_telemetry_state",
+        return_value={
+            "searchesEvaluated": 0,
+            "docsEvaluated": 0,
+            "boostApplied": 0,
+            "suppressedMinBase": 0,
+            "suppressedNoSignal": 0,
+            "cappedByGuardrail": 0,
+            "totalBoost": 0,
+            "lastUpdatedAt": "",
+            "lastRun": None,
+        },
+    )
+    def test_admin_click_signal_reset_returns_expected_shape(
+        self,
+        mock_create_click_signal_telemetry_state,
+        mock_set_click_signal_telemetry,
+    ) -> None:
+        token = self._admin_token()
+        response = self.client.post(
+            "/api/admin/click-signal/reset",
+            {},
+            format="json",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        payload = self._json(response)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(payload.get("ok"), True)
+        self.assertIn("generatedAt", payload)
+        telemetry = payload.get("clickSignalTelemetry") or {}
+        self.assertEqual(telemetry.get("searchesEvaluated"), 0)
+        self.assertIsNone(telemetry.get("lastRun"))
+        mock_create_click_signal_telemetry_state.assert_called_once()
+        mock_set_click_signal_telemetry.assert_called_once()
+
+    def test_admin_click_signal_snapshot_reset_requires_admin_auth(self) -> None:
+        response = self.client.post("/api/admin/click-signal/snapshot-reset", {}, format="json")
+        self.assertEqual(response.status_code, 401)
+
+    @patch(
+        "core.views.set_click_signal_telemetry",
+    )
+    @patch(
+        "core.views.create_click_signal_telemetry_state",
+        return_value={
+            "searchesEvaluated": 0,
+            "docsEvaluated": 0,
+            "boostApplied": 0,
+            "suppressedMinBase": 0,
+            "suppressedNoSignal": 0,
+            "cappedByGuardrail": 0,
+            "totalBoost": 0,
+            "lastUpdatedAt": "",
+            "lastRun": None,
+        },
+    )
+    @patch(
+        "core.views.get_click_signal_telemetry",
+        return_value={
+            "searchesEvaluated": 3,
+            "docsEvaluated": 30,
+            "boostApplied": 4,
+            "suppressedMinBase": 1,
+            "suppressedNoSignal": 2,
+            "cappedByGuardrail": 1,
+            "totalBoost": 6.5,
+            "lastUpdatedAt": "2026-03-22T09:00:00Z",
+            "lastRun": None,
+        },
+    )
+    def test_admin_click_signal_snapshot_reset_returns_snapshot_and_reset_payload(
+        self,
+        mock_get_click_signal_telemetry,
+        mock_create_click_signal_telemetry_state,
+        mock_set_click_signal_telemetry,
+    ) -> None:
+        token = self._admin_token()
+        response = self.client.post(
+            "/api/admin/click-signal/snapshot-reset",
+            {},
+            format="json",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        payload = self._json(response)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(payload.get("ok"), True)
+        self.assertIn("generatedAt", payload)
+        self.assertIn("snapshot", payload)
+        snapshot = payload.get("snapshot") or {}
+        self.assertIn("generatedAt", snapshot)
+        self.assertIn("clickSignalConfig", snapshot)
+        self.assertIn("clickSignalTelemetry", snapshot)
+        self.assertEqual(snapshot["clickSignalTelemetry"].get("searchesEvaluated"), 3)
+        self.assertEqual((payload.get("clickSignalTelemetry") or {}).get("searchesEvaluated"), 0)
+        mock_get_click_signal_telemetry.assert_called_once()
+        mock_create_click_signal_telemetry_state.assert_called_once()
+        mock_set_click_signal_telemetry.assert_called_once()
+
     def test_search_requires_query(self) -> None:
         response = self.client.get("/api/search")
         payload = self._json(response)
@@ -107,7 +215,17 @@ class CoreApiTests(TestCase):
         "core.views.run_search_page",
         return_value={
             "queryUsed": "alpha",
+            "appliedOperators": {
+                "site": [],
+                "excludedSite": [],
+                "filetype": [],
+                "inurl": [],
+                "intitle": [],
+                "cleanedQuery": "alpha",
+            },
             "queryRewrite": None,
+            "queryCorrection": None,
+            "querySuggestion": None,
             "results": [{"title": "A", "url": "https://example.com", "summary": "S"}],
             "total": 1,
             "limit": 20,
@@ -119,8 +237,14 @@ class CoreApiTests(TestCase):
             "facets": {"languages": [], "categories": [], "sources": []},
         },
     )
+    @patch("core.views.get_related_queries", return_value=["beta"])
     @patch("core.views.log_search")
-    def test_search_returns_ranked_results(self, mock_log_search, _mock_run_search_page) -> None:
+    def test_search_returns_ranked_results(
+        self,
+        mock_log_search,
+        mock_get_related_queries,
+        _mock_run_search_page,
+    ) -> None:
         response = self.client.get("/api/search?q=alpha")
         payload = self._json(response)
 
@@ -128,10 +252,103 @@ class CoreApiTests(TestCase):
         self.assertEqual(payload.get("engine"), "MAGNETO Core")
         self.assertEqual(payload.get("query"), "alpha")
         self.assertEqual(payload.get("queryUsed"), "alpha")
+        self.assertEqual((payload.get("appliedOperators") or {}).get("cleanedQuery"), "alpha")
         self.assertIsNone(payload.get("queryRewrite"))
+        self.assertIsNone(payload.get("queryCorrection"))
+        self.assertIsNone(payload.get("querySuggestion"))
+        self.assertEqual(payload.get("suggestions"), [])
+        self.assertEqual(payload.get("relatedQueries"), ["beta"])
+        self.assertEqual(payload.get("servedBy"), "django")
         self.assertEqual(payload.get("total"), 1)
         self.assertEqual(len(payload.get("results") or []), 1)
         mock_log_search.assert_called_once()
+        mock_get_related_queries.assert_called_once_with("alpha", 6)
+
+    @patch(
+        "core.views.get_trending_searches_payload",
+        return_value={
+            "ok": True,
+            "generatedAt": "2026-03-22T09:05:33Z",
+            "period": "weekly",
+            "windowDays": 7,
+            "total": 1,
+            "items": [
+                {
+                    "query": "api documentation",
+                    "hits": 3,
+                    "positiveHits": 3,
+                    "avgResults": 12.5,
+                    "firstSeen": "2026-03-20T10:00:00Z",
+                    "lastSeen": "2026-03-22T10:00:00Z",
+                    "trendScore": 24.5,
+                    "buckets": [
+                        {"bucket": "2026-03-22", "count": 3, "positiveHits": 3}
+                    ],
+                }
+            ],
+            "buckets": [
+                {
+                    "bucket": "2026-03-22",
+                    "totalSearches": 3,
+                    "positiveSearches": 3,
+                    "uniqueQueries": 1,
+                }
+            ],
+        },
+    )
+    def test_search_trending_returns_expected_shape(self, mock_get_trending_searches_payload) -> None:
+        response = self.client.get("/api/search/trending?period=weekly&limit=3&includeZero=true&q=api")
+        payload = self._json(response)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(payload.get("ok"), True)
+        self.assertEqual(payload.get("servedBy"), "django")
+        self.assertEqual(payload.get("period"), "weekly")
+        self.assertEqual(payload.get("total"), 1)
+        self.assertEqual((payload.get("items") or [])[0].get("query"), "api documentation")
+        mock_get_trending_searches_payload.assert_called_once_with(
+            period="weekly",
+            limit=3,
+            include_zero=True,
+            query="api",
+        )
+
+    def test_search_related_requires_query(self) -> None:
+        response = self.client.get("/api/search/related")
+        payload = self._json(response)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("error", payload)
+
+    @patch("core.views.get_related_queries", return_value=["contract-test", "test"])
+    def test_search_related_returns_expected_shape(self, mock_get_related_queries) -> None:
+        response = self.client.get("/api/search/related?q=api%20documentation&limit=4")
+        payload = self._json(response)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(payload.get("ok"), True)
+        self.assertEqual(payload.get("query"), "api documentation")
+        self.assertEqual(payload.get("related"), ["contract-test", "test"])
+        self.assertEqual(payload.get("servedBy"), "django")
+        mock_get_related_queries.assert_called_once_with("api documentation", 4)
+
+    @patch(
+        "core.views.get_popular_searches_payload",
+        return_value={
+            "ok": True,
+            "queries": ["api documentation", "test"],
+            "generatedAt": "2026-03-22T09:05:48Z",
+        },
+    )
+    def test_popular_searches_returns_expected_shape(self, mock_get_popular_searches_payload) -> None:
+        response = self.client.get("/api/analytics/popular-searches")
+        payload = self._json(response)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(payload.get("ok"), True)
+        self.assertEqual(payload.get("queries"), ["api documentation", "test"])
+        self.assertIn("generatedAt", payload)
+        mock_get_popular_searches_payload.assert_called_once_with()
 
     @patch("core.views.log_page_view")
     def test_page_view_event_returns_ok(self, mock_log_page_view) -> None:
@@ -436,6 +653,164 @@ class CoreApiTests(TestCase):
         payload = self._json(response)
 
         self.assertEqual(response.status_code, 400)
+        self.assertIn("error", payload)
+
+    @patch(
+        "core.views.execute_seed_sync",
+        return_value={
+            "summary": {
+                "durationMs": 10,
+                "reason": "seed",
+                "source": "all",
+                "status": "indexed",
+                "updatedSince": "",
+                "nextUpdatedSince": "2026-03-22T08:30:00Z",
+                "pagesFetched": 1,
+                "maxPages": 50,
+                "pageSize": 200,
+                "djangoReportedTotal": 2,
+                "fetchedDocuments": 2,
+                "importedDocuments": 2,
+                "uniqueUrlCount": 2,
+                "pageSummaries": [{"page": 1, "fetched": 2, "hasNextPage": False}],
+            },
+            "refresh": {
+                "beforeCount": 2,
+                "afterCount": 2,
+                "removedInvalid": 0,
+                "deduplicated": 0,
+                "backupFile": None,
+                "artifacts": {"docCount": 2, "vocabularySize": 10, "tokenDfSize": 10},
+            },
+            "index": {
+                "totalDocs": 2,
+                "file": {"path": "data/search-index.json", "sizeBytes": 1000, "mtime": ""},
+                "topLanguages": [],
+                "topCategories": [],
+                "topSources": [],
+            },
+        },
+    )
+    def test_admin_search_seed_returns_node_parity_payload(self, mock_execute_seed_sync) -> None:
+        token = self._admin_token()
+        response = self.client.post(
+            "/api/admin/search/seed",
+            {},
+            format="json",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        payload = self._json(response)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(payload.get("ok"), True)
+        self.assertIn("generatedAt", payload)
+        self.assertIn("seed", payload)
+        self.assertIn("refresh", payload)
+        self.assertIn("index", payload)
+        self.assertEqual(payload.get("seed", {}).get("reason"), "seed")
+        mock_execute_seed_sync.assert_called_once_with(authorization_header=f"Bearer {token}")
+
+    @patch(
+        "core.views.execute_seed_sync",
+        side_effect=ValueError(
+            "Missing Django auth token. Set DJANGO_ADMIN_TOKEN or provide Authorization header."
+        ),
+    )
+    def test_admin_search_seed_returns_400_when_sync_token_missing(
+        self,
+        _mock_execute_seed_sync,
+    ) -> None:
+        token = self._admin_token()
+        response = self.client.post(
+            "/api/admin/search/seed",
+            {},
+            format="json",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        payload = self._json(response)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("error", payload)
+
+    @patch(
+        "core.views.execute_crawl_sync",
+        return_value={
+            "summary": {
+                "durationMs": 12,
+                "reason": "crawl",
+                "source": "all",
+                "status": "indexed",
+                "updatedSince": "",
+                "nextUpdatedSince": "2026-03-22T08:35:00Z",
+                "pagesFetched": 2,
+                "maxPages": 25,
+                "pageSize": 200,
+                "djangoReportedTotal": 20,
+                "fetchedDocuments": 20,
+                "importedDocuments": 20,
+                "uniqueUrlCount": 20,
+                "pageSummaries": [
+                    {"page": 1, "fetched": 10, "hasNextPage": True},
+                    {"page": 2, "fetched": 10, "hasNextPage": False},
+                ],
+            },
+            "refresh": {
+                "beforeCount": 20,
+                "afterCount": 20,
+                "removedInvalid": 0,
+                "deduplicated": 0,
+                "backupFile": None,
+                "artifacts": {"docCount": 20, "vocabularySize": 50, "tokenDfSize": 50},
+            },
+            "index": {
+                "totalDocs": 20,
+                "file": {"path": "data/search-index.json", "sizeBytes": 3000, "mtime": ""},
+                "topLanguages": [],
+                "topCategories": [],
+                "topSources": [],
+            },
+        },
+    )
+    def test_admin_search_crawl_returns_node_parity_payload(self, mock_execute_crawl_sync) -> None:
+        token = self._admin_token()
+        response = self.client.post(
+            "/api/admin/search/crawl",
+            {"maxPages": 25},
+            format="json",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        payload = self._json(response)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(payload.get("ok"), True)
+        self.assertIn("generatedAt", payload)
+        self.assertIn("crawl", payload)
+        self.assertIn("refresh", payload)
+        self.assertIn("index", payload)
+        self.assertEqual(payload.get("crawl", {}).get("reason"), "crawl")
+        mock_execute_crawl_sync.assert_called_once_with(
+            authorization_header=f"Bearer {token}",
+            max_pages_value=25,
+        )
+
+    @patch(
+        "core.views.execute_crawl_sync",
+        side_effect=RuntimeError("A sync operation is already in progress."),
+    )
+    def test_admin_search_crawl_returns_502_on_sync_failure(
+        self,
+        _mock_execute_crawl_sync,
+    ) -> None:
+        token = self._admin_token()
+        response = self.client.post(
+            "/api/admin/search/crawl",
+            {"maxPages": 5},
+            format="json",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        payload = self._json(response)
+
+        self.assertEqual(response.status_code, 502)
         self.assertIn("error", payload)
 
     @patch(

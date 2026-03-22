@@ -1,7 +1,7 @@
 import json
 import random
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -28,6 +28,10 @@ def read_analytics() -> dict[str, Any]:
         return json.loads(ANALYTICS_PATH.read_text(encoding="utf-8"))
     except Exception:
         return {"searches": [], "pageViews": [], "resultClicks": []}
+
+
+def _iso_now() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 def write_analytics(data: dict[str, Any]) -> None:
@@ -280,6 +284,196 @@ def build_overview_payload(range_type: str = "all") -> dict[str, Any]:
         "trafficByPage": traffic_by_page,
         "latestSearches": latest_searches,
         "trends": trends,
+    }
+
+
+def get_popular_searches_payload(*, limit: int = 12, days: int = 7) -> dict[str, Any]:
+    safe_limit = max(1, min(50, int(limit or 12)))
+    safe_days = max(1, min(365, int(days or 7)))
+
+    searches = _filter_by_time(
+        list(read_analytics().get("searches") or []),
+        datetime.now(timezone.utc) - timedelta(days=safe_days),
+    )
+
+    query_map: dict[str, dict[str, Any]] = {}
+    for item in searches:
+        query = str(item.get("query") or "").strip()
+        normalized = query.lower()
+        if len(normalized) < 2:
+            continue
+
+        item_time = _parse_timestamp_iso(item.get("at"))
+        current = query_map.get(normalized)
+        if current is None:
+            query_map[normalized] = {
+                "query": query,
+                "count": 1,
+                "lastSeen": item_time,
+            }
+            continue
+
+        current["count"] = int(current.get("count") or 0) + 1
+        if item_time and (current.get("lastSeen") is None or item_time > current["lastSeen"]):
+            current["lastSeen"] = item_time
+            current["query"] = query
+
+    sorted_queries = sorted(
+        query_map.values(),
+        key=lambda item: (
+            -int(item.get("count") or 0),
+            -int((item.get("lastSeen") or datetime.min.replace(tzinfo=timezone.utc)).timestamp()),
+            str(item.get("query") or "").lower(),
+        ),
+    )
+
+    return {
+        "ok": True,
+        "queries": [str(item.get("query") or "").strip() for item in sorted_queries[:safe_limit]],
+        "generatedAt": _iso_now(),
+    }
+
+
+def get_trending_searches_payload(
+    *,
+    period: str = "weekly",
+    limit: int = 10,
+    include_zero: bool = False,
+    query: str = "",
+) -> dict[str, Any]:
+    normalized_period = str(period or "weekly").strip().lower()
+    if normalized_period not in {"daily", "weekly", "monthly"}:
+        normalized_period = "weekly"
+
+    window_days = {
+        "daily": 1,
+        "weekly": 7,
+        "monthly": 30,
+    }[normalized_period]
+    safe_limit = max(1, min(50, int(limit or 10)))
+    normalized_query = str(query or "").strip().lower()
+    searches = _filter_by_time(
+        list(read_analytics().get("searches") or []),
+        datetime.now(timezone.utc) - timedelta(days=window_days),
+    )
+
+    top_level_buckets: dict[str, dict[str, Any]] = {}
+    query_buckets: dict[str, dict[str, dict[str, int]]] = {}
+    query_stats: dict[str, dict[str, Any]] = {}
+
+    for item in searches:
+        raw_query = str(item.get("query") or "").strip()
+        normalized_item_query = raw_query.lower()
+        if len(normalized_item_query) < 2:
+            continue
+        if normalized_query and normalized_query not in normalized_item_query:
+            continue
+
+        item_time = _parse_timestamp_iso(item.get("at"))
+        if item_time is None:
+            continue
+
+        result_count = int(item.get("resultCount") or 0)
+        is_positive = result_count > 0
+        if not include_zero and not is_positive:
+            continue
+
+        bucket_key = item_time.date().isoformat()
+        bucket_entry = top_level_buckets.setdefault(
+            bucket_key,
+            {
+                "bucket": bucket_key,
+                "totalSearches": 0,
+                "positiveSearches": 0,
+                "uniqueQueries": set(),
+            },
+        )
+        bucket_entry["totalSearches"] = int(bucket_entry.get("totalSearches") or 0) + 1
+        if is_positive:
+            bucket_entry["positiveSearches"] = int(bucket_entry.get("positiveSearches") or 0) + 1
+        bucket_entry["uniqueQueries"].add(normalized_item_query)
+
+        current = query_stats.setdefault(
+            normalized_item_query,
+            {
+                "query": raw_query,
+                "hits": 0,
+                "positiveHits": 0,
+                "resultsTotal": 0,
+                "firstSeen": item_time,
+                "lastSeen": item_time,
+            },
+        )
+        current["hits"] = int(current.get("hits") or 0) + 1
+        current["resultsTotal"] = int(current.get("resultsTotal") or 0) + result_count
+        if is_positive:
+            current["positiveHits"] = int(current.get("positiveHits") or 0) + 1
+        if item_time < current["firstSeen"]:
+            current["firstSeen"] = item_time
+        if item_time > current["lastSeen"]:
+            current["lastSeen"] = item_time
+            current["query"] = raw_query
+
+        per_query_bucket = query_buckets.setdefault(normalized_item_query, {}).setdefault(
+            bucket_key,
+            {
+                "bucket": bucket_key,
+                "count": 0,
+                "positiveHits": 0,
+            },
+        )
+        per_query_bucket["count"] = int(per_query_bucket.get("count") or 0) + 1
+        if is_positive:
+            per_query_bucket["positiveHits"] = int(per_query_bucket.get("positiveHits") or 0) + 1
+
+    ranked_items = []
+    for normalized_item_query, stats in query_stats.items():
+        hits = int(stats.get("hits") or 0)
+        positive_hits = int(stats.get("positiveHits") or 0)
+        avg_results = round((int(stats.get("resultsTotal") or 0) / hits), 2) if hits else 0
+        ranked_items.append(
+            {
+                "query": str(stats.get("query") or "").strip(),
+                "hits": hits,
+                "positiveHits": positive_hits,
+                "avgResults": avg_results,
+                "firstSeen": stats["firstSeen"].isoformat().replace("+00:00", "Z"),
+                "lastSeen": stats["lastSeen"].isoformat().replace("+00:00", "Z"),
+                "trendScore": round((hits * 3) + (positive_hits * 1.5) + avg_results, 2),
+                "buckets": sorted(
+                    query_buckets.get(normalized_item_query, {}).values(),
+                    key=lambda bucket: str(bucket.get("bucket") or ""),
+                ),
+            }
+        )
+
+    ranked_items.sort(
+        key=lambda item: (
+            -int(item.get("hits") or 0),
+            -float(item.get("trendScore") or 0),
+            str(item.get("query") or "").lower(),
+        )
+    )
+
+    buckets = []
+    for item in sorted(top_level_buckets.values(), key=lambda bucket: str(bucket.get("bucket") or "")):
+        buckets.append(
+            {
+                "bucket": item["bucket"],
+                "totalSearches": int(item.get("totalSearches") or 0),
+                "positiveSearches": int(item.get("positiveSearches") or 0),
+                "uniqueQueries": len(item.get("uniqueQueries") or set()),
+            }
+        )
+
+    return {
+        "ok": True,
+        "generatedAt": _iso_now(),
+        "period": normalized_period,
+        "windowDays": window_days,
+        "total": len(ranked_items[:safe_limit]),
+        "items": ranked_items[:safe_limit],
+        "buckets": buckets,
     }
 
 

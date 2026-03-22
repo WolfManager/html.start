@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "magneto/domains/search/contracts/search-trending-response.schema.json",
+  "title": "SearchTrendingResponse",
+  "type": "object",
+  "required": [
+    "ok",
+    "generatedAt",
+    "period",
+    "windowDays",
+    "total",
+    "items",
+    "buckets"
+  ],
+  "properties": {
+    "ok": { "type": "boolean" },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "period": { "type": "string" },
+    "windowDays": { "type": "integer", "minimum": 1 },
+    "total": { "type": "integer", "minimum": 0 },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "query",
+          "hits",
+          "positiveHits",
+          "avgResults",
+          "firstSeen",
+          "lastSeen",
+          "trendScore",
+          "buckets"
+        ],
+        "properties": {
+          "query": { "type": "string" },
+          "hits": { "type": "integer", "minimum": 0 },
+          "positiveHits": { "type": "integer", "minimum": 0 },
+          "avgResults": { "type": "number" },
+          "firstSeen": { "type": "string", "format": "date-time" },
+          "lastSeen": { "type": "string", "format": "date-time" },
+          "trendScore": { "type": "number" },
+          "buckets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["bucket", "count", "positiveHits"],
+              "properties": {
+                "bucket": { "type": "string" },
+                "count": { "type": "integer", "minimum": 0 },
+                "positiveHits": { "type": "integer", "minimum": 0 }
+              },
+              "additionalProperties": true
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "buckets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "bucket",
+          "totalSearches",
+          "positiveSearches",
+          "uniqueQueries"
+        ],
+        "properties": {
+          "bucket": { "type": "string" },
+          "totalSearches": { "type": "integer", "minimum": 0 },
+          "positiveSearches": { "type": "integer", "minimum": 0 },
+          "uniqueQueries": { "type": "integer", "minimum": 0 }
+        },
+        "additionalProperties": true
+      }
+    },
+    "servedBy": { "type": "string", "enum": ["node", "django"] }
+  },
+  "additionalProperties": true
+}

@@ -94,6 +94,15 @@ const SCHEMAS = {
   "search-response": loadSchema(
     "domains/search/contracts/search-response.schema.json",
   ),
+  "search-trending-response": loadSchema(
+    "domains/search/contracts/search-trending-response.schema.json",
+  ),
+  "search-related-response": loadSchema(
+    "domains/search/contracts/search-related-response.schema.json",
+  ),
+  "analytics-popular-searches-response": loadSchema(
+    "domains/search/contracts/analytics-popular-searches-response.schema.json",
+  ),
   "assistant-request": loadSchema(
     "domains/assistant/contracts/assistant-request.schema.json",
   ),
@@ -105,6 +114,12 @@ const SCHEMAS = {
   ),
   "admin-index-status-response": loadSchema(
     "domains/admin/contracts/admin-index-status-response.schema.json",
+  ),
+  "admin-click-signal-reset-response": loadSchema(
+    "domains/admin/contracts/admin-click-signal-reset-response.schema.json",
+  ),
+  "admin-click-signal-snapshot-reset-response": loadSchema(
+    "domains/admin/contracts/admin-click-signal-snapshot-reset-response.schema.json",
   ),
   "admin-index-sync-status-response": loadSchema(
     "domains/admin/contracts/admin-index-sync-status-response.schema.json",
@@ -380,6 +395,24 @@ const PUBLIC_CHECKS = [
     schema: "assistant-response",
   },
   {
+    name: "GET /api/search/trending → search-trending-response",
+    method: "GET",
+    path: "/api/search/trending?period=weekly&limit=3",
+    schema: "search-trending-response",
+  },
+  {
+    name: "GET /api/search/related?q=api documentation → search-related-response",
+    method: "GET",
+    path: "/api/search/related?q=api%20documentation&limit=4",
+    schema: "search-related-response",
+  },
+  {
+    name: "GET /api/analytics/popular-searches → analytics-popular-searches-response",
+    method: "GET",
+    path: "/api/analytics/popular-searches",
+    schema: "analytics-popular-searches-response",
+  },
+  {
     name: "POST /api/assistant/chat with empty message → error-response",
     method: "POST",
     path: "/api/assistant/chat",
@@ -409,6 +442,22 @@ const ADMIN_CHECKS = [
     method: "GET",
     path: "/api/admin/overview",
     schema: "admin-metrics-response",
+    adminOnly: true,
+  },
+  {
+    name: "POST /api/admin/click-signal/reset → admin-click-signal-reset-response",
+    method: "POST",
+    path: "/api/admin/click-signal/reset",
+    body: JSON.stringify({}),
+    schema: "admin-click-signal-reset-response",
+    adminOnly: true,
+  },
+  {
+    name: "POST /api/admin/click-signal/snapshot-reset → admin-click-signal-snapshot-reset-response",
+    method: "POST",
+    path: "/api/admin/click-signal/snapshot-reset",
+    body: JSON.stringify({}),
+    schema: "admin-click-signal-snapshot-reset-response",
     adminOnly: true,
   },
   {
