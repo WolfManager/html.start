@@ -79,12 +79,18 @@ CLICK_SIGNAL_GUARDRAIL_MIN_BASE_SCORE = 12.0
 CLICK_SIGNAL_GUARDRAIL_MAX_SHARE = 0.3
 CLICK_SIGNAL_DECAY_HALFLIFE_DAYS = 14
 CLICK_SIGNAL_DECAY_MIN_WEIGHT = 0.2
+VOCABULARY_CACHE_TTL_SECONDS = 3600  # 1 hour
 
 _click_signal_cache: dict[str, Any] = {
     "expiresAt": 0.0,
     "queryUrlCounts": {},
     "queryCounts": {},
     "urlCounts": {},
+}
+
+_vocabulary_cache: dict[str, Any] = {
+    "expiresAt": 0.0,
+    "vocabulary": [],
 }
 
 
@@ -127,6 +133,11 @@ def invalidate_click_signal_cache() -> None:
     _click_signal_cache["queryUrlCounts"] = {}
     _click_signal_cache["queryCounts"] = {}
     _click_signal_cache["urlCounts"] = {}
+
+
+def invalidate_vocabulary_cache() -> None:
+    _vocabulary_cache["expiresAt"] = 0.0
+    _vocabulary_cache["vocabulary"] = []
 
 
 def _normalize_text(value: str) -> str:
@@ -468,6 +479,7 @@ def _bounded_levenshtein(left: str, right: str, max_distance: int = 2) -> int:
 
 
 def _build_search_vocabulary() -> list[str]:
+    """Build search vocabulary from index with caching (1h TTL)"""
     vocabulary: set[str] = set()
 
     for doc in _read_search_index():
@@ -496,13 +508,33 @@ def _build_search_vocabulary() -> list[str]:
     return sorted(vocabulary)
 
 
+def _get_cached_vocabulary() -> list[str]:
+    """Get vocabulary with 1h caching to reduce CPU."""
+    now = time.time()
+    if now < float(_vocabulary_cache.get("expiresAt") or 0):
+        return _vocabulary_cache.get("vocabulary") or []
+
+    built = _build_search_vocabulary()
+    _vocabulary_cache["vocabulary"] = built
+    _vocabulary_cache["expiresAt"] = now + VOCABULARY_CACHE_TTL_SECONDS
+    return built
+
+
 def _suggest_query_correction(query: str, vocabulary: list[str] | None = None) -> dict[str, str] | None:
+    """
+    Suggest spelling corrections using adaptive Levenshtein distance threshold.
+
+    Adaptive thresholds per token:
+    - Short tokens (<=4 chars): distance ≤1 (strict, fewer false positives)
+    - Medium tokens (5-8 chars): distance ≤2 (balanced)
+    - Long tokens (>8 chars): distance ≤3 (generous, better recall)
+    """
     raw_query = str(query or "").strip()
     tokens = tokenize(raw_query)
     if not tokens:
         return None
 
-    candidates = vocabulary or _build_search_vocabulary()
+    candidates = vocabulary or _get_cached_vocabulary()
     if not candidates:
         return None
 
@@ -514,25 +546,33 @@ def _suggest_query_correction(query: str, vocabulary: list[str] | None = None) -
             corrected_tokens.append(token)
             continue
 
+        # Adaptive threshold based on token length
+        if len(token) <= 4:
+            max_distance = 1  # strict for short tokens
+        elif len(token) <= 8:
+            max_distance = 2  # balanced for medium tokens
+        else:
+            max_distance = 3  # generous for long tokens
+
         best_candidate = token
-        best_distance = 3
+        best_distance = max_distance + 1
 
         for candidate in candidates:
             if candidate == token:
                 best_candidate = token
                 best_distance = 0
                 break
-            if abs(len(candidate) - len(token)) > 2:
+            if abs(len(candidate) - len(token)) > max_distance:
                 continue
 
-            distance = _bounded_levenshtein(token, candidate, 2)
+            distance = _bounded_levenshtein(token, candidate, max_distance)
             if distance < best_distance:
                 best_candidate = candidate
                 best_distance = distance
             if best_distance == 1:
                 break
 
-        if best_candidate != token and best_distance <= 2:
+        if best_candidate != token and best_distance <= max_distance:
             changed = True
             corrected_tokens.append(best_candidate)
         else:
@@ -1421,14 +1461,36 @@ def get_related_queries(query: str, limit: int = 6) -> list[str]:
     return [str(item.get("value") or "").strip() for item in ranked[:safe_limit]]
 
 
+def _compute_query_ctr_score(query: str, hits: int, positive_hits: int) -> float:
+    """
+    Compute CTR-enhanced score for a query.
+    Combines frequency and click-through signals.
+
+    Score components:
+    - Frequency: positive hits * 2 (base signal)
+    - CTR: (positive_hits / hits) * hits (click efficiency)
+    - Decay: log2(hits) * 0.5 (down-weight single-hit queries)
+    """
+    if hits <= 0 or positive_hits <= 0:
+        return 0.0
+
+    base_score = float(positive_hits * 2 + hits)
+    ctr = float(positive_hits) / float(hits)
+    ctr_boost = ctr * hits * 0.3  # CTR contributes 30% of score
+    frequency_decay = math.log2(max(1.0, float(hits))) * 0.5  # Smooth decay for frequency
+
+    return base_score + ctr_boost + frequency_decay
+
+
 def _get_popular_query_suggestions(partial: str, limit: int) -> list[dict[str, Any]]:
+    """Get popular query suggestions with CTR-enhanced ranking."""
     normalized_partial = _normalize_filter_value(partial)
     if not normalized_partial:
         return []
 
     analytics = read_analytics()
     searches = list(analytics.get("searches") or [])
-    stats: dict[str, dict[str, int]] = {}
+    stats: dict[str, dict[str, Any]] = {}
 
     for item in searches:
         query = str(item.get("query") or "").strip()
@@ -1452,7 +1514,7 @@ def _get_popular_query_suggestions(partial: str, limit: int) -> list[dict[str, A
         [
             {
                 "value": query,
-                "score": int(item["positive_hits"] * 2 + item["hits"]),
+                "score": int(_compute_query_ctr_score(query, item["hits"], item["positive_hits"])),
                 "source": "analytics",
             }
             for query, item in stats.items()
