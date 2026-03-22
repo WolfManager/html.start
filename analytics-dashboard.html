@@ -439,25 +439,103 @@
         <!-- A/B Test Results -->
         <div class="card">
           <h2>⚗️ A/B Test Results</h2>
+
+          <!-- Test Duration -->
+          <div
+            class="stat-group"
+            style="padding-bottom: 10px; border-bottom: 1px solid #e5e7eb"
+          >
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                font-size: 12px;
+              "
+            >
+              <div>
+                <span style="color: #6b7280">Running:</span>
+                <span
+                  id="ab-duration-formatted"
+                  style="color: #374151; font-weight: 600"
+                  >--</span
+                >
+              </div>
+              <div>
+                <span style="color: #6b7280">Min Required:</span>
+                <span style="color: #374151">7 days</span>
+              </div>
+            </div>
+            <div
+              id="ab-duration-bar"
+              style="
+                width: 100%;
+                height: 6px;
+                background: #e5e7eb;
+                margin-top: 6px;
+                border-radius: 3px;
+                overflow: hidden;
+              "
+            >
+              <div style="height: 100%; background: #f59e0b; width: 0%"></div>
+            </div>
+          </div>
+
+          <!-- Control Variant -->
           <div class="stat-group">
             <h3>Control Variant (Current)</h3>
             <div class="stat-items">
               <div class="stat-item">
                 <div class="stat-item-label">CTR</div>
-                <div id="control-ctr" class="stat-item-value">3.2%</div>
+                <div>
+                  <div id="control-ctr" class="stat-item-value">3.2%</div>
+                  <div
+                    id="control-ctr-ci"
+                    style="font-size: 11px; color: #9ca3af; margin-top: 2px"
+                  >
+                    95% CI: --
+                  </div>
+                </div>
               </div>
               <div class="stat-item">
-                <div class="stat-item-label">Traffic</div>
-                <div id="control-traffic" class="stat-item-value">100%</div>
+                <div class="stat-item-label">Sample</div>
+                <div id="control-sample-display" style="font-size: 13px">
+                  <div style="color: #374151; font-weight: 600">--</div>
+                  <div
+                    id="control-adequacy-bar"
+                    style="
+                      width: 60px;
+                      height: 4px;
+                      background: #e5e7eb;
+                      margin-top: 4px;
+                      border-radius: 2px;
+                      overflow: hidden;
+                    "
+                  >
+                    <div
+                      style="height: 100%; background: #f59e0b; width: 0%"
+                    ></div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
+
+          <!-- Treatment Variant -->
           <div class="stat-group">
             <h3>Treatment Variant (LTR)</h3>
             <div class="stat-items">
               <div class="stat-item">
                 <div class="stat-item-label">CTR</div>
-                <div id="treatment-ctr" class="stat-item-value">3.26%</div>
+                <div>
+                  <div id="treatment-ctr" class="stat-item-value">3.26%</div>
+                  <div
+                    id="treatment-ctr-ci"
+                    style="font-size: 11px; color: #9ca3af; margin-top: 2px"
+                  >
+                    95% CI: --
+                  </div>
+                </div>
               </div>
               <div class="stat-item">
                 <div class="stat-item-label">Uplift</div>
@@ -471,23 +549,31 @@
               </div>
             </div>
           </div>
+
+          <!-- Significance Result -->
           <div
             style="
               margin-top: 15px;
-              padding: 10px;
+              padding: 12px;
               background: rgba(16, 185, 129, 0.1);
               border-radius: 6px;
               border-left: 3px solid #10b981;
             "
           >
-            <div style="font-size: 12px; color: #10b981; font-weight: 600">
+            <div style="font-size: 13px; color: #10b981; font-weight: 600">
               <span id="ab-significance">✓ Statistically Significant</span>
             </div>
             <div
               id="ab-significance-meta"
-              style="font-size: 11px; color: #6b7280; margin-top: 3px"
+              style="font-size: 11px; color: #6b7280; margin-top: 4px"
             >
-              p-value: pending (95% confidence)
+              p-value: <span id="ab-pvalue" style="font-weight: 600">--</span>
+              <span id="ab-duration-adequate-meta" style="margin-left: 12px"
+                >Duration:
+                <span id="ab-duration-meta" style="font-weight: 600"
+                  >--</span
+                ></span
+              >
             </div>
           </div>
         </div>
@@ -833,16 +919,71 @@
           `${(controlCtr * 100).toFixed(2)}%`;
         document.getElementById("treatment-ctr").textContent =
           `${(treatmentCtr * 100).toFixed(2)}%`;
-        document.getElementById("control-traffic").textContent =
-          `${((abStatus?.control?.traffic_fraction || 0) * 100).toFixed(0)}%`;
+
+        // Confidence intervals for CTR
+        const controlCI = abStatus?.control?.ci || {};
+        if (controlCI.ci_lower !== undefined) {
+          document.getElementById("control-ctr-ci").textContent =
+            `95% CI: ${(controlCI.ci_lower * 100).toFixed(2)}% - ${(controlCI.ci_upper * 100).toFixed(2)}%`;
+        }
+
+        const treatmentCI = abStatus?.treatment?.ci || {};
+        if (treatmentCI.ci_lower !== undefined) {
+          document.getElementById("treatment-ctr-ci").textContent =
+            `95% CI: ${(treatmentCI.ci_lower * 100).toFixed(2)}% - ${(treatmentCI.ci_upper * 100).toFixed(2)}%`;
+        }
+
+        // Sample adequacy progress bars
+        const controlAdequacy = abStatus?.control?.adequacy || {};
+        if (controlAdequacy.visits !== undefined) {
+          const controlPct = Math.min(
+            100,
+            controlAdequacy.percent_of_required || 0,
+          );
+          document.getElementById("control-sample-display").innerHTML = `
+            <div style="color: #374151; font-weight: 600">${controlAdequacy.visits} visits</div>
+            <div id="control-adequacy-bar" style="width: 60px; height: 4px; background: #e5e7eb; margin-top: 4px; border-radius: 2px; overflow: hidden">
+              <div style="height: 100%; background: ${controlPct >= 100 ? "#10b981" : "#f59e0b"}; width: ${controlPct}%"></div>
+            </div>
+          `;
+        }
+
+        // Test duration display
+        const duration = abStatus?.statistics?.duration || {};
+        if (duration.elapsed_days !== undefined) {
+          document.getElementById("ab-duration-formatted").textContent =
+            duration.formatted || "--";
+          const durationPct = Math.min(
+            100,
+            (duration.elapsed_days / duration.min_required_days) * 100,
+          );
+          const durationBar = document
+            .getElementById("ab-duration-bar")
+            .querySelector("div");
+          if (durationBar) {
+            durationBar.style.width = `${durationPct}%`;
+            durationBar.style.background =
+              durationPct >= 100 ? "#10b981" : "#f59e0b";
+          }
+          document.getElementById("ab-duration-meta").textContent =
+            duration.is_duration_adequate
+              ? `${duration.elapsed_days}d ✓`
+              : `${duration.elapsed_days}d (${duration.days_remaining} more needed)`;
+        }
+
+        // P-value display
+        const pvalue = abStatus?.statistics?.pvalue;
+        if (pvalue !== undefined) {
+          document.getElementById("ab-pvalue").textContent =
+            `${pvalue.toFixed(4)}`;
+        }
+
         document.getElementById("treatment-uplift").textContent =
           `${ctrDelta >= 0 ? "+" : ""}${ctrDelta.toFixed(1)}% ${ctrDelta >= 0 ? "↑" : "↓"}`;
         document.getElementById("ab-significance").textContent =
           abStatus?.is_statistically_significant
             ? "✓ Statistically Significant"
             : "• Not yet statistically significant";
-        document.getElementById("ab-significance-meta").textContent =
-          `winner: ${String(abStatus?.winner || "pending")}`;
 
         const totalRuns = Number(training.total_runs || 0);
         const successfulRuns = Number(training.successful_runs || 0);

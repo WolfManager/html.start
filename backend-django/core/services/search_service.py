@@ -2128,6 +2128,12 @@ def get_ab_test_status() -> dict[str, Any]:
 
         test.check_statistical_significance()
 
+        # Compute enhanced statistics
+        ci = test.compute_confidence_interval()
+        adequacy = test.compute_sample_adequacy()
+        duration = test.get_test_duration()
+        pvalue = test.compute_chi_square_pvalue()
+
         return {
             "active": test.status == "active",
             "test_id": test.test_id,
@@ -2139,6 +2145,8 @@ def get_ab_test_status() -> dict[str, Any]:
                 "visits": test.variants["control"].metrics.get("visits", 0),
                 "clicks": test.variants["control"].metrics.get("clicks", 0),
                 "ctr": test.variants["control"].metrics.get("ctr", 0.0),
+                "ci": ci.get("control", {}),
+                "adequacy": adequacy.get("control", {}),
             },
             "treatment": {
                 "name": "treatment",
@@ -2146,9 +2154,15 @@ def get_ab_test_status() -> dict[str, Any]:
                 "visits": test.variants["treatment"].metrics.get("visits", 0),
                 "clicks": test.variants["treatment"].metrics.get("clicks", 0),
                 "ctr": test.variants["treatment"].metrics.get("ctr", 0.0),
+                "ci": ci.get("treatment", {}),
+                "adequacy": adequacy.get("treatment", {}),
             },
             "winner": test.winner,
             "is_statistically_significant": test.is_statistically_significant,
+            "statistics": {
+                "pvalue": round(pvalue, 4),
+                "duration": duration,
+            },
         }
     except Exception as e:
         return {"active": False, "error": str(e)[:100]}
