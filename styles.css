@@ -909,6 +909,103 @@ select:focus,
   outline-offset: 2px;
 }
 
+.home-ops-panel {
+  margin-top: 12px;
+  border: 1px solid rgba(98, 171, 214, 0.34);
+  border-radius: 14px;
+  padding: 12px;
+  background: linear-gradient(
+    180deg,
+    rgba(248, 253, 255, 0.95),
+    rgba(234, 247, 255, 0.86)
+  );
+  text-align: left;
+}
+
+.home-ops-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.home-ops-title {
+  margin: 0;
+  font-family: "Syne", "Trebuchet MS", sans-serif;
+  font-size: 0.9rem;
+  color: #155376;
+}
+
+.home-health-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(97, 171, 214, 0.35);
+  background: rgba(241, 250, 255, 0.94);
+  color: #2b668a;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.home-health-badge.ok {
+  border-color: rgba(56, 165, 123, 0.4);
+  background: rgba(233, 250, 242, 0.95);
+  color: #228058;
+}
+
+.home-health-badge.warn {
+  border-color: rgba(207, 117, 70, 0.35);
+  background: rgba(255, 241, 235, 0.95);
+  color: #a34e32;
+}
+
+.home-ops-status {
+  margin: 8px 0 0;
+  color: #4b7593;
+  font-size: 0.82rem;
+}
+
+.home-ops-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.home-ops-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid rgba(93, 166, 210, 0.38);
+  border-radius: 10px;
+  text-decoration: none;
+  color: #1f5a7d;
+  font-size: 0.79rem;
+  font-weight: 700;
+  background: rgba(245, 251, 255, 0.92);
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.home-ops-link:hover {
+  transform: translateY(-1px);
+  border-color: rgba(61, 156, 217, 0.62);
+  box-shadow: 0 8px 14px rgba(40, 102, 139, 0.12);
+}
+
+.home-ops-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .assistant-modal {
   position: fixed;
   top: 108px;

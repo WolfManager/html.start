@@ -1,6 +1,10 @@
 const searchForm = document.getElementById("searchForm");
 const searchQuery = document.getElementById("searchQuery");
 const statusMessage = document.getElementById("statusMessage");
+const homeOpsStatus = document.getElementById("homeOpsStatus");
+const homeHealthBadge = document.getElementById("homeHealthBadge");
+const homeOpsLtrLink = document.getElementById("homeOpsLtrLink");
+const homeOpsAnalyticsLink = document.getElementById("homeOpsAnalyticsLink");
 const searchHistoryPanel = document.getElementById("searchHistoryPanel");
 const searchHistoryList = document.getElementById("searchHistoryList");
 const searchHistoryClear = document.getElementById("searchHistoryClear");
@@ -1351,6 +1355,67 @@ function initHomeForm() {
   if (!searchForm || !searchQuery) {
     return;
   }
+
+  const initHomeOpsPanel = async () => {
+    if (!homeOpsStatus || !homeHealthBadge) {
+      return;
+    }
+
+    const token = getAdminToken();
+    const protectedLinks = [homeOpsLtrLink, homeOpsAnalyticsLink].filter(
+      Boolean,
+    );
+
+    protectedLinks.forEach((link) => {
+      if (!token) {
+        link.setAttribute("aria-disabled", "true");
+        link.style.opacity = "0.6";
+      } else {
+        link.removeAttribute("aria-disabled");
+        link.style.opacity = "1";
+      }
+    });
+
+    if (!token) {
+      homeOpsStatus.textContent =
+        "Public health available. Sign in via Admin Panel for LTR/Analytics dashboards.";
+    }
+
+    try {
+      const response = await apiFetch("/api/health");
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error || "Health check failed.");
+      }
+
+      const backend = String(payload.backend || "unknown").toUpperCase();
+      const now = new Date().toLocaleTimeString();
+      homeHealthBadge.textContent = "Healthy";
+      homeHealthBadge.classList.remove("warn");
+      homeHealthBadge.classList.add("ok");
+      homeOpsStatus.textContent = `Backend ${backend} is reachable. Last check: ${now}.`;
+    } catch (error) {
+      homeHealthBadge.textContent = "Degraded";
+      homeHealthBadge.classList.remove("ok");
+      homeHealthBadge.classList.add("warn");
+      homeOpsStatus.textContent =
+        error?.message || "Could not read health endpoint.";
+    }
+
+    protectedLinks.forEach((link) => {
+      link.addEventListener("click", (event) => {
+        if (!getAdminToken()) {
+          event.preventDefault();
+          updateSearchStatus(
+            "Sign in via Admin Panel before opening protected dashboards.",
+            true,
+          );
+        }
+      });
+    });
+  };
+
+  initHomeOpsPanel();
 
   let searchSuggestAbortController = null;
   let searchSuggestDebounceId = null;
