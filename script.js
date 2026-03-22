@@ -69,6 +69,12 @@ const adminSnapshotResetClickTelemetryBtn = document.getElementById(
   "adminSnapshotResetClickTelemetryBtn",
 );
 const adminExportBtn = document.getElementById("adminExportBtn");
+const adminOpenLtrMonitorBtn = document.getElementById(
+  "adminOpenLtrMonitorBtn",
+);
+const adminOpenAnalyticsDashboardBtn = document.getElementById(
+  "adminOpenAnalyticsDashboardBtn",
+);
 
 const kpiTotalSearches = document.getElementById("kpiTotalSearches");
 const kpiTotalViews = document.getElementById("kpiTotalViews");
@@ -2745,6 +2751,21 @@ function setAdminToken(token) {
   }
 
   localStorage.setItem(ADMIN_TOKEN_KEY, token);
+}
+
+function openAdminDashboardPage(path) {
+  const token = getAdminToken();
+  if (!token) {
+    setAdminStatus("Please sign in first.", true);
+    return;
+  }
+
+  const target = String(path || "").trim();
+  if (!target) {
+    return;
+  }
+
+  window.open(target, "_blank", "noopener,noreferrer");
 }
 
 function areAdminClickSnapshotsEquivalent(a, b) {
@@ -6338,6 +6359,18 @@ function initAdminPage() {
       } catch (error) {
         setAdminStatus(error.message || "Could not refresh analytics.", true);
       }
+    });
+  }
+
+  if (adminOpenLtrMonitorBtn) {
+    adminOpenLtrMonitorBtn.addEventListener("click", () => {
+      openAdminDashboardPage("admin-ltr-monitor.html");
+    });
+  }
+
+  if (adminOpenAnalyticsDashboardBtn) {
+    adminOpenAnalyticsDashboardBtn.addEventListener("click", () => {
+      openAdminDashboardPage("analytics-dashboard.html");
     });
   }
 

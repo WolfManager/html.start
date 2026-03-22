@@ -35,6 +35,7 @@
       h1 {
         font-size: 28px;
         background: linear-gradient(135deg, #00d4ff, #7c3aed);
+        background-clip: text;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         margin-bottom: 10px;
@@ -328,6 +329,7 @@
         font-size: 32px;
         font-weight: 700;
         background: linear-gradient(135deg, #10b981, #00d4ff);
+        background-clip: text;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         margin: 10px 0;
@@ -558,25 +560,53 @@
     </div>
 
     <script>
-      const API_BASE = "http://127.0.0.1:8000/api";
+      const API_BASE = "/api";
+      const ADMIN_TOKEN_KEY = "magneto.admin.token";
+
+      function getAdminToken() {
+        const tokenFromQuery = new URLSearchParams(window.location.search).get(
+          "token",
+        );
+        if (tokenFromQuery) {
+          return tokenFromQuery;
+        }
+        return localStorage.getItem(ADMIN_TOKEN_KEY) || "";
+      }
+
+      async function fetchAdminJson(path) {
+        const token = getAdminToken();
+        if (!token) {
+          throw new Error(
+            "Missing admin token. Open this page from admin panel.",
+          );
+        }
+
+        const response = await fetch(`${API_BASE}${path}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
+        });
+
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(
+            payload.error || `Request failed (${response.status})`,
+          );
+        }
+
+        return payload;
+      }
 
       async function updateDashboard() {
         try {
           // Fetch all statuses in parallel
           const [readiness, ltrStatus, abStatus, deployStatus] =
             await Promise.all([
-              fetch(`${API_BASE}/admin/search/ltr-readiness`)
-                .then((r) => r.json())
-                .catch(() => ({})),
-              fetch(`${API_BASE}/admin/search/ltr-status`)
-                .then((r) => r.json())
-                .catch(() => ({})),
-              fetch(`${API_BASE}/admin/search/ab-test-status`)
-                .then((r) => r.json())
-                .catch(() => ({})),
-              fetch(`${API_BASE}/admin/search/deployment-status`)
-                .then((r) => r.json())
-                .catch(() => ({})),
+              fetchAdminJson("/admin/search/ltr-readiness"),
+              fetchAdminJson("/admin/search/ltr-status"),
+              fetchAdminJson("/admin/search/ab-test-status"),
+              fetchAdminJson("/admin/search/deployment-status"),
             ]);
 
           updateReadiness(readiness);
@@ -586,6 +616,8 @@
           updateTimestamp();
         } catch (error) {
           console.error("Dashboard update failed:", error);
+          const recList = document.getElementById("recommendations-list");
+          recList.innerHTML = `<div style="color:#f59e0b;">${String(error.message || "Could not refresh dashboard")}</div>`;
         }
       }
 

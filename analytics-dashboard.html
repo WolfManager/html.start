@@ -37,6 +37,7 @@
       .header-left h1 {
         font-size: 32px;
         background: linear-gradient(135deg, #00d4ff, #7c3aed);
+        background-clip: text;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         margin-bottom: 5px;
@@ -730,30 +731,107 @@
     </div>
 
     <script>
-      function updateTimestamp() {
-        const now = new Date();
-        document.getElementById("timestamp").textContent =
-          now.toLocaleTimeString();
+      const API_BASE = "/api";
+      const ADMIN_TOKEN_KEY = "magneto.admin.token";
+
+      function getAdminToken() {
+        const tokenFromQuery = new URLSearchParams(window.location.search).get(
+          "token",
+        );
+        if (tokenFromQuery) {
+          return tokenFromQuery;
+        }
+        return localStorage.getItem(ADMIN_TOKEN_KEY) || "";
       }
 
-      function simulateMetricsUpdate() {
-        // Simulate slight variations in metrics
-        const ndcg = 0.728 + (Math.random() - 0.5) * 0.02;
+      async function fetchAdminJson(path) {
+        const token = getAdminToken();
+        if (!token) {
+          throw new Error(
+            "Missing admin token. Open this page from admin panel.",
+          );
+        }
+
+        const response = await fetch(`${API_BASE}${path}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
+        });
+
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(
+            payload.error || `Request failed (${response.status})`,
+          );
+        }
+        return payload;
+      }
+
+      function updateTimestamp() {
+        document.getElementById("timestamp").textContent =
+          new Date().toLocaleTimeString();
+      }
+
+      function updateFromData(ltrStatus, abStatus, deployStatus, readiness) {
+        const currentMetrics =
+          ltrStatus?.training?.current_metrics ||
+          ltrStatus?.training?.current_model_metrics ||
+          {};
+        const ndcg = Number(currentMetrics.ndcg_5 || 0);
         document.getElementById("ndcg-current").textContent = ndcg.toFixed(3);
 
-        const ctrDiff = 1.8 + (Math.random() - 0.5) * 0.5;
-        document.getElementById("ctr-diff").textContent =
-          ctrDiff.toFixed(1) + "%";
+        const controlCtr = Number(abStatus?.control?.ctr || 0);
+        const treatmentCtr = Number(abStatus?.treatment?.ctr || 0);
+        const ctrDelta =
+          controlCtr > 0 ? ((treatmentCtr - controlCtr) / controlCtr) * 100 : 0;
+        const ctrDiffEl = document.getElementById("ctr-diff");
+        const ctrSignificanceEl = document.getElementById("ctr-significance");
+
+        ctrDiffEl.textContent = `${ctrDelta >= 0 ? "+" : ""}${ctrDelta.toFixed(1)}%`;
+        ctrSignificanceEl.textContent = abStatus?.is_statistically_significant
+          ? "Significant ✓"
+          : "Learning";
+        ctrSignificanceEl.className = `kpi-change ${ctrDelta >= 0 ? "positive" : "negative"}`;
+
+        const readinessValue = Number(readiness?.readiness_percent || 0);
+        const readinessEl = document.getElementById("readiness-score");
+        if (readinessEl) {
+          readinessEl.textContent = `${readinessValue.toFixed(1)}%`;
+        }
+
+        const trafficPercent = Number(deployStatus?.canary_percentage || 0);
+        const progressBars = document.querySelectorAll(".progress-fill");
+        if (progressBars.length > 1) {
+          progressBars[1].style.width = `${Math.max(0, Math.min(100, trafficPercent))}%`;
+        }
       }
 
-      // Initial update
-      updateTimestamp();
+      async function refreshAnalyticsDashboard() {
+        try {
+          const [ltrStatus, abStatus, deployStatus, readiness] =
+            await Promise.all([
+              fetchAdminJson("/admin/search/ltr-status"),
+              fetchAdminJson("/admin/search/ab-test-status"),
+              fetchAdminJson("/admin/search/deployment-status"),
+              fetchAdminJson("/admin/search/ltr-readiness"),
+            ]);
+          updateFromData(ltrStatus, abStatus, deployStatus, readiness);
+        } catch (error) {
+          const ctrSignificanceEl = document.getElementById("ctr-significance");
+          if (ctrSignificanceEl) {
+            ctrSignificanceEl.textContent = String(
+              error?.message || "Could not refresh analytics",
+            );
+            ctrSignificanceEl.className = "kpi-change negative";
+          }
+        } finally {
+          updateTimestamp();
+        }
+      }
 
-      // Update every 10 seconds
-      setInterval(() => {
-        updateTimestamp();
-        simulateMetricsUpdate();
-      }, 10000);
+      refreshAnalyticsDashboard();
+      setInterval(refreshAnalyticsDashboard, 10000);
     </script>
   </body>
 </html>
