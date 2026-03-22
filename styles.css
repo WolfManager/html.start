@@ -493,10 +493,11 @@ h1 {
 .assistant-thread {
   margin-top: 0;
   display: grid;
-  gap: 10px;
+  gap: 12px;
   min-height: 0;
   overflow-y: auto;
-  padding-right: 4px;
+  padding-right: 6px;
+  padding-bottom: 2px;
   align-content: start;
 }
 
@@ -541,9 +542,12 @@ h1 {
 
 .assistant-bubble {
   border-radius: 14px;
-  padding: 9px 11px;
-  font-size: 0.82rem;
-  line-height: 1.5;
+  padding: 11px 13px;
+  font-size: clamp(0.9rem, 0.92vw, 0.98rem);
+  line-height: 1.68;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .assistant-bubble.user {

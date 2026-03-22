@@ -360,12 +360,6 @@
 
               <button type="submit" class="search-btn">Search</button>
             </form>
-            <p
-              id="statusMessage"
-              class="status"
-              role="status"
-              aria-live="polite"
-            ></p>
             <button
               id="assistantLaunchBtn"
               type="button"
@@ -373,65 +367,6 @@
             >
               Open Magneto AI Assistant
             </button>
-
-            <section class="home-ops-panel" aria-label="System operations">
-              <div class="home-ops-header">
-                <p class="home-ops-title">System Ops</p>
-                <span id="homeHealthBadge" class="home-health-badge">
-                  checking...
-                </span>
-              </div>
-              <p id="homeOpsStatus" class="home-ops-status" aria-live="polite">
-                Verifying backend health.
-              </p>
-              <div class="home-ops-actions">
-                <a class="home-ops-link" href="admin.html">Open Admin Panel</a>
-                <a
-                  id="homeOpsLtrLink"
-                  class="home-ops-link"
-                  href="admin-ltr-monitor.html"
-                  title="Requires admin sign-in"
-                  >LTR Monitor</a
-                >
-                <a
-                  id="homeOpsAnalyticsLink"
-                  class="home-ops-link"
-                  href="analytics-dashboard.html"
-                  title="Requires admin sign-in"
-                  >Analytics Dashboard</a
-                >
-              </div>
-            </section>
-          </section>
-
-          <section
-            id="searchHistoryPanel"
-            class="search-history-panel"
-            aria-label="Your search history"
-            hidden
-          >
-            <div class="search-history-header">
-              <p class="search-history-label">Your Searches</p>
-              <button
-                id="searchHistoryClear"
-                type="button"
-                class="search-history-clear-btn"
-                aria-label="Clear search history"
-              >
-                Clear
-              </button>
-            </div>
-            <div id="searchHistoryList" class="search-history-list"></div>
-          </section>
-
-          <section
-            id="popularSearchesPanel"
-            class="popular-searches-panel"
-            aria-label="Popular searches"
-            hidden
-          >
-            <p class="popular-searches-label">Trending Now</p>
-            <div id="popularSearchesList" class="popular-searches-list"></div>
           </section>
         </section>
       </div>
