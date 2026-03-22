@@ -91,6 +91,7 @@ from .services.search_service import (
     run_search_page,
     set_click_signal_telemetry,
     write_query_rewrite_rules,
+    _collect_ltr_training_sample,
 )
 
 
@@ -1047,6 +1048,25 @@ def result_click(request):
         ip=get_client_ip(request.META),
     )
     invalidate_click_signal_cache()
+
+    # Wire LTR training signal: record this click as a positive example
+    try:
+        position_raw = str(payload.get("position") or "").strip()
+        position = int(position_raw) if position_raw.isdigit() else 0
+        doc_score_raw = payload.get("score") or payload.get("doc_score") or 0.0
+        dwell_raw = str(payload.get("dwellTime") or "").strip()
+        dwell_ms = int(dwell_raw) if dwell_raw.isdigit() else 0
+        _collect_ltr_training_sample(
+            query=query,
+            doc_url=url,
+            doc_score=float(doc_score_raw),
+            position=position,
+            clicked=True,
+            dwell_time_ms=dwell_ms,
+        )
+    except Exception:
+        pass  # LTR data collection must never break click logging
+
     return Response({"ok": True})
 
 
@@ -1670,5 +1690,34 @@ def admin_search_reformulations(request):
     except Exception as e:
         return Response(
             {"error": str(e)[:200], "range_days": 7},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def admin_search_ltr_debug(request):
+    """Explain LTR ranking for a given query — shows feature vectors and per-feature contributions."""
+    auth_error = _admin_auth_error(request)
+    if auth_error is not None:
+        return auth_error
+
+    try:
+        query = str(request.query_params.get("q") or "").strip()
+        if not query:
+            return Response(
+                {"error": "q parameter is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        limit_raw = str(request.query_params.get("limit") or "5").strip()
+        limit = int(limit_raw) if limit_raw.isdigit() else 5
+        limit = max(1, min(20, limit))
+
+        from .services.search_service import get_ltr_debug_ranking
+        result = get_ltr_debug_ranking(query=query, limit=limit)
+        return Response(result)
+    except Exception as e:
+        return Response(
+            {"error": str(e)[:200], "query": ""},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )

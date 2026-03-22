@@ -557,7 +557,50 @@
           </div>
         </div>
       </div>
-    </div>
+
+      <!-- LTR Debugger Section -->
+      <div style="margin: 0 24px 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px">
+
+        <!-- Feature Importance Chart -->
+        <div class="card">
+          <h2>🏋️ Feature Importance &amp; Weights</h2>
+          <div id="feature-importance-chart" style="margin-top: 12px">
+            <div style="color: #9ca3af; font-size: 13px">Loading model weights...</div>
+          </div>
+          <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid #e5e7eb">
+            <div style="font-size: 12px; color: #6b7280">
+              Live training buffer:&nbsp;
+              <span id="debug-sample-count" style="font-weight: 600; color: #6366f1">0 samples</span>
+              &nbsp;/&nbsp;500 required
+            </div>
+            <div style="width: 100%; height: 6px; background: #e5e7eb; border-radius: 3px; margin-top: 6px; overflow: hidden">
+              <div id="debug-sample-bar" style="height: 100%; background: #6366f1; width: 0%; transition: width 0.4s"></div>
+            </div>
+            <div id="debug-data-collection-flag" style="font-size: 11px; color: #9ca3af; margin-top: 4px"></div>
+          </div>
+        </div>
+
+        <!-- Interactive Query Debugger -->
+        <div class="card">
+          <h2>🔬 LTR Ranking Debugger</h2>
+          <div style="display: flex; gap: 8px; margin-bottom: 12px">
+            <input
+              id="ltr-debug-input"
+              type="text"
+              placeholder="Enter a query to debug..."
+              style="flex: 1; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; outline: none"
+            />
+            <button
+              id="ltr-debug-btn"
+              onclick="runLtrDebug()"
+              style="padding: 8px 14px; background: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px"
+            >Debug</button>
+          </div>
+          <div id="ltr-debug-results" style="font-size: 12px; max-height: 340px; overflow-y: auto">
+            <div style="color: #9ca3af">Type a query above to see how LTR ranks each result.</div>
+          </div>
+        </div>
+      </div>
 
     <script>
       const API_BASE = "/api";
@@ -681,6 +724,57 @@
             })
             .join("");
         }
+
+        // Feature importance chart
+        const model = data.current_model || {};
+        const importance = model.feature_importance || {};
+        const weights = model.feature_weights || {};
+        const chartEl = document.getElementById("feature-importance-chart");
+        if (chartEl) {
+          const entries = Object.entries(importance);
+          if (entries.length === 0) {
+            chartEl.innerHTML = `<div style="color: #9ca3af; font-size: 13px">No model loaded or no importance data available.</div>`;
+          } else {
+            const maxImp = Math.max(...entries.map(([, v]) => v));
+            chartEl.innerHTML = entries
+              .sort(([, a], [, b]) => b - a)
+              .map(([feat, imp]) => {
+                const pct = maxImp > 0 ? (imp / maxImp) * 100 : 0;
+                const w = weights[feat] ?? 0;
+                return `
+                  <div style="margin-bottom: 10px">
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 3px">
+                      <span style="color: #374151; font-weight: 600">${feat}</span>
+                      <span style="color: #6b7280">imp: ${imp.toFixed(4)}&nbsp;&nbsp;weight: ${w.toFixed(4)}</span>
+                    </div>
+                    <div style="width: 100%; height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden">
+                      <div style="height: 100%; width: ${pct.toFixed(1)}%; background: #6366f1; border-radius: 4px; transition: width 0.4s"></div>
+                    </div>
+                  </div>
+                `;
+              }).join("");
+          }
+        }
+
+        // Live sample buffer
+        const debug = data.debug || {};
+        const sampleCount = debug.live_sample_count || 0;
+        const minRequired = debug.min_training_samples || 500;
+        const samplePct = Math.min(100, (sampleCount / minRequired) * 100);
+        const sampleEl = document.getElementById("debug-sample-count");
+        if (sampleEl) sampleEl.textContent = `${sampleCount} samples`;
+        const sampleBar = document.getElementById("debug-sample-bar");
+        if (sampleBar) {
+          sampleBar.style.width = `${samplePct.toFixed(1)}%`;
+          sampleBar.style.background = samplePct >= 100 ? "#10b981" : "#6366f1";
+        }
+        const flagEl = document.getElementById("debug-data-collection-flag");
+        if (flagEl) {
+          flagEl.textContent = debug.data_collection_enabled
+            ? "✓ Click-based LTR data collection active"
+            : "⚠ Data collection disabled (LTR_DATA_COLLECTION_ENABLED=false)";
+          flagEl.style.color = debug.data_collection_enabled ? "#10b981" : "#f59e0b";
+        }
       }
 
       function updateABStatus(data) {
@@ -778,6 +872,61 @@
       // Initial load and auto-refresh every 5 seconds
       updateDashboard();
       setInterval(updateDashboard, 5000);
+
+      async function runLtrDebug() {
+        const input = document.getElementById("ltr-debug-input");
+        const resultsEl = document.getElementById("ltr-debug-results");
+        const query = (input?.value || "").trim();
+        if (!query) {
+          resultsEl.innerHTML = `<div style="color: #f59e0b">Please enter a query.</div>`;
+          return;
+        }
+        resultsEl.innerHTML = `<div style="color: #9ca3af">Fetching LTR debug for "${query}"...</div>`;
+        try {
+          const data = await fetchAdminJson(`/admin/search/ltr-debug?q=${encodeURIComponent(query)}&limit=5`);
+          if (data.error) {
+            resultsEl.innerHTML = `<div style="color: #ef4444">⚠ ${data.error}</div>`;
+            return;
+          }
+
+          const results = data.results || [];
+          if (results.length === 0) {
+            resultsEl.innerHTML = `<div style="color: #9ca3af">No results found for "${query}".</div>`;
+            return;
+          }
+
+          resultsEl.innerHTML = results.map((r) => {
+            const changeStr = r.position_change > 0
+              ? `<span style="color:#10b981">↑${r.position_change}</span>`
+              : r.position_change < 0
+              ? `<span style="color:#ef4444">↓${Math.abs(r.position_change)}</span>`
+              : `<span style="color:#9ca3af">→</span>`;
+
+            const contribs = Object.entries(r.contributions || {}).map(([k, v]) => {
+              const color = v > 0 ? "#10b981" : v < 0 ? "#ef4444" : "#9ca3af";
+              return `<span style="margin-right:8px; color:${color}">${k}: ${v >= 0 ? '+' : ''}${v.toFixed(4)}</span>`;
+            }).join("");
+
+            return `
+              <div style="border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px; margin-bottom: 8px">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px">
+                  <div style="font-weight:600; color:#374151; font-size:13px">#${r.ltr_position + 1} ${r.title || r.url}</div>
+                  <div style="font-size:12px">${changeStr} &nbsp;<span style="color:#6366f1; font-weight:600">score: ${r.ltr_score.toFixed(4)}</span></div>
+                </div>
+                <div style="color:#9ca3af; font-size:11px; word-break:break-all; margin-bottom:5px">${r.url}</div>
+                <div style="font-size:11px">${contribs}</div>
+              </div>
+            `;
+          }).join("");
+        } catch (err) {
+          resultsEl.innerHTML = `<div style="color: #ef4444">Error: ${err.message}</div>`;
+        }
+      }
+
+      // Allow Enter key in debug input
+      document.getElementById("ltr-debug-input")?.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") runLtrDebug();
+      });
 
       // Add sample events for demo
       setTimeout(() => {

@@ -1967,12 +1967,16 @@ def _apply_ltr_ranking_adjustment(
     try:
         # Prepare features for each result
         docs_with_features = []
+        query_length = len(tokenize(query))
+        has_operators = bool(_parse_search_operators(query)[1].get("sites"))
         for position, result in enumerate(results):
+            raw_score = float(result.get("score") or result.get("_score") or 50.0)
             features = {
-                "query_length": len(tokenize(query)),
-                "has_operators": bool(_parse_search_operators(query)[1].get("sites")),
-                "doc_position": position,
-                "doc_score": 50.0,  # normalized base score
+                "query_length": query_length,
+                "has_operators": has_operators,
+                "position": position,          # matches training key
+                "doc_score": raw_score,         # actual result relevance score
+                "dwell_time_ms": 0,             # unknown at ranking time
             }
             docs_with_features.append({
                 "position": position,
@@ -2099,13 +2103,21 @@ def get_ltr_model_status() -> dict[str, Any]:
         model = load_model()
         training_summary = get_training_summary()
 
+        model_detail: dict[str, Any] = {
+            "model_id": model.model_id if model else None,
+            "version": model.version if model else None,
+            "feature_count": len(model.feature_weights) if model else 0,
+        }
+        if model:
+            model_detail["feature_weights"] = dict(model.feature_weights)
+            model_detail["feature_importance"] = dict(getattr(model, 'feature_importance', {}))
+            model_detail["bias"] = float(getattr(model, 'bias', 0.1))
+
+        live_sample_count = int(_ltr_feature_cache.get("sample_count") or 0)
+
         return {
             "status": "active" if model else "inactive",
-            "current_model": {
-                "model_id": model.model_id if model else None,
-                "version": model.version if model else None,
-                "feature_count": len(model.feature_weights) if model else 0,
-            },
+            "current_model": model_detail,
             "training": {
                 "total_runs": training_summary.get("total_training_runs", 0),
                 "successful_runs": training_summary.get("successful_runs", 0),
@@ -2114,9 +2126,85 @@ def get_ltr_model_status() -> dict[str, Any]:
                 "ndcg_trend": training_summary.get("ndcg_trend", []),
                 "avg_training_duration_seconds": training_summary.get("avg_training_duration_seconds", 0.0),
             },
+            "debug": {
+                "live_sample_count": live_sample_count,
+                "data_collection_enabled": LTR_DATA_COLLECTION_ENABLED,
+                "min_training_samples": 500,
+            },
         }
     except Exception as e:
         return {"status": "error", "error": str(e)[:100]}
+
+
+def get_ltr_debug_ranking(query: str, limit: int = 5) -> dict[str, Any]:
+    """Explain LTR ranking for a query — feature vectors + per-feature contributions."""
+    try:
+        model = load_model()
+        if not model:
+            return {"error": "No active LTR model loaded.", "query": query}
+
+        # Run the real search to get actual results with scores
+        results = _run_search_all(query, language="", category="", source="", sort="relevance", limit=limit, offset=0)
+        all_results = list(results.get("results") or [])
+
+        query_length = len(tokenize(query))
+        has_operators = bool(_parse_search_operators(query)[1].get("sites"))
+        feature_importance = dict(getattr(model, 'feature_importance', {}))
+        feature_weights = dict(model.feature_weights)
+        bias = float(getattr(model, 'bias', 0.1))
+
+        explained: list[dict[str, Any]] = []
+        for position, result in enumerate(all_results):
+            raw_score = float(result.get("score") or result.get("_score") or 50.0)
+            features = {
+                "query_length": query_length,
+                "has_operators": int(has_operators),
+                "position": position,
+                "doc_score": raw_score,
+                "dwell_time_ms": 0,
+            }
+
+            # Compute per-feature contribution (weight × feature_value)
+            contributions: dict[str, float] = {}
+            logit = bias
+            for feat_name, feat_val in features.items():
+                w = float(feature_weights.get(feat_name, 0.0))
+                contrib = w * float(feat_val)
+                contributions[feat_name] = round(contrib, 6)
+                logit += contrib
+
+            # Sigmoid
+            import math as _math
+            ltr_score = 1.0 / (1.0 + _math.exp(-logit))
+
+            explained.append({
+                "position": position,
+                "title": str(result.get("title") or "")[:80],
+                "url": str(result.get("url") or ""),
+                "raw_search_score": round(raw_score, 4),
+                "ltr_score": round(ltr_score, 6),
+                "logit": round(logit, 6),
+                "features": features,
+                "contributions": contributions,
+            })
+
+        # Re-sort by LTR score to show re-ranked order
+        explained_sorted = sorted(explained, key=lambda x: x["ltr_score"], reverse=True)
+        for new_pos, item in enumerate(explained_sorted):
+            item["ltr_position"] = new_pos
+            item["position_change"] = item["position"] - new_pos  # + means moved up
+
+        return {
+            "query": query,
+            "model_id": model.model_id,
+            "feature_weights": feature_weights,
+            "feature_importance": feature_importance,
+            "bias": bias,
+            "results": explained_sorted,
+            "result_count": len(all_results),
+        }
+    except Exception as e:
+        return {"error": str(e)[:200], "query": query}
 
 
 def get_ab_test_status() -> dict[str, Any]:
