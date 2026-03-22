@@ -40,6 +40,224 @@ body {
   overflow-x: hidden;
 }
 
+body.home-tropical {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(16, 55, 79, 0.28) 0%,
+      rgba(16, 55, 79, 0.1) 28%,
+      rgba(18, 72, 98, 0.2) 58%,
+      rgba(63, 49, 22, 0.22) 100%
+    ),
+    url("poza1.jpg") center center / cover no-repeat fixed;
+}
+
+body.home-tropical::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(
+      circle at 24% 14%,
+      rgba(255, 255, 255, 0.3),
+      transparent 32%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.05) 0%,
+      rgba(255, 255, 255, 0) 100%
+    );
+}
+
+.tropical-sky-glow,
+.tropical-ocean,
+.tropical-ocean-foam,
+.tropical-beach,
+.tropical-palms {
+  display: none;
+}
+
+.tropical-sky-glow {
+  top: 0;
+  height: 44vh;
+  z-index: 0;
+  background:
+    radial-gradient(
+      circle at 16% 18%,
+      rgba(255, 255, 255, 0.58),
+      transparent 40%
+    ),
+    radial-gradient(
+      circle at 74% 11%,
+      rgba(255, 255, 255, 0.3),
+      transparent 36%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.16) 0%,
+      rgba(255, 255, 255, 0) 100%
+    );
+}
+
+.tropical-ocean {
+  top: 40vh;
+  height: 31vh;
+  z-index: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(43, 153, 205, 0.82) 0%,
+    rgba(23, 122, 177, 0.94) 56%,
+    rgba(19, 104, 160, 0.96) 100%
+  );
+  overflow: hidden;
+}
+
+.tropical-ocean::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      ellipse at 10% 22%,
+      rgba(255, 255, 255, 0.2),
+      transparent 48%
+    ),
+    radial-gradient(
+      ellipse at 64% 34%,
+      rgba(255, 255, 255, 0.16),
+      transparent 52%
+    ),
+    repeating-linear-gradient(
+      102deg,
+      rgba(255, 255, 255, 0.05) 0,
+      rgba(255, 255, 255, 0.05) 10px,
+      rgba(255, 255, 255, 0) 10px,
+      rgba(255, 255, 255, 0) 34px
+    );
+  animation: oceanDrift 12s linear infinite;
+}
+
+.tropical-ocean::after {
+  content: "";
+  position: absolute;
+  left: -8%;
+  right: -8%;
+  top: -2px;
+  height: 16px;
+  background: radial-gradient(
+    ellipse at 50% 100%,
+    rgba(255, 255, 255, 0.34),
+    rgba(255, 255, 255, 0) 64%
+  );
+  animation: oceanEdge 6s ease-in-out infinite;
+}
+
+.tropical-ocean-foam {
+  top: 40.2vh;
+  height: 3.6vh;
+  z-index: 1;
+  opacity: 0.68;
+  background:
+    radial-gradient(
+      ellipse at 14% 72%,
+      rgba(255, 255, 255, 0.64) 0,
+      rgba(255, 255, 255, 0.14) 55%,
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse at 48% 70%,
+      rgba(255, 255, 255, 0.6) 0,
+      rgba(255, 255, 255, 0.13) 52%,
+      transparent 56%
+    ),
+    radial-gradient(
+      ellipse at 80% 72%,
+      rgba(255, 255, 255, 0.64) 0,
+      rgba(255, 255, 255, 0.14) 55%,
+      transparent 58%
+    );
+  animation: foamPulse 7.5s ease-in-out infinite;
+}
+
+.tropical-beach {
+  bottom: 0;
+  height: 31vh;
+  z-index: 0;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(234, 210, 157, 0.95) 0%,
+      rgba(221, 190, 124, 0.98) 100%
+    ),
+    repeating-linear-gradient(
+      12deg,
+      rgba(255, 255, 255, 0.06) 0,
+      rgba(255, 255, 255, 0.06) 2px,
+      rgba(0, 0, 0, 0) 2px,
+      rgba(0, 0, 0, 0) 8px
+    );
+}
+
+.tropical-palms {
+  bottom: 0;
+  height: 36vh;
+  z-index: 1;
+  opacity: 0.28;
+}
+
+.tropical-palms::before,
+.tropical-palms::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  width: 240px;
+  height: 100%;
+  background:
+    linear-gradient(
+      78deg,
+      transparent 42%,
+      rgba(83, 56, 30, 0.92) 43% 46%,
+      transparent 47%
+    ),
+    linear-gradient(
+      102deg,
+      transparent 56%,
+      rgba(83, 56, 30, 0.92) 57% 60%,
+      transparent 61%
+    ),
+    conic-gradient(
+      from 170deg at 48% 26%,
+      rgba(19, 70, 44, 0.95) 0 18deg,
+      transparent 18deg 360deg
+    ),
+    conic-gradient(
+      from 210deg at 50% 24%,
+      rgba(19, 70, 44, 0.95) 0 18deg,
+      transparent 18deg 360deg
+    ),
+    conic-gradient(
+      from 240deg at 52% 26%,
+      rgba(19, 70, 44, 0.95) 0 16deg,
+      transparent 16deg 360deg
+    );
+  filter: blur(0.15px);
+}
+
+.tropical-palms::before {
+  left: 0;
+  transform-origin: left bottom;
+  animation: palmsSway 11s ease-in-out infinite;
+}
+
+.tropical-palms::after {
+  right: 0;
+  transform-origin: right bottom;
+  transform: scaleX(-1);
+  animation: palmsSway 12s ease-in-out infinite reverse;
+}
+
 .aurora {
   position: fixed;
   border-radius: 999px;
@@ -632,7 +850,7 @@ h1 {
   margin: 22px auto 0;
   border: 1px solid var(--line);
   border-radius: 28px;
-  padding: 24px;
+  padding: 20px 24px 8px;
   background: linear-gradient(165deg, var(--panel), var(--panel-strong));
   box-shadow:
     0 28px 48px rgba(31, 72, 103, 0.22),
@@ -2955,6 +3173,52 @@ mark {
   }
   50% {
     transform: scale(1.07);
+  }
+}
+
+@keyframes oceanDrift {
+  0% {
+    transform: translateX(-1.2%);
+  }
+  50% {
+    transform: translateX(1.1%);
+  }
+  100% {
+    transform: translateX(-1.2%);
+  }
+}
+
+@keyframes oceanEdge {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.88;
+  }
+  50% {
+    transform: translateY(2px);
+    opacity: 0.65;
+  }
+}
+
+@keyframes foamPulse {
+  0%,
+  100% {
+    opacity: 0.64;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 0.8;
+    transform: translateY(1px);
+  }
+}
+
+@keyframes palmsSway {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  50% {
+    transform: translateX(2px) rotate(1.2deg);
   }
 }
 
