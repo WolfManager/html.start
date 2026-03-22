@@ -2168,6 +2168,83 @@ def get_ab_test_status() -> dict[str, Any]:
         return {"active": False, "error": str(e)[:100]}
 
 
+def get_reformulation_stats(range_days: int = 7) -> dict[str, Any]:
+    """Analyse analytics data to produce query reformulation tracking stats."""
+    try:
+        analytics = read_analytics()
+        searches = list(analytics.get("searches") or [])
+
+        cutoff_ts = time.time() - (range_days * 86400)
+        recent_searches = []
+        for s in searches:
+            try:
+                at = s.get("at") or ""
+                ts = datetime.fromisoformat(at.replace("Z", "+00:00")).timestamp()
+                if ts >= cutoff_ts:
+                    recent_searches.append(s)
+            except Exception:
+                continue
+
+        total_searches = len(recent_searches)
+        rewritten_searches = [s for s in recent_searches if s.get("wasRewritten")]
+        rewrite_count = len(rewritten_searches)
+        rewrite_rate = (rewrite_count / total_searches * 100) if total_searches > 0 else 0.0
+
+        # Tally which rules fired most
+        rule_counts: dict[str, dict[str, Any]] = {}
+        for s in rewritten_searches:
+            rule = s.get("rewriteRule") or {}
+            key = f"{rule.get('from', '?')} → {rule.get('to', '?')}"
+            if key not in rule_counts:
+                rule_counts[key] = {
+                    "from": rule.get("from", "?"),
+                    "to": rule.get("to", "?"),
+                    "reason": rule.get("reason", "configured-rewrite"),
+                    "matchType": rule.get("matchType", "exact"),
+                    "count": 0,
+                    "zero_results_after": 0,
+                }
+            rule_counts[key]["count"] += 1
+            if int(s.get("resultCount", 0)) == 0:
+                rule_counts[key]["zero_results_after"] += 1
+
+        top_rules = sorted(rule_counts.values(), key=lambda r: r["count"], reverse=True)[:10]
+
+        # Recent rewrites for the activity log
+        recent_rewrites = []
+        for s in sorted(rewritten_searches, key=lambda x: x.get("at", ""), reverse=True)[:20]:
+            recent_rewrites.append({
+                "originalQuery": s.get("query", ""),
+                "rewrittenQuery": s.get("queryUsed", ""),
+                "rule": s.get("rewriteRule", {}),
+                "resultCount": s.get("resultCount", 0),
+                "at": s.get("at", ""),
+            })
+
+        # User-initiated reformulations (sequential behaviour)
+        user_reformulations = [s for s in recent_searches if s.get("reformulationType")]
+        zero_results_refinements = sum(1 for s in user_reformulations if s.get("reformulationType") == "zero-results-refinement")
+        low_results_refinements = sum(1 for s in user_reformulations if s.get("reformulationType") == "low-results-refinement")
+        query_refinements = sum(1 for s in user_reformulations if s.get("reformulationType") == "query-refinement")
+
+        return {
+            "range_days": range_days,
+            "total_searches": total_searches,
+            "rewrite_count": rewrite_count,
+            "rewrite_rate": round(rewrite_rate, 2),
+            "top_rules": top_rules,
+            "recent_rewrites": recent_rewrites,
+            "user_reformulations": {
+                "total": len(user_reformulations),
+                "zero_results_refinement": zero_results_refinements,
+                "low_results_refinement": low_results_refinements,
+                "query_refinement": query_refinements,
+            },
+        }
+    except Exception as e:
+        return {"error": str(e)[:200], "range_days": range_days}
+
+
 def get_deployment_status() -> dict[str, Any]:
     """Get current deployment status and canary state."""
     try:

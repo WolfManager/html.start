@@ -115,7 +115,15 @@ def _detect_reformulation(
     return None, None
 
 
-def log_search(*, query: str, result_count: int, ip: str) -> None:
+def log_search(
+    *,
+    query: str,
+    result_count: int,
+    ip: str,
+    query_used: str | None = None,
+    was_rewritten: bool = False,
+    rewrite_rule: dict | None = None,
+) -> None:
     analytics = read_analytics()
     searches = list(analytics.get("searches") or [])
     normalized_query = _normalize_text(query)
@@ -127,19 +135,27 @@ def log_search(*, query: str, result_count: int, ip: str) -> None:
         ip=normalized_ip,
         now_ms=now_ms,
     )
-    searches.append(
-        {
-            "id": f"s-{now_ms}-{random.randint(1000, 9999)}",
-            "query": query.strip(),
-            "normalizedQuery": normalized_query,
-            "resultCount": int(result_count),
-            "zeroResults": int(result_count) == 0,
-            "ip": normalized_ip,
-            "reformulatesSearchId": reformulates_search_id,
-            "reformulationType": reformulation_type,
-            "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    entry: dict = {
+        "id": f"s-{now_ms}-{random.randint(1000, 9999)}",
+        "query": query.strip(),
+        "normalizedQuery": normalized_query,
+        "resultCount": int(result_count),
+        "zeroResults": int(result_count) == 0,
+        "ip": normalized_ip,
+        "reformulatesSearchId": reformulates_search_id,
+        "reformulationType": reformulation_type,
+        "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+    if was_rewritten and query_used and rewrite_rule:
+        entry["wasRewritten"] = True
+        entry["queryUsed"] = str(query_used).strip()
+        entry["rewriteRule"] = {
+            "from": str(rewrite_rule.get("from", ""))[:160],
+            "to": str(rewrite_rule.get("to", ""))[:160],
+            "reason": str(rewrite_rule.get("reason", "configured-rewrite"))[:120],
+            "matchType": str(rewrite_rule.get("matchType", "exact"))[:20],
         }
-    )
+    searches.append(entry)
     analytics["searches"] = _trim_list(searches, 10000)
     analytics.setdefault("pageViews", [])
     analytics.setdefault("resultClicks", [])

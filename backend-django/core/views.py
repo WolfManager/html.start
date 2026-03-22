@@ -160,10 +160,15 @@ def search(request):
         limit=safe_limit,
         offset=offset,
     )
+    query_rewrite = payload.get("queryRewrite")
+    query_used = payload.get("queryUsed") or query
     log_search(
         query=query,
         result_count=int(payload.get("total", 0) or 0),
         ip=get_client_ip(request.META),
+        query_used=query_used,
+        was_rewritten=bool(query_rewrite),
+        rewrite_rule=query_rewrite if isinstance(query_rewrite, dict) else None,
     )
 
     total = int(payload.get("total", 0) or 0)
@@ -1642,5 +1647,28 @@ def admin_search_ltr_readiness(request):
                 "checks": {},
                 "recommendations": ["System failed to initialize"],
             },
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def admin_search_reformulations(request):
+    """Get query reformulation tracking stats."""
+    auth_error = _admin_auth_error(request)
+    if auth_error is not None:
+        return auth_error
+
+    try:
+        range_raw = str(request.query_params.get("range", "7d") or "7d").strip()
+        range_days = int(range_raw.replace("d", "")) if range_raw.replace("d", "").isdigit() else 7
+        range_days = max(1, min(90, range_days))
+
+        from .services.search_service import get_reformulation_stats
+        stats = get_reformulation_stats(range_days=range_days)
+        return Response(stats)
+    except Exception as e:
+        return Response(
+            {"error": str(e)[:200], "range_days": 7},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )

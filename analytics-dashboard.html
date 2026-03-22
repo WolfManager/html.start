@@ -687,6 +687,91 @@
         </div>
       </div>
 
+      <!-- Query Reformulations -->
+      <div class="grid">
+        <div class="card">
+          <h2>🔄 Query Reformulation Tracking</h2>
+
+          <!-- Summary KPIs -->
+          <div class="stat-items" style="margin-bottom: 16px">
+            <div class="stat-item">
+              <div class="stat-item-label">Rewrite Rate</div>
+              <div
+                id="reform-rate"
+                class="stat-item-value"
+                style="color: #8b5cf6"
+              >
+                0.0%
+              </div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-item-label">Rewrites (7d)</div>
+              <div id="reform-count" class="stat-item-value">0</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-item-label">Total Searches</div>
+              <div id="reform-total" class="stat-item-value">0</div>
+            </div>
+          </div>
+
+          <!-- User Reformulations -->
+          <div class="stat-group">
+            <h3>User Behaviour Reformulations</h3>
+            <div class="stat-items">
+              <div class="stat-item">
+                <div class="stat-item-label">Zero Results</div>
+                <div
+                  id="reform-zero"
+                  class="stat-item-value"
+                  style="color: #ef4444"
+                >
+                  0
+                </div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-item-label">Low Results</div>
+                <div
+                  id="reform-low"
+                  class="stat-item-value"
+                  style="color: #f59e0b"
+                >
+                  0
+                </div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-item-label">Query Refine</div>
+                <div
+                  id="reform-refine"
+                  class="stat-item-value"
+                  style="color: #3b82f6"
+                >
+                  0
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Top Fired Rules -->
+          <div class="stat-group">
+            <h3>Top Active Rewrite Rules</h3>
+            <div id="reform-rules-body" style="font-size: 12px">
+              <div style="color: #9ca3af; padding: 8px 0">
+                Loading rule stats...
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>📜 Recent Rewrites</h2>
+          <div id="reform-recent-body" style="font-size: 12px">
+            <div style="color: #9ca3af; padding: 8px 0">
+              No recent rewrites logged yet.
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Health Checks -->
       <div class="grid">
         <div class="card">
@@ -1107,6 +1192,81 @@
         }
       }
 
+      function renderReformulationStats(data) {
+        if (!data || data.error) return;
+
+        const setText = (id, val) => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = val;
+        };
+
+        setText("reform-rate", `${(data.rewrite_rate || 0).toFixed(1)}%`);
+        setText("reform-count", String(data.rewrite_count || 0));
+        setText("reform-total", String(data.total_searches || 0));
+
+        const ur = data.user_reformulations || {};
+        setText("reform-zero", String(ur.zero_results_refinement || 0));
+        setText("reform-low", String(ur.low_results_refinement || 0));
+        setText("reform-refine", String(ur.query_refinement || 0));
+
+        // Top rules
+        const rulesContainer = document.getElementById("reform-rules-body");
+        if (rulesContainer) {
+          const rules = Array.isArray(data.top_rules) ? data.top_rules : [];
+          if (rules.length === 0) {
+            rulesContainer.innerHTML = `<div style="color: #9ca3af; padding: 8px 0">No rule firings recorded yet. Rules log after first rewrite event.</div>`;
+          } else {
+            rulesContainer.innerHTML = rules
+              .map(
+                (r) => `
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f3f4f6">
+                <div>
+                  <span style="color: #374151; font-weight: 600">"${r.from}"</span>
+                  <span style="color: #9ca3af"> → </span>
+                  <span style="color: #10b981; font-weight: 600">"${r.to}"</span>
+                  <span style="color: #9ca3af; font-size: 11px; margin-left: 6px">(${r.reason})</span>
+                </div>
+                <div style="text-align: right; min-width: 60px">
+                  <span style="color: #6366f1; font-weight: 600">${r.count}x</span>
+                  ${r.zero_results_after > 0 ? `<div style="color: #ef4444; font-size: 10px">${r.zero_results_after} zero-result</div>` : ""}
+                </div>
+              </div>
+            `,
+              )
+              .join("");
+          }
+        }
+
+        // Recent rewrites log
+        const recentContainer = document.getElementById("reform-recent-body");
+        if (recentContainer) {
+          const items = Array.isArray(data.recent_rewrites)
+            ? data.recent_rewrites
+            : [];
+          if (items.length === 0) {
+            recentContainer.innerHTML = `<div style="color: #9ca3af; padding: 8px 0">No rule-based rewrites in the last 7 days.<br><span style="font-size: 11px">Rewrites will appear here as searches trigger rewrite rules.</span></div>`;
+          } else {
+            recentContainer.innerHTML = items
+              .map(
+                (item) => `
+              <div style="padding: 7px 0; border-bottom: 1px solid #f3f4f6">
+                <div style="display: flex; justify-content: space-between">
+                  <div>
+                    <span style="color: #6b7280; text-decoration: line-through">${item.originalQuery}</span>
+                    <span style="color: #9ca3af"> → </span>
+                    <span style="color: #10b981; font-weight: 600">${item.rewrittenQuery}</span>
+                  </div>
+                  <span style="color: #9ca3af; font-size: 11px">${item.resultCount} results</span>
+                </div>
+                <div style="color: #9ca3af; font-size: 11px; margin-top: 2px">${new Date(item.at).toLocaleString()}</div>
+              </div>
+            `,
+              )
+              .join("");
+          }
+        }
+      }
+
       async function refreshAnalyticsDashboard() {
         try {
           const [
@@ -1117,6 +1277,7 @@
             overview,
             runtimeMetrics,
             routingVerify,
+            reformulations,
           ] = await Promise.all([
             fetchAdminJson("/admin/search/ltr-status"),
             fetchAdminJson("/admin/search/ab-test-status"),
@@ -1125,10 +1286,12 @@
             fetchAdminJson("/admin/overview?range=7d"),
             fetchAdminJson("/admin/runtime-metrics"),
             fetchAdminJson("/admin/routing/verify"),
+            fetchAdminJson("/admin/search/reformulations?range=7d"),
           ]);
           updateFromData(ltrStatus, abStatus, deployStatus, readiness);
           renderTopQueriesTable(overview);
           updateRuntimeHealth(runtimeMetrics, routingVerify);
+          renderReformulationStats(reformulations);
         } catch (error) {
           const ctrSignificanceEl = document.getElementById("ctr-significance");
           if (ctrSignificanceEl) {
