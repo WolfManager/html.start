@@ -1564,3 +1564,83 @@ def admin_routing_verify(request):
             "routing": routing,
         }
     )
+
+
+# ─── LTR Model & Deployment Monitoring ─────────────────────────────────────────
+
+
+@api_view(["GET"])
+def admin_search_ltr_status(request):
+    """Get current LTR model training status and metrics."""
+    auth_error = _admin_auth_error(request)
+    if auth_error is not None:
+        return auth_error
+
+    try:
+        from .services.search_service import get_ltr_model_status
+        status_data = get_ltr_model_status()
+        return Response(status_data)
+    except Exception as e:
+        return Response(
+            {"error": str(e), "status": "inactive"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(["GET"])
+def admin_search_ab_test_status(request):
+    """Get current A/B test status and metrics."""
+    auth_error = _admin_auth_error(request)
+    if auth_error is not None:
+        return auth_error
+
+    try:
+        from .services.search_service import get_ab_test_status
+        test_data = get_ab_test_status()
+        return Response(test_data)
+    except Exception as e:
+        return Response(
+            {"error": str(e), "active": False},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(["GET"])
+def admin_search_deployment_status(request):
+    """Get current canary deployment status."""
+    auth_error = _admin_auth_error(request)
+    if auth_error is not None:
+        return auth_error
+
+    try:
+        from .services.search_service import get_deployment_status
+        deploy_data = get_deployment_status()
+        return Response(deploy_data)
+    except Exception as e:
+        return Response(
+            {"error": str(e), "is_active": False},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(["GET"])
+def admin_search_ltr_readiness(request):
+    """Get production readiness assessment for LTR system."""
+    auth_error = _admin_auth_error(request)
+    if auth_error is not None:
+        return auth_error
+
+    try:
+        from .services.search_service import get_system_readiness_for_production
+        readiness = get_system_readiness_for_production()
+        return Response(readiness)
+    except Exception as e:
+        return Response(
+            {
+                "readiness_percent": 0,
+                "error": str(e),
+                "checks": {},
+                "recommendations": ["System failed to initialize"],
+            },
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )

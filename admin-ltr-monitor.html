@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LTR Model & Deployment Monitor</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
+          Cantarell, sans-serif;
+        background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 100%);
+        color: #e0e0e0;
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      header {
+        margin-bottom: 40px;
+        border-bottom: 2px solid #333;
+        padding-bottom: 20px;
+      }
+
+      h1 {
+        font-size: 28px;
+        background: linear-gradient(135deg, #00d4ff, #7c3aed);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 10px;
+      }
+
+      .status-bar {
+        display: flex;
+        gap: 20px;
+        margin-top: 15px;
+        flex-wrap: wrap;
+      }
+
+      .status-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 6px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+      }
+
+      .status-dot.active {
+        background: #10b981;
+        box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+      }
+
+      .status-dot.inactive {
+        background: #6b7280;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+
+      .card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 20px;
+        backdrop-filter: blur(10px);
+      }
+
+      .card h2 {
+        font-size: 16px;
+        margin-bottom: 15px;
+        color: #00d4ff;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .metric {
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .metric:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+      }
+
+      .metric-label {
+        font-size: 12px;
+        color: #9ca3af;
+        text-transform: uppercase;
+        margin-bottom: 5px;
+      }
+
+      .metric-value {
+        font-size: 18px;
+        font-weight: 600;
+        color: #fff;
+      }
+
+      .metric-unit {
+        font-size: 12px;
+        color: #6b7280;
+        margin-left: 5px;
+      }
+
+      .progress-bar {
+        width: 100%;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+        overflow: hidden;
+        margin-top: 8px;
+      }
+
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #10b981, #00d4ff);
+        border-radius: 3px;
+        transition: width 0.3s ease;
+      }
+
+      .chart-container {
+        margin-top: 15px;
+        height: 180px;
+      }
+
+      .sparkline {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-around;
+        height: 100%;
+        gap: 3px;
+      }
+
+      .sparkline-bar {
+        flex: 1;
+        background: linear-gradient(180deg, #00d4ff, #7c3aed);
+        border-radius: 2px 2px 0 0;
+        min-height: 4px;
+        opacity: 0.8;
+        transition: opacity 0.2s;
+      }
+
+      .sparkline-bar:hover {
+        opacity: 1;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-right: 8px;
+        margin-bottom: 8px;
+      }
+
+      .badge.success {
+        background: rgba(16, 185, 129, 0.2);
+        color: #10b981;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+      }
+
+      .badge.warning {
+        background: rgba(245, 158, 11, 0.2);
+        color: #f59e0b;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+      }
+
+      .badge.info {
+        background: rgba(59, 130, 246, 0.2);
+        color: #3b82f6;
+        border: 1px solid rgba(59, 130, 246, 0.3);
+      }
+
+      .ab-test-split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-top: 12px;
+      }
+
+      .ab-variant {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 12px;
+      }
+
+      .ab-variant-name {
+        font-weight: 600;
+        margin-bottom: 8px;
+        font-size: 13px;
+      }
+
+      .ab-variant-stat {
+        font-size: 12px;
+        color: #9ca3af;
+        margin-bottom: 4px;
+      }
+
+      .traffic-split {
+        display: flex;
+        gap: 4px;
+        height: 8px;
+        margin-top: 12px;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .traffic-segment {
+        flex: 1;
+        background: #3b82f6;
+        transition: flex 0.3s ease;
+      }
+
+      .traffic-segment.treatment {
+        background: #7c3aed;
+      }
+
+      .recommendations {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .recommendation-item {
+        font-size: 13px;
+        color: #fbbf24;
+        margin-bottom: 8px;
+        padding-left: 20px;
+        position: relative;
+      }
+
+      .recommendation-item:before {
+        content: "→";
+        position: absolute;
+        left: 0;
+      }
+
+      .timeline {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .timeline-item {
+        display: flex;
+        gap: 12px;
+        padding: 10px;
+        background: rgba(255, 255, 255, 0.02);
+        border-left: 2px solid #00d4ff;
+        border-radius: 4px;
+      }
+
+      .timeline-time {
+        font-size: 11px;
+        color: #6b7280;
+        white-space: nowrap;
+        padding-top: 2px;
+      }
+
+      .timeline-text {
+        font-size: 13px;
+        flex: 1;
+      }
+
+      .loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 200px;
+        color: #6b7280;
+      }
+
+      .loading-spinner {
+        display: inline-block;
+        width: 24px;
+        height: 24px;
+        border: 3px solid rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        border-top-color: #00d4ff;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .readiness-score {
+        font-size: 32px;
+        font-weight: 700;
+        background: linear-gradient(135deg, #10b981, #00d4ff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin: 10px 0;
+      }
+
+      .wide-card {
+        grid-column: 1 / -1;
+      }
+
+      @media (max-width: 768px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+        h1 {
+          font-size: 20px;
+        }
+
+        .status-bar {
+          flex-direction: column;
+          gap: 10px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>🚀 LTR Model & Deployment Monitor</h1>
+        <div class="status-bar">
+          <div class="status-item">
+            <div class="status-dot active" id="model-status"></div>
+            <span id="model-status-text">Model Training</span>
+          </div>
+          <div class="status-item">
+            <div class="status-dot active" id="ab-test-status"></div>
+            <span id="ab-test-status-text">A/B Testing</span>
+          </div>
+          <div class="status-item">
+            <div class="status-dot active" id="deployment-status"></div>
+            <span id="deployment-status-text">Canary Deployment</span>
+          </div>
+          <div class="status-item">
+            <span id="last-update">Last update: —</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="grid">
+        <!-- Production Readiness -->
+        <div class="card">
+          <h2>📊 Production Readiness</h2>
+          <div class="readiness-score" id="readiness-score">—</div>
+          <div class="progress-bar">
+            <div
+              class="progress-fill"
+              id="readiness-progress"
+              style="width: 0%"
+            ></div>
+          </div>
+          <div
+            id="readiness-checks"
+            style="margin-top: 15px; font-size: 13px"
+          ></div>
+        </div>
+
+        <!-- LTR Model Status -->
+        <div class="card">
+          <h2>🧠 LTR Model</h2>
+          <div class="metric">
+            <div class="metric-label">Current Model</div>
+            <div class="metric-value" id="model-id">—</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">NDCG@5</div>
+            <div class="metric-value">
+              <span id="model-ndcg">—</span
+              ><span class="metric-unit">score</span>
+            </div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Training Runs</div>
+            <div class="metric-value">
+              <span id="training-runs">—</span
+              ><span class="metric-unit">total</span>
+            </div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Successful</div>
+            <div class="metric-value">
+              <span id="training-success">—</span
+              ><span class="metric-unit">runs</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- A/B Test Info -->
+        <div class="card">
+          <h2>⚗️ A/B Test Status</h2>
+          <div class="metric">
+            <div class="metric-label">Test Active</div>
+            <div class="metric-value" id="ab-test-active">Inactive</div>
+          </div>
+          <div id="ab-test-content" style="display: none">
+            <div class="metric">
+              <div class="metric-label">Winner</div>
+              <div class="metric-value" id="ab-winner">—</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Significance</div>
+              <div class="metric-value" id="ab-significance">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Deployment Canary -->
+        <div class="card">
+          <h2>🎯 Canary Deployment</h2>
+          <div class="metric">
+            <div class="metric-label">Traffic to Treatment</div>
+            <div class="metric-value">
+              <span id="canary-percentage">0</span
+              ><span class="metric-unit">%</span>
+            </div>
+            <div class="progress-bar">
+              <div
+                class="progress-fill"
+                id="canary-progress"
+                style="width: 0%"
+              ></div>
+            </div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Model Version</div>
+            <div class="metric-value" id="model-version">—</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Status</div>
+            <div class="metric-value" id="deployment-phase">Inactive</div>
+          </div>
+        </div>
+
+        <!-- NDCG Trend -->
+        <div class="card">
+          <h2>📈 NDCG Trend</h2>
+          <div class="chart-container">
+            <div class="sparkline" id="ndcg-trend">
+              <div class="sparkline-bar" style="height: 30%"></div>
+              <div class="sparkline-bar" style="height: 40%"></div>
+              <div class="sparkline-bar" style="height: 50%"></div>
+            </div>
+          </div>
+          <div
+            style="
+              text-align: center;
+              margin-top: 10px;
+              font-size: 11px;
+              color: #6b7280;
+            "
+          >
+            Last 10 training runs
+          </div>
+        </div>
+
+        <!-- Recommendations -->
+        <div class="card">
+          <h2>💡 Recommendations</h2>
+          <div id="recommendations-list">
+            <div class="loading">
+              <div class="loading-spinner"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- A/B Test Details (Wide) -->
+        <div class="card wide-card" id="ab-test-card" style="display: none">
+          <h2>⚗️ A/B Test Breakdown</h2>
+          <div class="ab-test-split">
+            <div class="ab-variant">
+              <div class="ab-variant-name">🔵 Control</div>
+              <div class="ab-variant-stat">
+                Traffic: <span id="control-traffic">—</span>%
+              </div>
+              <div class="ab-variant-stat">
+                Visits: <span id="control-visits">—</span>
+              </div>
+              <div class="ab-variant-stat">
+                CTR: <span id="control-ctr">—</span>
+              </div>
+            </div>
+            <div class="ab-variant">
+              <div class="ab-variant-name">🟣 Treatment</div>
+              <div class="ab-variant-stat">
+                Traffic: <span id="treatment-traffic">—</span>%
+              </div>
+              <div class="ab-variant-stat">
+                Visits: <span id="treatment-visits">—</span>
+              </div>
+              <div class="ab-variant-stat">
+                CTR: <span id="treatment-ctr">—</span>
+              </div>
+            </div>
+          </div>
+          <div class="traffic-split" style="margin-top: 15px">
+            <div
+              class="traffic-segment"
+              id="traffic-control"
+              style="flex: 50"
+            ></div>
+            <div
+              class="traffic-segment treatment"
+              id="traffic-treatment"
+              style="flex: 50"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Recent Events (Wide) -->
+        <div class="card wide-card">
+          <h2>📜 Recent Activity</h2>
+          <div class="timeline" id="events-timeline">
+            <div class="loading">
+              <div class="loading-spinner"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const API_BASE = "http://127.0.0.1:8000/api";
+
+      async function updateDashboard() {
+        try {
+          // Fetch all statuses in parallel
+          const [readiness, ltrStatus, abStatus, deployStatus] =
+            await Promise.all([
+              fetch(`${API_BASE}/admin/search/ltr-readiness`)
+                .then((r) => r.json())
+                .catch(() => ({})),
+              fetch(`${API_BASE}/admin/search/ltr-status`)
+                .then((r) => r.json())
+                .catch(() => ({})),
+              fetch(`${API_BASE}/admin/search/ab-test-status`)
+                .then((r) => r.json())
+                .catch(() => ({})),
+              fetch(`${API_BASE}/admin/search/deployment-status`)
+                .then((r) => r.json())
+                .catch(() => ({})),
+            ]);
+
+          updateReadiness(readiness);
+          updateLTRStatus(ltrStatus);
+          updateABStatus(abStatus);
+          updateDeployment(deployStatus);
+          updateTimestamp();
+        } catch (error) {
+          console.error("Dashboard update failed:", error);
+        }
+      }
+
+      function updateReadiness(data) {
+        const percent = data.readiness_percent || 0;
+        document.getElementById("readiness-score").textContent =
+          percent.toFixed(1) + "%";
+        document.getElementById("readiness-progress").style.width =
+          percent + "%";
+
+        const checks = data.checks || {};
+        const checksList = document.getElementById("readiness-checks");
+        checksList.innerHTML = Object.entries(checks)
+          .map(([key, value]) => {
+            const badge = value ? "success" : "warning";
+            const label = key
+              .replace(/_/g, " ")
+              .replace(/^\w/, (c) => c.toUpperCase());
+            return `<div class="badge ${badge}">${label}</div>`;
+          })
+          .join("");
+
+        const recommendations = data.recommendations || [];
+        const recList = document.getElementById("recommendations-list");
+        if (recommendations.length > 0) {
+          recList.innerHTML = recommendations
+            .map(
+              (r) => `
+                    <div class="recommendation-item">${r}</div>
+                `,
+            )
+            .join("");
+        } else {
+          recList.innerHTML =
+            '<div style="color: #10b981;">All systems ready for production ✓</div>';
+        }
+      }
+
+      function updateLTRStatus(data) {
+        const training = data.training || {};
+        const current = training.current_metrics || {};
+        const ndcg_trend = training.ndcg_trend || [];
+
+        document.getElementById("model-id").textContent =
+          data.status === "active" ? "Active" : "No model";
+        document.getElementById("model-ndcg").textContent = (
+          current.ndcg_5 || 0
+        ).toFixed(3);
+        document.getElementById("training-runs").textContent =
+          training.total_runs || 0;
+        document.getElementById("training-success").textContent =
+          training.successful_runs || 0;
+
+        // Update NDCG trend sparkline
+        if (ndcg_trend.length > 0) {
+          const max = Math.max(...ndcg_trend);
+          document.getElementById("ndcg-trend").innerHTML = ndcg_trend
+            .map((val) => {
+              const height = max > 0 ? (val / max) * 100 : 20;
+              return `<div class="sparkline-bar" style="height: ${height}%;"></div>`;
+            })
+            .join("");
+        }
+      }
+
+      function updateABStatus(data) {
+        const active = data.active || false;
+        document.getElementById("ab-test-active").textContent = active
+          ? "Active"
+          : "Inactive";
+
+        if (active) {
+          document.getElementById("ab-test-content").style.display = "block";
+          document.getElementById("ab-test-card").style.display = "block";
+
+          document.getElementById("ab-winner").textContent = data.winner || "—";
+          document.getElementById("ab-significance").textContent =
+            data.is_statistically_significant ? "Yes ✓" : "Pending";
+
+          // Control variant
+          const control = data.control || {};
+          document.getElementById("control-traffic").textContent = (
+            control.traffic_fraction * 100
+          ).toFixed(1);
+          document.getElementById("control-visits").textContent =
+            control.visits || 0;
+          document.getElementById("control-ctr").textContent =
+            (control.ctr * 100).toFixed(1) + "%";
+
+          // Treatment variant
+          const treatment = data.treatment || {};
+          document.getElementById("treatment-traffic").textContent = (
+            treatment.traffic_fraction * 100
+          ).toFixed(1);
+          document.getElementById("treatment-visits").textContent =
+            treatment.visits || 0;
+          document.getElementById("treatment-ctr").textContent =
+            (treatment.ctr * 100).toFixed(1) + "%";
+
+          // Traffic split visualization
+          const controlFlex = (control.traffic_fraction || 0) * 100;
+          const treatmentFlex = (treatment.traffic_fraction || 0) * 100;
+          document.getElementById("traffic-control").style.flex =
+            controlFlex || 50;
+          document.getElementById("traffic-treatment").style.flex =
+            treatmentFlex || 50;
+        } else {
+          document.getElementById("ab-test-content").style.display = "none";
+          document.getElementById("ab-test-card").style.display = "none";
+        }
+      }
+
+      function updateDeployment(data) {
+        const percent = data.canary_percentage || 0;
+        document.getElementById("canary-percentage").textContent =
+          percent.toFixed(1);
+        document.getElementById("canary-progress").style.width = percent + "%";
+        document.getElementById("model-version").textContent =
+          data.model_version || "—";
+        document.getElementById("deployment-phase").textContent = data.is_active
+          ? `Canary (${percent}%)`
+          : "Inactive";
+
+        // Update deployment status dot
+        const dot = document.getElementById("deployment-status");
+        if (data.is_active) {
+          dot.classList.add("active");
+          dot.classList.remove("inactive");
+        } else {
+          dot.classList.remove("active");
+          dot.classList.add("inactive");
+        }
+      }
+
+      function updateTimestamp() {
+        const now = new Date();
+        document.getElementById("last-update").textContent =
+          "Last update: " + now.toLocaleTimeString();
+      }
+
+      function addTimelineEvent(text, time) {
+        const timeline = document.getElementById("events-timeline");
+        if (timeline.querySelector(".loading")) {
+          timeline.innerHTML = "";
+        }
+        const item = document.createElement("div");
+        item.className = "timeline-item";
+        item.innerHTML = `
+                <div class="timeline-time">${time}</div>
+                <div class="timeline-text">${text}</div>
+            `;
+        timeline.insertBefore(item, timeline.firstChild);
+        if (timeline.children.length > 10) {
+          timeline.removeChild(timeline.lastChild);
+        }
+      }
+
+      // Initial load and auto-refresh every 5 seconds
+      updateDashboard();
+      setInterval(updateDashboard, 5000);
+
+      // Add sample events for demo
+      setTimeout(() => {
+        addTimelineEvent(
+          "✓ Model v1.2 training completed with 0.728 NDCG@5",
+          "now",
+        );
+        addTimelineEvent("→ Canary traffic increased to 25%", "2m ago");
+        addTimelineEvent(
+          "✓ Treatment variant showing +1.8% CTR improvement",
+          "5m ago",
+        );
+      }, 2000);
+    </script>
+  </body>
+</html>
