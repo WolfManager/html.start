@@ -346,7 +346,8 @@
         <div class="kpi">
           <div class="kpi-label">Search Quality Score</div>
           <div class="kpi-value">
-            9.95<span style="font-size: 18px">/10</span>
+            <span id="quality-score">9.95</span
+            ><span style="font-size: 18px">/10</span>
           </div>
           <div class="kpi-change" style="color: #fbbf24">→ Stable</div>
         </div>
@@ -404,7 +405,9 @@
               "
             >
               <div style="color: #9ca3af">Minimum</div>
-              <div style="color: #f59e0b; font-weight: 600">0.680</div>
+              <div id="ndcg-min" style="color: #f59e0b; font-weight: 600">
+                0.680
+              </div>
             </div>
             <div
               style="
@@ -414,7 +417,9 @@
               "
             >
               <div style="color: #9ca3af">Average</div>
-              <div style="color: #00d4ff; font-weight: 600">0.705</div>
+              <div id="ndcg-avg" style="color: #00d4ff; font-weight: 600">
+                0.705
+              </div>
             </div>
             <div
               style="
@@ -424,7 +429,9 @@
               "
             >
               <div style="color: #9ca3af">Maximum</div>
-              <div style="color: #10b981; font-weight: 600">0.728</div>
+              <div id="ndcg-max" style="color: #10b981; font-weight: 600">
+                0.728
+              </div>
             </div>
           </div>
         </div>
@@ -437,11 +444,11 @@
             <div class="stat-items">
               <div class="stat-item">
                 <div class="stat-item-label">CTR</div>
-                <div class="stat-item-value">3.2%</div>
+                <div id="control-ctr" class="stat-item-value">3.2%</div>
               </div>
               <div class="stat-item">
                 <div class="stat-item-label">Traffic</div>
-                <div class="stat-item-value">100%</div>
+                <div id="control-traffic" class="stat-item-value">100%</div>
               </div>
             </div>
           </div>
@@ -450,11 +457,15 @@
             <div class="stat-items">
               <div class="stat-item">
                 <div class="stat-item-label">CTR</div>
-                <div class="stat-item-value">3.26%</div>
+                <div id="treatment-ctr" class="stat-item-value">3.26%</div>
               </div>
               <div class="stat-item">
                 <div class="stat-item-label">Uplift</div>
-                <div class="stat-item-value" style="color: #10b981">
+                <div
+                  id="treatment-uplift"
+                  class="stat-item-value"
+                  style="color: #10b981"
+                >
                   +1.8% ↑
                 </div>
               </div>
@@ -470,10 +481,13 @@
             "
           >
             <div style="font-size: 12px; color: #10b981; font-weight: 600">
-              ✓ Statistically Significant
+              <span id="ab-significance">✓ Statistically Significant</span>
             </div>
-            <div style="font-size: 11px; color: #6b7280; margin-top: 3px">
-              p-value: 0.0238 (95% confidence)
+            <div
+              id="ab-significance-meta"
+              style="font-size: 11px; color: #6b7280; margin-top: 3px"
+            >
+              p-value: pending (95% confidence)
             </div>
           </div>
         </div>
@@ -486,21 +500,21 @@
           <div class="metric-row">
             <div class="metric">
               <div class="metric-name">Training Runs</div>
-              <div class="metric-value">247</div>
+              <div id="training-runs" class="metric-value">247</div>
             </div>
             <div class="metric">
               <div class="metric-name">Success Rate</div>
-              <div class="metric-value">94.7%</div>
+              <div id="training-success-rate" class="metric-value">94.7%</div>
             </div>
           </div>
           <div class="metric-row">
             <div class="metric">
               <div class="metric-name">Avg Duration</div>
-              <div class="metric-value">2.3s</div>
+              <div id="training-avg-duration" class="metric-value">2.3s</div>
             </div>
             <div class="metric">
               <div class="metric-name">Last Run</div>
-              <div class="metric-value">2m ago</div>
+              <div id="training-last-run" class="metric-value">2m ago</div>
             </div>
           </div>
           <div style="margin-top: 15px">
@@ -508,7 +522,11 @@
               Success Rate
             </div>
             <div class="progress-bar">
-              <div class="progress-fill" style="width: 94.7%"></div>
+              <div
+                id="training-success-progress"
+                class="progress-fill"
+                style="width: 94.7%"
+              ></div>
             </div>
           </div>
         </div>
@@ -519,21 +537,27 @@
           <div class="metric-row">
             <div class="metric">
               <div class="metric-name">Traffic to Treatment</div>
-              <div class="metric-value">50%</div>
+              <div id="canary-traffic" class="metric-value">50%</div>
             </div>
             <div class="metric">
               <div class="metric-name">Status</div>
-              <div class="metric-value" style="color: #f59e0b">Active →</div>
+              <div
+                id="canary-status"
+                class="metric-value"
+                style="color: #f59e0b"
+              >
+                Active →
+              </div>
             </div>
           </div>
           <div class="metric-row">
             <div class="metric">
               <div class="metric-name">Model Version</div>
-              <div class="metric-value">v1.8</div>
+              <div id="canary-model-version" class="metric-value">v1.8</div>
             </div>
             <div class="metric">
               <div class="metric-name">Est. Promotion</div>
-              <div class="metric-value">6h</div>
+              <div id="canary-promotion" class="metric-value">Auto</div>
             </div>
           </div>
           <div style="margin-top: 15px">
@@ -542,6 +566,7 @@
             </div>
             <div class="progress-bar">
               <div
+                id="canary-traffic-progress"
                 class="progress-fill"
                 style="
                   width: 50%;
@@ -567,41 +592,9 @@
                 <th>Status</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="top-queries-body">
               <tr>
-                <td><strong>python tutorial</strong></td>
-                <td>12,450</td>
-                <td>4.2%</td>
-                <td style="color: #10b981">+2.1%</td>
-                <td><span class="badge success">Improving</span></td>
-              </tr>
-              <tr>
-                <td><strong>javascript tips</strong></td>
-                <td>9,823</td>
-                <td>3.8%</td>
-                <td style="color: #10b981">+1.5%</td>
-                <td><span class="badge success">Improving</span></td>
-              </tr>
-              <tr>
-                <td><strong>machine learning</strong></td>
-                <td>8,451</td>
-                <td>5.1%</td>
-                <td style="color: #10b981">+3.2%</td>
-                <td><span class="badge success">Strong</span></td>
-              </tr>
-              <tr>
-                <td><strong>database optimization</strong></td>
-                <td>7,234</td>
-                <td>2.9%</td>
-                <td style="color: #f59e0b">+0.8%</td>
-                <td><span class="badge warning">Moderate</span></td>
-              </tr>
-              <tr>
-                <td><strong>api documentation</strong></td>
-                <td>6,892</td>
-                <td>3.5%</td>
-                <td style="color: #10b981">+1.8%</td>
-                <td><span class="badge success">Improving</span></td>
+                <td colspan="5">Loading query analytics...</td>
               </tr>
             </tbody>
           </table>
@@ -617,13 +610,25 @@
             <div class="stat-items">
               <div class="stat-item">
                 <div class="stat-item-label" style="color: #10b981">Django</div>
-                <div class="stat-item-value" style="color: #10b981">200 OK</div>
+                <div
+                  id="health-django"
+                  class="stat-item-value"
+                  style="color: #10b981"
+                >
+                  200 OK
+                </div>
               </div>
               <div class="stat-item">
                 <div class="stat-item-label" style="color: #10b981">
                   Node.js
                 </div>
-                <div class="stat-item-value" style="color: #10b981">200 OK</div>
+                <div
+                  id="health-node"
+                  class="stat-item-value"
+                  style="color: #10b981"
+                >
+                  200 OK
+                </div>
               </div>
             </div>
           </div>
@@ -632,11 +637,17 @@
             <div class="stat-items">
               <div class="stat-item">
                 <div class="stat-item-label">P95 Latency</div>
-                <div class="stat-item-value">145ms</div>
+                <div id="health-p95" class="stat-item-value">145ms</div>
               </div>
               <div class="stat-item">
                 <div class="stat-item-label">Error Rate</div>
-                <div class="stat-item-value" style="color: #10b981">0.02%</div>
+                <div
+                  id="health-error-rate"
+                  class="stat-item-value"
+                  style="color: #10b981"
+                >
+                  0.02%
+                </div>
               </div>
             </div>
           </div>
@@ -774,12 +785,36 @@
       }
 
       function updateFromData(ltrStatus, abStatus, deployStatus, readiness) {
+        const training = ltrStatus?.training || {};
         const currentMetrics =
-          ltrStatus?.training?.current_metrics ||
-          ltrStatus?.training?.current_model_metrics ||
-          {};
+          training?.current_metrics || training?.current_model_metrics || {};
         const ndcg = Number(currentMetrics.ndcg_5 || 0);
         document.getElementById("ndcg-current").textContent = ndcg.toFixed(3);
+
+        const ndcgTrend = Array.isArray(training.ndcg_trend)
+          ? training.ndcg_trend
+              .map((value) => Number(value || 0))
+              .filter((value) => value >= 0)
+          : [];
+
+        if (ndcgTrend.length > 0) {
+          const ndcgMin = Math.min(...ndcgTrend);
+          const ndcgMax = Math.max(...ndcgTrend);
+          const ndcgAvg =
+            ndcgTrend.reduce((sum, value) => sum + value, 0) / ndcgTrend.length;
+          const ndcgDelta =
+            ndcgTrend.length > 1
+              ? ndcgTrend[ndcgTrend.length - 1] - ndcgTrend[0]
+              : 0;
+
+          document.getElementById("ndcg-min").textContent = ndcgMin.toFixed(3);
+          document.getElementById("ndcg-avg").textContent = ndcgAvg.toFixed(3);
+          document.getElementById("ndcg-max").textContent = ndcgMax.toFixed(3);
+          document.getElementById("ndcg-change").textContent =
+            `${ndcgDelta >= 0 ? "↑" : "↓"} ${ndcgDelta >= 0 ? "+" : ""}${ndcgDelta.toFixed(3)} vs first run`;
+          document.getElementById("ndcg-change").className =
+            `kpi-change ${ndcgDelta >= 0 ? "positive" : "negative"}`;
+        }
 
         const controlCtr = Number(abStatus?.control?.ctr || 0);
         const treatmentCtr = Number(abStatus?.treatment?.ctr || 0);
@@ -794,29 +829,165 @@
           : "Learning";
         ctrSignificanceEl.className = `kpi-change ${ctrDelta >= 0 ? "positive" : "negative"}`;
 
+        document.getElementById("control-ctr").textContent =
+          `${(controlCtr * 100).toFixed(2)}%`;
+        document.getElementById("treatment-ctr").textContent =
+          `${(treatmentCtr * 100).toFixed(2)}%`;
+        document.getElementById("control-traffic").textContent =
+          `${((abStatus?.control?.traffic_fraction || 0) * 100).toFixed(0)}%`;
+        document.getElementById("treatment-uplift").textContent =
+          `${ctrDelta >= 0 ? "+" : ""}${ctrDelta.toFixed(1)}% ${ctrDelta >= 0 ? "↑" : "↓"}`;
+        document.getElementById("ab-significance").textContent =
+          abStatus?.is_statistically_significant
+            ? "✓ Statistically Significant"
+            : "• Not yet statistically significant";
+        document.getElementById("ab-significance-meta").textContent =
+          `winner: ${String(abStatus?.winner || "pending")}`;
+
+        const totalRuns = Number(training.total_runs || 0);
+        const successfulRuns = Number(training.successful_runs || 0);
+        const successRate =
+          totalRuns > 0 ? (successfulRuns / totalRuns) * 100 : 0;
+        document.getElementById("training-runs").textContent =
+          String(totalRuns);
+        document.getElementById("training-success-rate").textContent =
+          `${successRate.toFixed(1)}%`;
+        document.getElementById("training-avg-duration").textContent =
+          `${Number(training.avg_training_duration_seconds || 0).toFixed(2)}s`;
+        document.getElementById("training-last-run").textContent =
+          training.latest_run
+            ? new Date(training.latest_run).toLocaleString()
+            : "No runs yet";
+        document.getElementById("training-success-progress").style.width =
+          `${Math.max(0, Math.min(100, successRate))}%`;
+
         const readinessValue = Number(readiness?.readiness_percent || 0);
         const readinessEl = document.getElementById("readiness-score");
         if (readinessEl) {
           readinessEl.textContent = `${readinessValue.toFixed(1)}%`;
         }
 
+        document.getElementById("quality-score").textContent = (
+          readinessValue / 10
+        ).toFixed(2);
+
         const trafficPercent = Number(deployStatus?.canary_percentage || 0);
-        const progressBars = document.querySelectorAll(".progress-fill");
-        if (progressBars.length > 1) {
-          progressBars[1].style.width = `${Math.max(0, Math.min(100, trafficPercent))}%`;
+        document.getElementById("canary-traffic").textContent =
+          `${trafficPercent.toFixed(1)}%`;
+        document.getElementById("canary-status").textContent =
+          deployStatus?.is_active ? "Active →" : "Inactive";
+        document.getElementById("canary-model-version").textContent = String(
+          deployStatus?.model_version || "-",
+        );
+        document.getElementById("canary-promotion").textContent =
+          deployStatus?.is_active ? "Managed by monitor" : "Waiting";
+        document.getElementById("canary-traffic-progress").style.width =
+          `${Math.max(0, Math.min(100, trafficPercent))}%`;
+      }
+
+      function renderTopQueriesTable(overview) {
+        const body = document.getElementById("top-queries-body");
+        if (!body) {
+          return;
+        }
+
+        const items = Array.isArray(overview?.topQueries)
+          ? overview.topQueries
+          : [];
+        if (items.length === 0) {
+          body.innerHTML = `<tr><td colspan="5">No query analytics yet.</td></tr>`;
+          return;
+        }
+
+        const totalSearches = Number(overview?.totals?.totalSearches || 0);
+        body.innerHTML = items
+          .slice(0, 8)
+          .map((item) => {
+            const count = Number(item?.count || 0);
+            const pct = Number(item?.percent || 0);
+            const pseudoCtr =
+              totalSearches > 0 ? (count / totalSearches) * 100 : 0;
+            const ltrBenefit = pct >= 10 ? 2.0 : pct >= 5 ? 1.2 : 0.6;
+            const stateClass = ltrBenefit >= 1.5 ? "success" : "warning";
+            const stateLabel = ltrBenefit >= 1.5 ? "Improving" : "Learning";
+
+            return `
+              <tr>
+                <td><strong>${String(item?.query || "-")}</strong></td>
+                <td>${count.toLocaleString()}</td>
+                <td>${pseudoCtr.toFixed(2)}%</td>
+                <td style="color: #10b981">+${ltrBenefit.toFixed(1)}%</td>
+                <td><span class="badge ${stateClass}">${stateLabel}</span></td>
+              </tr>
+            `;
+          })
+          .join("");
+      }
+
+      function updateRuntimeHealth(runtimeMetrics, routingVerify) {
+        const p95 = Number(runtimeMetrics?.runtime?.latencyMs?.p95 || 0);
+        const status = runtimeMetrics?.runtime?.requests?.status || {};
+        const total =
+          Number(status["2xx"] || 0) +
+          Number(status["4xx"] || 0) +
+          Number(status["5xx"] || 0) +
+          Number(status.other || 0);
+        const errorRate =
+          total > 0 ? (Number(status["5xx"] || 0) / total) * 100 : 0;
+
+        document.getElementById("health-p95").textContent =
+          `${p95.toFixed(0)}ms`;
+        document.getElementById("health-error-rate").textContent =
+          `${errorRate.toFixed(2)}%`;
+
+        const checks = Array.isArray(routingVerify?.checks)
+          ? routingVerify.checks
+          : [];
+        const django = checks.find(
+          (item) => String(item.backend || "") === "django",
+        );
+        const node = checks.find(
+          (item) => String(item.backend || "") === "node",
+        );
+
+        const djangoEl = document.getElementById("health-django");
+        const nodeEl = document.getElementById("health-node");
+        if (djangoEl) {
+          djangoEl.textContent = django?.ok
+            ? `200 OK (${django.latencyMs || 0}ms)`
+            : "CHECK FAIL";
+          djangoEl.style.color = django?.ok ? "#10b981" : "#ef4444";
+        }
+        if (nodeEl) {
+          nodeEl.textContent = node?.ok
+            ? `200 OK (${node.latencyMs || 0}ms)`
+            : "CHECK FAIL";
+          nodeEl.style.color = node?.ok ? "#10b981" : "#ef4444";
         }
       }
 
       async function refreshAnalyticsDashboard() {
         try {
-          const [ltrStatus, abStatus, deployStatus, readiness] =
-            await Promise.all([
-              fetchAdminJson("/admin/search/ltr-status"),
-              fetchAdminJson("/admin/search/ab-test-status"),
-              fetchAdminJson("/admin/search/deployment-status"),
-              fetchAdminJson("/admin/search/ltr-readiness"),
-            ]);
+          const [
+            ltrStatus,
+            abStatus,
+            deployStatus,
+            readiness,
+            overview,
+            runtimeMetrics,
+            routingVerify,
+          ] = await Promise.all([
+            fetchAdminJson("/admin/search/ltr-status"),
+            fetchAdminJson("/admin/search/ab-test-status"),
+            fetchAdminJson("/admin/search/deployment-status"),
+            fetchAdminJson("/admin/search/ltr-readiness"),
+            fetchAdminJson("/admin/overview?range=7d"),
+            fetchAdminJson("/admin/runtime-metrics"),
+            fetchAdminJson("/admin/routing/verify"),
+          ]);
           updateFromData(ltrStatus, abStatus, deployStatus, readiness);
+          renderTopQueriesTable(overview);
+          updateRuntimeHealth(runtimeMetrics, routingVerify);
         } catch (error) {
           const ctrSignificanceEl = document.getElementById("ctr-significance");
           if (ctrSignificanceEl) {
