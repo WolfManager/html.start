@@ -13,12 +13,21 @@ ASSISTANT_MODEL_DISCOVERY_TTL_SECONDS = max(
     60,
     min(86400, int(os.getenv("ASSISTANT_MODEL_DISCOVERY_TTL_SECONDS", "21600"))),
 )
+ASSISTANT_PROVIDER_HEALTH_TTL_SECONDS = max(
+    15,
+    min(3600, int(os.getenv("ASSISTANT_PROVIDER_HEALTH_TTL_SECONDS", "300"))),
+)
 
 _discovery_lock = Lock()
 _model_discovery_cache: dict[str, dict[str, Any]] = {
     "openai": {"fetched_at": 0.0, "models": []},
     "anthropic": {"fetched_at": 0.0, "models": []},
     "gemini": {"fetched_at": 0.0, "models": []},
+}
+_provider_health_lock = Lock()
+_provider_health_cache: dict[str, Any] = {
+    "fetched_at": 0.0,
+    "checks": {},
 }
 
 
@@ -629,6 +638,13 @@ def _local_fallback(message: str) -> dict[str, Any]:
 
 
 def probe_providers_health() -> dict[str, dict[str, Any]]:
+    with _provider_health_lock:
+        cached_at = float(_provider_health_cache.get("fetched_at") or 0.0)
+        cached_checks = _provider_health_cache.get("checks") or {}
+        cache_is_fresh = (time.time() - cached_at) < ASSISTANT_PROVIDER_HEALTH_TTL_SECONDS
+        if cache_is_fresh and isinstance(cached_checks, dict) and cached_checks:
+            return json.loads(json.dumps(cached_checks))
+
     checks: dict[str, dict[str, Any]] = {
         "openai": {
             "configured": bool(str(os.getenv("OPENAI_API_KEY", "")).strip()),
@@ -679,6 +695,10 @@ def probe_providers_health() -> dict[str, dict[str, Any]]:
             checks["gemini"]["error"] = str(exc)
     else:
         checks["gemini"]["error"] = "API key missing"
+
+    with _provider_health_lock:
+        _provider_health_cache["fetched_at"] = time.time()
+        _provider_health_cache["checks"] = json.loads(json.dumps(checks))
 
     return checks
 

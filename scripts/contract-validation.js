@@ -26,6 +26,13 @@ const http = require("http");
 const https = require("https");
 const fs = require("fs");
 const path = require("path");
+const dotenv = require("dotenv");
+
+const rootDir = path.resolve(__dirname, "..");
+const djangoDir = path.join(rootDir, "backend-django");
+
+dotenv.config({ path: path.join(rootDir, ".env"), override: false });
+dotenv.config({ path: path.join(djangoDir, ".env"), override: false });
 
 // ---------------------------------------------------------------------------
 // CLI argument parsing
@@ -72,7 +79,7 @@ const shouldRunAdminChecks = Boolean(
 // Schema loader — reads JSON Schema files as structural contracts
 // ---------------------------------------------------------------------------
 
-const ROOT = path.resolve(__dirname, "..");
+const ROOT = rootDir;
 
 function loadSchema(relPath) {
   const fullPath = path.join(ROOT, relPath);
