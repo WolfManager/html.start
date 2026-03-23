@@ -5435,6 +5435,1146 @@
       "helper": "general",
       "model": "gpt-4o-mini",
       "at": "2026-03-22T15:13:10.651Z"
+    },
+    {
+      "id": "a-1774286489952-348",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for general health tips, information on a specific health condition, or something else? Let me know so I can assist you better!",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:21:29.952Z"
+    },
+    {
+      "id": "a-1774286489972-2667",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for general health tips, information on a specific health condition, or something else? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:21:29.972Z"
+    },
+    {
+      "id": "a-1774286500713-6564",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for general health tips, information on a specific health condition, or something else? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:21:40.713Z"
+    },
+    {
+      "id": "a-1774286500730-6260",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for general health tips, information on a specific health condition, or something else? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:21:40.730Z"
+    },
+    {
+      "id": "a-1774286504941",
+      "at": "2026-03-23T17:21:44Z",
+      "ip": "127.0.0.1",
+      "message": "health check",
+      "reply": "A health check for what, specifically?\n\nTo provide an accurate assessment, please specify the system, application, or service you'd like me to check. For example, are you interested in:\n\n*   Server resource utilization (CPU, Memory, Disk, Network)?\n*   The status of a particular application or service?\n*   Network connectivity to a specific host?\n*   Database performance?\n\nOnce you provide more details, I can give you a precise health report.",
+      "provider": "gemini",
+      "model": "gemini-2.5-flash",
+      "helper": "general"
+    },
+    {
+      "id": "a-1774286515695-9936",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for general health tips, information on a specific health condition, or something else? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:21:55.695Z"
+    },
+    {
+      "id": "a-1774286515734-9639",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for general health tips, information on a specific health condition, or something else? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:21:55.734Z"
+    },
+    {
+      "id": "a-1774286517767-4459",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for general health tips, information on a specific health condition, or something else? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:21:57.767Z"
+    },
+    {
+      "id": "a-1774286520876-3101",
+      "ip": "::ffff:127.0.0.1",
+      "message": "contract-test",
+      "reply": "Could you please clarify what you mean by \"contract-test\"? Are you looking for information on testing contracts in software development, legal contracts, or something else? Let me know how I can assist you!",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:22:00.876Z"
+    },
+    {
+      "id": "a-1774286524434",
+      "at": "2026-03-23T17:22:04Z",
+      "ip": "127.0.0.1",
+      "message": "contract-test",
+      "reply": "Contract testing is a way to ensure that two separate systems (like a client and a server, or two microservices) can communicate with each other correctly. It verifies that the \"contract\" of the interaction (e.g., the expected request format and response structure) is upheld by both sides.\n\nThis helps catch integration issues early, reduces the need for extensive end-to-end testing, and allows teams to develop services independently with confidence.\n\nAre you looking for information on specific tools, best practices, or how to implement contract testing in a particular environment?",
+      "provider": "gemini",
+      "model": "gemini-2.5-flash",
+      "helper": "general"
+    },
+    {
+      "id": "a-1774286548486-5098",
+      "ip": "::1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for general health tips, information on a specific health condition, or something else? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:22:28.486Z"
+    },
+    {
+      "id": "a-1774286549939-925",
+      "ip": "::1",
+      "message": "weather now in Bucharest",
+      "reply": "Current weather in Bucharest, Romania: 9.8C, overcast, wind 6 km/h.",
+      "provider": "weather-live",
+      "helper": "weather",
+      "model": "weather-live",
+      "at": "2026-03-23T17:22:29.939Z"
+    },
+    {
+      "id": "a-1774286557671-5088",
+      "ip": "::1",
+      "message": "write a short follow-up email after a project meeting",
+      "reply": "Here's a clean, professional follow-up email you can adapt:\n\n---\n\n**Subject:** Follow-Up – [Project Name] Meeting | [Date]\n\nHi [Name/Team],\n\nThanks for joining today's meeting. Here's a quick recap to keep us aligned:\n\n**Key Decisions Made:**\n- [Decision 1]\n- [Decision 2]\n\n**Action Items:**\n| Task | Owner | Due Date |\n|------|-------|----------|\n| [Task 1] | [Name] | [Date] |\n| [Task 2] | [Name] | [Date] |\n\n**Next Steps:**\nOur next meeting is scheduled for **[date/time]**. Please come prepared with [any specific deliverable or update].\n\nFeel free to reply if anything needs clarifying or correc",
+      "provider": "anthropic",
+      "helper": "writing",
+      "model": "claude-sonnet-4-6",
+      "at": "2026-03-23T17:22:37.671Z"
+    },
+    {
+      "id": "a-1774286562531-8735",
+      "ip": "::1",
+      "message": "Explain quantum computing simply and compare it with classical computing in 3 short bullets.",
+      "reply": "- **Basic Concept**: Quantum computing uses quantum bits (qubits) that can represent and process information in multiple states simultaneously, thanks to the principles of superposition and entanglement. In contrast, classical computing relies on bits that are either 0 or 1.\n\n- **Processing Power**: Quantum computers can solve certain complex problems much faster than classical computers by performing many calculations at once. For example, they excel in tasks like factoring large numbers or simulating quantum systems, while classical computers handle straightforward tasks sequentially.\n\n- **A",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:22:42.531Z"
+    },
+    {
+      "id": "a-1774286589999-3097",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for general health tips, information on a specific health condition, or something else? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:23:09.999Z"
+    },
+    {
+      "id": "a-1774286590028-3112",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for general health tips, information on a specific health condition, or something else? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:23:10.028Z"
+    },
+    {
+      "id": "a-1774286592457-4270",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for general health tips, information on a specific health condition, or something else? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:23:12.457Z"
+    },
+    {
+      "id": "a-1774286592482-224",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for general health tips, information on a specific health condition, or something else? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:23:12.482Z"
+    },
+    {
+      "id": "a-1774286595358-7430",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for general health tips, information on a specific health condition, or something else? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:23:15.358Z"
+    },
+    {
+      "id": "a-1774286596699-8516",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for general health tips, information on a specific health condition, or something else? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:23:16.699Z"
+    },
+    {
+      "id": "a-1774286608412-6684",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for general health tips, information on a specific health condition, or something else? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:23:28.412Z"
+    },
+    {
+      "id": "a-1774286660952-5890",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for general health tips, information on a specific health condition, or something else? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:24:20.952Z"
+    },
+    {
+      "id": "a-1774286718160-4783",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for general health tips, information on a specific health condition, or something else? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:25:18.160Z"
+    },
+    {
+      "id": "a-1774286789751-7563",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for general health tips, information on a specific health condition, or something else? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:26:29.751Z"
+    },
+    {
+      "id": "a-1774286831734-648",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for general health tips, information on a specific health condition, or something else? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:27:11.734Z"
+    },
+    {
+      "id": "a-1774286831769-9812",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for general health tips, information on a specific health condition, or something else? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:27:11.769Z"
+    },
+    {
+      "id": "a-1774286834581-5039",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for general health tips, information on a specific health condition, or something else? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:27:14.581Z"
+    },
+    {
+      "id": "a-1774286834622-8945",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for general health tips, information on a specific health condition, or something else? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:27:14.622Z"
+    },
+    {
+      "id": "a-1774286836925-7779",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for general health tips, information on a specific health condition, or something else? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:27:16.925Z"
+    },
+    {
+      "id": "a-1774286838629-8037",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for general health tips, information on a specific health condition, or something else? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:27:18.629Z"
+    },
+    {
+      "id": "a-1774286938754-2011",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for general health tips, information on a specific health condition, or something else? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:28:58.754Z"
+    },
+    {
+      "id": "a-1774286938770-1721",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for general health tips, information on a specific health condition, or something else? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:28:58.770Z"
+    },
+    {
+      "id": "a-1774286941130-1055",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for general health tips, information on a specific health condition, or something else? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:29:01.130Z"
+    },
+    {
+      "id": "a-1774286941146-8972",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for general health tips, information on a specific health condition, or something else? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:29:01.146Z"
+    },
+    {
+      "id": "a-1774286943328-3058",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for general health tips, information on a specific health condition, or something else? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:29:03.328Z"
+    },
+    {
+      "id": "a-1774286944497-2791",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for general health tips, information on a specific health condition, or something else? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:29:04.497Z"
+    },
+    {
+      "id": "a-1774287101278-6211",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for general health tips, information on a specific health condition, or something else? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:31:41.278Z"
+    },
+    {
+      "id": "a-1774288208290-5391",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what type of health check you are interested in? Are you looking for information on physical health, mental health, or perhaps a specific health-related topic like nutrition or exercise? Let me know so I can assist you better!",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T17:50:08.290Z"
+    },
+    {
+      "id": "a-1774288211200",
+      "at": "2026-03-23T17:50:11Z",
+      "ip": "127.0.0.1",
+      "message": "health check",
+      "reply": "To perform a health check, please specify what you would like me to check. For example, are you interested in:\n\n*   A specific server (CPU, memory, disk, network utilization)?\n*   An application or service (status, logs, performance)?\n*   A database (connection status, query performance, replication)?\n*   Network connectivity or latency?\n\nOnce you provide more details, I can give you a targeted assessment.",
+      "provider": "gemini",
+      "model": "gemini-2.5-flash",
+      "helper": "general"
+    },
+    {
+      "id": "a-1774288779253-4516",
+      "ip": "::ffff:127.0.0.1",
+      "message": "hello",
+      "reply": "Ask a concrete question and I can narrow it down quickly.",
+      "provider": "local-hybrid",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-23T17:59:39.253Z"
+    },
+    {
+      "id": "a-1774288780055",
+      "at": "2026-03-23T17:59:40Z",
+      "ip": "127.0.0.1",
+      "message": "hello",
+      "reply": "Hello! How can I assist you today?",
+      "provider": "openai",
+      "model": "gpt-4o-mini",
+      "helper": "general"
+    },
+    {
+      "id": "a-1774288804472-7428",
+      "ip": "::ffff:127.0.0.1",
+      "message": "hello",
+      "reply": "Ask a concrete question and I can narrow it down quickly.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-23T18:00:04.472Z"
+    },
+    {
+      "id": "a-1774288821129-4655",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what type of health check you are interested in? Are you looking for information on physical health, mental health, or perhaps a specific health-related topic like nutrition or exercise? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T18:00:21.129Z"
+    },
+    {
+      "id": "a-1774288821183-350",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what type of health check you are interested in? Are you looking for information on physical health, mental health, or perhaps a specific health-related topic like nutrition or exercise? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T18:00:21.183Z"
+    },
+    {
+      "id": "a-1774288823991-4172",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what type of health check you are interested in? Are you looking for information on physical health, mental health, or perhaps a specific health-related topic like nutrition or exercise? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T18:00:23.991Z"
+    },
+    {
+      "id": "a-1774288824027-5402",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what type of health check you are interested in? Are you looking for information on physical health, mental health, or perhaps a specific health-related topic like nutrition or exercise? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T18:00:24.027Z"
+    },
+    {
+      "id": "a-1774288827118-382",
+      "ip": "::ffff:127.0.0.1",
+      "message": "hello",
+      "reply": "Ask a concrete question and I can narrow it down quickly.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-23T18:00:27.118Z"
+    },
+    {
+      "id": "a-1774288837579-4749",
+      "ip": "::ffff:127.0.0.1",
+      "message": "hello",
+      "reply": "Ask a concrete question and I can narrow it down quickly.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-23T18:00:37.579Z"
+    },
+    {
+      "id": "a-1774288856098-9307",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what type of health check you are interested in? Are you looking for information on physical health, mental health, or perhaps a specific health-related topic like nutrition or exercise? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T18:00:56.098Z"
+    },
+    {
+      "id": "a-1774288856154-369",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what type of health check you are interested in? Are you looking for information on physical health, mental health, or perhaps a specific health-related topic like nutrition or exercise? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T18:00:56.154Z"
+    },
+    {
+      "id": "a-1774288859318-3590",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what type of health check you are interested in? Are you looking for information on physical health, mental health, or perhaps a specific health-related topic like nutrition or exercise? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T18:00:59.318Z"
+    },
+    {
+      "id": "a-1774288859369-499",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what type of health check you are interested in? Are you looking for information on physical health, mental health, or perhaps a specific health-related topic like nutrition or exercise? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T18:00:59.369Z"
+    },
+    {
+      "id": "a-1774288861975-1673",
+      "ip": "::ffff:127.0.0.1",
+      "message": "hello",
+      "reply": "Ask a concrete question and I can narrow it down quickly.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-23T18:01:01.975Z"
+    },
+    {
+      "id": "a-1774288875525-225",
+      "ip": "::ffff:127.0.0.1",
+      "message": "hello",
+      "reply": "Ask a concrete question and I can narrow it down quickly.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-23T18:01:15.525Z"
+    },
+    {
+      "id": "a-1774288914449-6284",
+      "ip": "::ffff:127.0.0.1",
+      "message": "hello",
+      "reply": "Ask a concrete question and I can narrow it down quickly.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-23T18:01:54.449Z"
+    },
+    {
+      "id": "a-1774288945210-5545",
+      "ip": "::ffff:127.0.0.1",
+      "message": "hello",
+      "reply": "Ask a concrete question and I can narrow it down quickly.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-23T18:02:25.210Z"
+    },
+    {
+      "id": "a-1774288990160-3091",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what type of health check you are interested in? Are you looking for information on physical health, mental health, or perhaps a specific health-related topic like nutrition or exercise? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T18:03:10.160Z"
+    },
+    {
+      "id": "a-1774288990220-1779",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what type of health check you are interested in? Are you looking for information on physical health, mental health, or perhaps a specific health-related topic like nutrition or exercise? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T18:03:10.221Z"
+    },
+    {
+      "id": "a-1774288992985-6794",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what type of health check you are interested in? Are you looking for information on physical health, mental health, or perhaps a specific health-related topic like nutrition or exercise? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T18:03:12.985Z"
+    },
+    {
+      "id": "a-1774288993055-3177",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what type of health check you are interested in? Are you looking for information on physical health, mental health, or perhaps a specific health-related topic like nutrition or exercise? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T18:03:13.055Z"
+    },
+    {
+      "id": "a-1774288996177-7547",
+      "ip": "::ffff:127.0.0.1",
+      "message": "hello",
+      "reply": "Ask a concrete question and I can narrow it down quickly.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-23T18:03:16.177Z"
+    },
+    {
+      "id": "a-1774289009628-7197",
+      "ip": "::ffff:127.0.0.1",
+      "message": "hello",
+      "reply": "Ask a concrete question and I can narrow it down quickly.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-23T18:03:29.628Z"
+    },
+    {
+      "id": "a-1774289023275-3444",
+      "ip": "::ffff:127.0.0.1",
+      "message": "contract-test",
+      "reply": "Could you clarify what you mean by \"contract-test\"? Are you looking for information on testing contracts in software development, legal contracts, or something else entirely? Please provide a bit more detail so I can assist you effectively.",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T18:03:43.275Z"
+    },
+    {
+      "id": "a-1774289026954",
+      "at": "2026-03-23T18:03:46Z",
+      "ip": "127.0.0.1",
+      "message": "contract-test",
+      "reply": "Contract testing is a method to ensure that two separate systems (like a client and a service) can communicate with each other correctly. It verifies that the \"contract\" – the agreed-upon data format and interaction patterns – between them is upheld by both sides.\n\nThis helps catch integration issues early, especially in microservices architectures, without needing to run full end-to-end tests.\n\nAre you looking for more information on its benefits, how to implement it, or specific tools?",
+      "provider": "gemini",
+      "model": "gemini-2.5-flash",
+      "helper": "general"
+    },
+    {
+      "id": "a-1774289051630-3352",
+      "ip": "::ffff:127.0.0.1",
+      "message": "contract-test",
+      "reply": "Could you clarify what you mean by \"contract-test\"? Are you looking for information on testing contracts in software development, legal contracts, or something else entirely? Please provide a bit more detail so I can assist you effectively.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T18:04:11.630Z"
+    },
+    {
+      "id": "a-1774289222282-6548",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for information on a general health check-up, specific tests, or health assessments for a particular condition? Let me know so I can provide the most relevant information!",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T18:07:02.282Z"
+    },
+    {
+      "id": "a-1774289222322-5970",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for information on a general health check-up, specific tests, or health assessments for a particular condition? Let me know so I can provide the most relevant information!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T18:07:02.322Z"
+    },
+    {
+      "id": "a-1774289225677",
+      "at": "2026-03-23T18:07:05Z",
+      "ip": "127.0.0.1",
+      "message": "health check",
+      "reply": "A health check for what specifically? Please specify the system, service, application, or component you'd like to assess.",
+      "provider": "gemini",
+      "model": "gemini-2.5-flash",
+      "helper": "general"
+    },
+    {
+      "id": "a-1774289227425-8552",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for information on a general health check-up, specific tests, or health assessments for a particular condition? Let me know so I can provide the most relevant information!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T18:07:07.425Z"
+    },
+    {
+      "id": "a-1774289227483-8522",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what specific health check you're referring to? Are you looking for information on a general health check-up, specific tests, or health assessments for a particular condition? Let me know so I can provide the most relevant information!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T18:07:07.483Z"
+    },
+    {
+      "id": "a-1774289230467-6364",
+      "ip": "::ffff:127.0.0.1",
+      "message": "hello",
+      "reply": "Ask a concrete question and I can narrow it down quickly.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-23T18:07:10.467Z"
+    },
+    {
+      "id": "a-1774289235733-8382",
+      "ip": "::ffff:127.0.0.1",
+      "message": "hello",
+      "reply": "Ask a concrete question and I can narrow it down quickly.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-23T18:07:15.733Z"
+    },
+    {
+      "id": "a-1774289243116-9678",
+      "ip": "::ffff:127.0.0.1",
+      "message": "contract-test",
+      "reply": "Could you clarify what you mean by \"contract-test\"? Are you looking for information on testing contracts in software development, legal contracts, or something else entirely? Please provide a bit more detail so I can assist you effectively.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T18:07:23.116Z"
+    },
+    {
+      "id": "a-1774292340702-6747",
+      "ip": "::1",
+      "message": "cum esti ?",
+      "reply": "Sunt bine, mulțumesc! Tu cum ești?",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T18:59:00.702Z"
+    },
+    {
+      "id": "a-1774292355214-3286",
+      "ip": "::1",
+      "message": "si eu bine , am avut o zii grea",
+      "reply": "Îmi pare rău să aud că ai avut o zi grea. Ce s-a întâmplat? Poate pot să te ajut cu ceva sau să îți ofer câteva sugestii pentru a te relaxa.",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T18:59:15.214Z"
+    },
+    {
+      "id": "a-1774292395736-6240",
+      "ip": "::1",
+      "message": "mult de lucru .",
+      "reply": "Înțeleg, uneori sarcinile pot deveni copleșitoare. Ai încercat să îți organizezi activitățile sau să îți stabilești priorități? Iată câteva sugestii care te-ar putea ajuta:\n\n1. **Prioritizează sarcinile**: Fă o listă cu tot ce ai de făcut și clasifică-le în funcție de urgență și importanță.\n2. **Împarte sarcinile mari în pași mici**: Asta poate face totul să pară mai gestionabil.\n3. **Stabilește intervale de lucru**: Lucrează timp de 25 de minute, apoi ia o pauză de 5 minute (tehnica Pomodoro).\n4. **Elimină distragerile**: Găsește un loc liniștit pentru a te concentra.\n\nDacă ai nevoie de ajuto",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T18:59:55.736Z"
+    },
+    {
+      "id": "a-1774292405523-5598",
+      "ip": "::1",
+      "message": "magneto-ai.com",
+      "reply": "Se pare că ai menționat un site, dar nu am informații specifice despre „magneto-ai.com”. Poate că te referi la un serviciu sau un produs specific? Dacă ai nevoie de informații sau ajutor legat de acest site, te rog să îmi oferi mai multe detalii despre ce anume te interesează.",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T19:00:05.523Z"
+    },
+    {
+      "id": "a-1774292417843-514",
+      "ip": "::1",
+      "message": "acuma lucrez pe un proiect",
+      "reply": "Înțeleg! Poți să îmi dai mai multe detalii despre proiectul pe care lucrezi? De exemplu:\n\n1. **Despre ce este vorba în proiect?**\n2. **Care este obiectivul tău?**\n3. **Ce tip de ajutor ai nevoie?**\n\nAstfel, pot să îți ofer sugestii mai precise sau să te ajut cu planificarea.",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T19:00:17.843Z"
+    },
+    {
+      "id": "a-1774292436077-3330",
+      "ip": "::1",
+      "message": "acela era numele proiectului , adica adresa de web",
+      "reply": "Înțeleg, „magneto-ai.com” este numele proiectului tău. Ce tip de proiect este? Ai nevoie de ajutor cu dezvoltarea site-ului, strategii de marketing, design sau altceva? Oferă-mi mai multe detalii și te voi ajuta cu plăcere!",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T19:00:36.077Z"
+    },
+    {
+      "id": "a-1774292469831-8251",
+      "ip": "::1",
+      "message": "un search mnotor puternic , ce am nevoie pentru asta ?",
+      "reply": "Pentru a dezvolta un motor de căutare puternic, ai nevoie de mai multe componente esențiale. Iată un ghid detaliat:\n\n### 1. **Infrastructură Tehnică**\n   - **Servere:** Ai nevoie de servere puternice pentru a gestiona procesarea datelor și stocarea acestora.\n   - **Stocare:** Utilizarea unor soluții de stocare scalabile, cum ar fi baze de date NoSQL (ex. MongoDB, Elasticsearch) sau soluții de stocare distribuită.\n\n### 2. **Crawling (Indexare)**\n   - **Crawler:** Dezvoltă un crawler care să navigheze pe web și să colecteze date. Acesta ar trebui să fie capabil să gestioneze diferite tipuri de c",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T19:01:09.831Z"
+    },
+    {
+      "id": "a-1774292490507-1299",
+      "ip": "::1",
+      "message": "scriemi in limba romana",
+      "reply": "Pentru a crea un motor de căutare puternic, ai nevoie de următoarele componente și pași:\n\n1. **Definirea scopului**: Stabilirea tipului de informații pe care vrei să le indexezi (de exemplu, pagini web, imagini, videoclipuri).\n\n2. **Creează un crawler (robot de indexare)**:\n   - Acesta va naviga pe internet pentru a descoperi și a colecta date de pe diferite site-uri.\n   - Poți utiliza limbaje de programare precum Python, Java sau Node.js.\n\n3. **Construirea unei baze de date**:\n   - Stochează informațiile colectate într-o bază de date eficientă. Poți folosi soluții precum MySQL, MongoDB sau El",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T19:01:30.507Z"
+    },
+    {
+      "id": "a-1774292497005-1557",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what type of health check you are referring to? Are you looking for information on a specific health issue, general wellness tips, or perhaps a checklist for a medical appointment? Let me know so I can assist you better!",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T19:01:37.005Z"
+    },
+    {
+      "id": "a-1774292497024-3024",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what type of health check you are referring to? Are you looking for information on a specific health issue, general wellness tips, or perhaps a checklist for a medical appointment? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T19:01:37.024Z"
+    },
+    {
+      "id": "a-1774292501772",
+      "at": "2026-03-23T19:01:41Z",
+      "ip": "127.0.0.1",
+      "message": "health check",
+      "reply": "To provide an accurate health check, please specify the system or service you are referring to. For example, are you interested in:\n\n*   Server resource utilization (CPU, Memory, Disk I/O)?\n*   Network connectivity and latency?\n*   Specific application or database service status?\n*   Log analysis for errors or warnings?\n\nOnce you provide more details, I can offer a targeted assessment and recommendations.",
+      "provider": "gemini",
+      "model": "gemini-2.5-flash",
+      "helper": "general"
+    },
+    {
+      "id": "a-1774292503067-1490",
+      "ip": "::ffff:127.0.0.1",
+      "message": "hello",
+      "reply": "Ask a concrete question and I can narrow it down quickly.",
+      "provider": "local-hybrid",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-23T19:01:43.068Z"
+    },
+    {
+      "id": "a-1774292504226",
+      "at": "2026-03-23T19:01:44Z",
+      "ip": "127.0.0.1",
+      "message": "hello",
+      "reply": "Hello! How can I assist you today?",
+      "provider": "openai",
+      "model": "gpt-4o-mini",
+      "helper": "general"
+    },
+    {
+      "id": "a-1774292507522-789",
+      "ip": "::ffff:127.0.0.1",
+      "message": "contract-test",
+      "reply": "Could you clarify what you mean by \"contract-test\"? Are you looking for information on testing contracts in software development, legal contract testing, or something else entirely? Please provide more details so I can assist you better!",
+      "provider": "openai",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T19:01:47.522Z"
+    },
+    {
+      "id": "a-1774292509520",
+      "at": "2026-03-23T19:01:49Z",
+      "ip": "127.0.0.1",
+      "message": "contract-test",
+      "reply": "Contract testing is a method for ensuring that two separate systems (like a client and a service, or a producer and a consumer) can communicate with each other correctly.\n\nIt verifies that the \"contract\" of an API or service—its inputs, outputs, and behavior—is upheld by both sides. This is done by generating tests based on an agreed-upon contract (e.g., an OpenAPI spec or a Pact file), allowing teams to test their components in isolation without needing to deploy the entire integrated system.\n\nThis approach helps catch integration issues earlier, speeds up development cycles, and reduces the need for extensive end-to-end testing.",
+      "provider": "gemini",
+      "model": "gemini-2.5-flash",
+      "helper": "general"
+    },
+    {
+      "id": "a-1774292512022-2363",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what type of health check you are referring to? Are you looking for information on a specific health issue, general wellness tips, or perhaps a checklist for a medical appointment? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T19:01:52.022Z"
+    },
+    {
+      "id": "a-1774292512046-6654",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what type of health check you are referring to? Are you looking for information on a specific health issue, general wellness tips, or perhaps a checklist for a medical appointment? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T19:01:52.046Z"
+    },
+    {
+      "id": "a-1774292514912-8293",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what type of health check you are referring to? Are you looking for information on a specific health issue, general wellness tips, or perhaps a checklist for a medical appointment? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T19:01:54.912Z"
+    },
+    {
+      "id": "a-1774292514931-9783",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what type of health check you are referring to? Are you looking for information on a specific health issue, general wellness tips, or perhaps a checklist for a medical appointment? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T19:01:54.931Z"
+    },
+    {
+      "id": "a-1774292517332-956",
+      "ip": "::ffff:127.0.0.1",
+      "message": "hello",
+      "reply": "Ask a concrete question and I can narrow it down quickly.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-23T19:01:57.332Z"
+    },
+    {
+      "id": "a-1774292527153-8783",
+      "ip": "::ffff:127.0.0.1",
+      "message": "hello",
+      "reply": "Ask a concrete question and I can narrow it down quickly.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-23T19:02:07.153Z"
+    },
+    {
+      "id": "a-1774292546333-4205",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what type of health check you are referring to? Are you looking for information on a specific health issue, general wellness tips, or perhaps a checklist for a medical appointment? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T19:02:26.333Z"
+    },
+    {
+      "id": "a-1774292546353-8774",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what type of health check you are referring to? Are you looking for information on a specific health issue, general wellness tips, or perhaps a checklist for a medical appointment? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T19:02:26.353Z"
+    },
+    {
+      "id": "a-1774292548870-7783",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what type of health check you are referring to? Are you looking for information on a specific health issue, general wellness tips, or perhaps a checklist for a medical appointment? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T19:02:28.870Z"
+    },
+    {
+      "id": "a-1774292548889-4687",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what type of health check you are referring to? Are you looking for information on a specific health issue, general wellness tips, or perhaps a checklist for a medical appointment? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T19:02:28.889Z"
+    },
+    {
+      "id": "a-1774292551116-3533",
+      "ip": "::ffff:127.0.0.1",
+      "message": "hello",
+      "reply": "Ask a concrete question and I can narrow it down quickly.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-23T19:02:31.116Z"
+    },
+    {
+      "id": "a-1774292556658-9182",
+      "ip": "::ffff:127.0.0.1",
+      "message": "hello",
+      "reply": "Ask a concrete question and I can narrow it down quickly.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-23T19:02:36.658Z"
+    },
+    {
+      "id": "a-1774292573246-402",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what type of health check you are referring to? Are you looking for information on a specific health issue, general wellness tips, or perhaps a checklist for a medical appointment? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T19:02:53.246Z"
+    },
+    {
+      "id": "a-1774292573268-6238",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what type of health check you are referring to? Are you looking for information on a specific health issue, general wellness tips, or perhaps a checklist for a medical appointment? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T19:02:53.268Z"
+    },
+    {
+      "id": "a-1774292575785-5325",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what type of health check you are referring to? Are you looking for information on a specific health issue, general wellness tips, or perhaps a checklist for a medical appointment? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T19:02:55.785Z"
+    },
+    {
+      "id": "a-1774292575805-9764",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what type of health check you are referring to? Are you looking for information on a specific health issue, general wellness tips, or perhaps a checklist for a medical appointment? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T19:02:55.805Z"
+    },
+    {
+      "id": "a-1774292578004-6061",
+      "ip": "::ffff:127.0.0.1",
+      "message": "hello",
+      "reply": "Ask a concrete question and I can narrow it down quickly.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-23T19:02:58.004Z"
+    },
+    {
+      "id": "a-1774292586899-5215",
+      "ip": "::ffff:127.0.0.1",
+      "message": "hello",
+      "reply": "Ask a concrete question and I can narrow it down quickly.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-23T19:03:06.899Z"
+    },
+    {
+      "id": "a-1774292595547-2794",
+      "ip": "::ffff:127.0.0.1",
+      "message": "contract-test",
+      "reply": "Could you clarify what you mean by \"contract-test\"? Are you looking for information on testing contracts in software development, legal contract testing, or something else entirely? Please provide more details so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T19:03:15.548Z"
+    },
+    {
+      "id": "a-1774292604173-7648",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what type of health check you are referring to? Are you looking for information on a specific health issue, general wellness tips, or perhaps a checklist for a medical appointment? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T19:03:24.173Z"
+    },
+    {
+      "id": "a-1774292604190-448",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what type of health check you are referring to? Are you looking for information on a specific health issue, general wellness tips, or perhaps a checklist for a medical appointment? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T19:03:24.190Z"
+    },
+    {
+      "id": "a-1774292606739-4161",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what type of health check you are referring to? Are you looking for information on a specific health issue, general wellness tips, or perhaps a checklist for a medical appointment? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T19:03:26.739Z"
+    },
+    {
+      "id": "a-1774292606772-6975",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Could you clarify what type of health check you are referring to? Are you looking for information on a specific health issue, general wellness tips, or perhaps a checklist for a medical appointment? Let me know so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T19:03:26.772Z"
+    },
+    {
+      "id": "a-1774292609674-9496",
+      "ip": "::ffff:127.0.0.1",
+      "message": "hello",
+      "reply": "Ask a concrete question and I can narrow it down quickly.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-23T19:03:29.674Z"
+    },
+    {
+      "id": "a-1774292623118-4436",
+      "ip": "::ffff:127.0.0.1",
+      "message": "hello",
+      "reply": "Ask a concrete question and I can narrow it down quickly.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-23T19:03:43.118Z"
+    },
+    {
+      "id": "a-1774292633354-7763",
+      "ip": "::ffff:127.0.0.1",
+      "message": "contract-test",
+      "reply": "Could you clarify what you mean by \"contract-test\"? Are you looking for information on testing contracts in software development, legal contract testing, or something else entirely? Please provide more details so I can assist you better!",
+      "provider": "cache",
+      "helper": "general",
+      "model": "gpt-4o-mini",
+      "at": "2026-03-23T19:03:53.354Z"
     }
   ]
 }
