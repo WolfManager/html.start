@@ -2587,7 +2587,13 @@ async function initResultsPage() {
         anchor.rel = "noopener noreferrer";
         anchor.textContent = item.title;
         anchor.addEventListener("click", () => {
-          trackResultClick(item.url, item.title, currentQuery);
+          trackResultClick(item.url, item.title, currentQuery, {
+            category: item.category || "",
+            sourceSlug: item.sourceSlug || "",
+            sourceName: item.sourceName || "",
+            position: Number(item.position || 0),
+            score: Number(item.score || item.doc_score || 0),
+          });
         });
 
         const description = document.createElement("p");
@@ -5383,9 +5389,9 @@ async function refreshRewriteRulesWithMessage(okMessage = "") {
   }
 }
 
-async function trackResultClick(url, title, query) {
+async function trackResultClick(url, title, query, metadata = {}) {
   if (typeof magnetoTrackingApi.trackResultClick === "function") {
-    return magnetoTrackingApi.trackResultClick(url, title, query);
+    return magnetoTrackingApi.trackResultClick(url, title, query, metadata);
   }
 
   try {
@@ -5406,6 +5412,11 @@ async function trackResultClick(url, title, query) {
         url: normalizedUrl,
         title: normalizedTitle,
         query: normalizedQuery,
+        category: String(metadata?.category || "").trim(),
+        sourceSlug: String(metadata?.sourceSlug || "").trim(),
+        sourceName: String(metadata?.sourceName || "").trim(),
+        position: Number(metadata?.position || 0),
+        score: Number(metadata?.score || 0),
       }),
     });
   } catch (error) {

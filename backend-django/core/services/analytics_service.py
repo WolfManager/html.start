@@ -120,6 +120,7 @@ def log_search(
     query: str,
     result_count: int,
     ip: str,
+    user_hash: str = "",
     query_used: str | None = None,
     was_rewritten: bool = False,
     rewrite_rule: dict | None = None,
@@ -142,6 +143,7 @@ def log_search(
         "resultCount": int(result_count),
         "zeroResults": int(result_count) == 0,
         "ip": normalized_ip,
+        "userHash": str(user_hash or "").strip(),
         "reformulatesSearchId": reformulates_search_id,
         "reformulationType": reformulation_type,
         "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -180,7 +182,17 @@ def log_page_view(*, page: str, ip: str, user_agent: str) -> None:
     write_analytics(analytics)
 
 
-def log_result_click(*, url: str, title: str, query: str, ip: str) -> None:
+def log_result_click(
+    *,
+    url: str,
+    title: str,
+    query: str,
+    ip: str,
+    user_hash: str = "",
+    category: str = "",
+    source_slug: str = "",
+    source_name: str = "",
+) -> None:
     analytics = read_analytics()
     result_clicks = list(analytics.get("resultClicks") or [])
     normalized_url = _normalize_index_url(url)
@@ -216,6 +228,10 @@ def log_result_click(*, url: str, title: str, query: str, ip: str) -> None:
             "title": str(title or "").strip(),
             "query": str(query or "").strip(),
             "ip": normalized_ip,
+            "userHash": str(user_hash or "").strip(),
+            "category": str(category or "").strip(),
+            "sourceSlug": str(source_slug or "").strip(),
+            "sourceName": str(source_name or "").strip(),
             "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         }
     )

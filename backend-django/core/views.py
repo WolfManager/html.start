@@ -65,6 +65,7 @@ from .services.search_sync_service import (
 )
 from .services.assistant_service import generate_assistant_response, probe_providers_health
 from .services.location_service import resolve_approx_location
+from .services.personalization_service import resolve_user_hash, build_personalization_stats
 from .services.runtime_metrics_service import get_runtime_metrics
 from .services.search_admin_sync_service import execute_crawl_sync, execute_seed_sync
 from .services.search_ranking_config_service import (
@@ -113,6 +114,14 @@ def _admin_auth_error(request):
     return None
 
 
+def _get_or_create_session_key(request) -> str:
+    session_key = str(request.session.session_key or "").strip()
+    if session_key:
+        return session_key
+    request.session.create()
+    return str(request.session.session_key or "").strip()
+
+
 @api_view(["GET"])
 def health(_request):
     """Compatibility health endpoint for gradual migration from Node backend."""
@@ -152,6 +161,13 @@ def search(request):
     page = max(1, min(500, page))
     safe_limit = max(1, min(50, limit))
     offset = (page - 1) * safe_limit
+    request_ip = get_client_ip(request.META)
+    explicit_user_id = str(request.query_params.get("userId") or "").strip()
+    user_hash = resolve_user_hash(
+        explicit_user_id=explicit_user_id,
+        session_key=_get_or_create_session_key(request),
+        ip=request_ip,
+    )
 
     payload = run_search_page(
         query,
@@ -161,13 +177,15 @@ def search(request):
         sort=sort,
         limit=safe_limit,
         offset=offset,
+        user_id=user_hash,
     )
     query_rewrite = payload.get("queryRewrite")
     query_used = payload.get("queryUsed") or query
     log_search(
         query=query,
         result_count=int(payload.get("total", 0) or 0),
-        ip=get_client_ip(request.META),
+        ip=request_ip,
+        user_hash=user_hash,
         query_used=query_used,
         was_rewritten=bool(query_rewrite),
         rewrite_rule=query_rewrite if isinstance(query_rewrite, dict) else None,
@@ -1042,11 +1060,23 @@ def result_click(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+    request_ip = get_client_ip(request.META)
+    explicit_user_id = str(payload.get("userId") or "").strip()
+    user_hash = resolve_user_hash(
+        explicit_user_id=explicit_user_id,
+        session_key=_get_or_create_session_key(request),
+        ip=request_ip,
+    )
+
     log_result_click(
         url=url,
         title=title,
         query=query,
-        ip=get_client_ip(request.META),
+        ip=request_ip,
+        user_hash=user_hash,
+        category=str(payload.get("category") or "").strip(),
+        source_slug=str(payload.get("sourceSlug") or "").strip(),
+        source_name=str(payload.get("sourceName") or "").strip(),
     )
     invalidate_click_signal_cache()
 
@@ -1257,6 +1287,27 @@ def admin_overview(request):
     range_value = str(request.query_params.get("range") or "all")
     payload = build_admin_overview(range_value)
     return Response(payload)
+
+
+@api_view(["GET"])
+def admin_personalization_stats(request):
+    auth_error = _admin_auth_error(request)
+    if auth_error is not None:
+        return auth_error
+
+    limit_raw = str(request.query_params.get("limit") or "10").strip()
+    try:
+        limit = int(limit_raw)
+    except Exception:
+        limit = 10
+
+    payload = build_personalization_stats(limit_users=limit)
+    return Response(
+        {
+            "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "personalization": payload,
+        }
+    )
 
 
 @api_view(["POST"])

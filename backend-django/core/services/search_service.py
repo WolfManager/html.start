@@ -13,6 +13,9 @@ from django.db.models import Count
 
 from core.models import SearchDocument, SearchSource
 from .analytics_service import read_analytics
+from .cross_reference import compute_cross_domain_signal_bonus
+from .personalization_service import apply_personalization
+from .query_intent import detect_query_intent
 from .ltr_model_trainer import train_ltr_model, load_model, save_model, compute_ndcg, compute_average_precision
 from .ltr_training_pipeline import run_training_cycle, get_training_summary
 from .ab_testing import ABTest, get_current_ab_test, save_ab_test, start_ab_test, update_traffic_split, should_rollout_to_100_percent
@@ -1226,6 +1229,7 @@ def _run_db_search(
     normalized_source = _normalize_filter_value(source)
     normalized_sort = _normalize_filter_value(sort) or "relevance"
     query_language = detect_query_language(query)
+    query_intent = detect_query_intent(parsed_query) if parsed_query else {"intent": "", "confidence": 0.0, "signals": []}
 
     documents = (
         SearchDocument.objects.filter(status=SearchDocument.STATUS_INDEXED)
@@ -1281,6 +1285,16 @@ def _run_db_search(
             if normalized_sort == "relevance"
             else 0.0
         )
+        cross_domain_signals = compute_cross_domain_signal_bonus(
+            document,
+            parsed_query,
+            query_intent=query_intent,
+        )
+        cross_domain_bonus = (
+            float(cross_domain_signals.get("totalBonus", 0.0))
+            if normalized_sort == "relevance"
+            else 0.0
+        )
         total_score = (
             score
             + quality_bonus
@@ -1288,6 +1302,7 @@ def _run_db_search(
             + language_bonus
             + authority_bonus
             + click_boost
+            + cross_domain_bonus
         )
         fetched_at = document.fetched_at or document.indexed_at
         ranked_with_score.append(
@@ -1459,6 +1474,9 @@ def run_search_page(
     query_used, query_rewrite = _apply_query_rewrite_rules(original_query)
     query_correction = None
 
+    # Detect query intent for improved ranking and analytics
+    query_intent = detect_query_intent(query_used)
+
     all_results = _run_search_all(
         query_used,
         language=language,
@@ -1532,6 +1550,12 @@ def run_search_page(
             # LTR ranking failure is silent - use original results
             pass
 
+    if user_id:
+        try:
+            all_results = apply_personalization(all_results, user_hash=user_id, query=query_used)
+        except Exception:
+            pass
+
     safe_limit = _safe_limit(limit)
     safe_offset = _safe_offset(offset)
     total = len(all_results)
@@ -1558,6 +1582,7 @@ def run_search_page(
             }
 
     return {
+        "queryIntent": query_intent,
         "queryUsed": query_used,
         "queryRewrite": query_rewrite,
         "appliedOperators": get_applied_search_operators(query_used),

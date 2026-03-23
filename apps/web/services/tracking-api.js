@@ -17,7 +17,7 @@
     }
   }
 
-  async function trackResultClick(url, title, query) {
+  async function trackResultClick(url, title, query, metadata = {}) {
     if (typeof apiFetch !== "function") {
       return;
     }
@@ -40,6 +40,11 @@
           url: normalizedUrl,
           title: normalizedTitle,
           query: normalizedQuery,
+          category: String(metadata?.category || "").trim(),
+          sourceSlug: String(metadata?.sourceSlug || "").trim(),
+          sourceName: String(metadata?.sourceName || "").trim(),
+          position: Number(metadata?.position || 0),
+          score: Number(metadata?.score || 0),
         }),
       });
     } catch (error) {

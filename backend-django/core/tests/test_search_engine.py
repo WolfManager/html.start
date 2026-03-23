@@ -107,6 +107,70 @@ class SearchEngineTests(TestCase):
         results = run_search("python tutorial", limit=2)
         self.assertEqual(len(results), 2)
 
+    def test_run_search_page_returns_query_intent(self) -> None:
+        source = SearchSource.objects.create(
+            slug="intent-test",
+            name="Intent Test",
+            base_url="https://intent.example.com",
+            start_urls=["https://intent.example.com"],
+            allowed_domains=["intent.example.com"],
+            language_hint="en",
+            category_hint="Development",
+        )
+        SearchDocument.objects.create(
+            source=source,
+            url="https://intent.example.com/python-guide",
+            title="Python tutorial guide",
+            summary="Learn Python step by step",
+            content="How to learn Python with examples.",
+            language="en",
+            category="Development",
+            tags=["python", "tutorial"],
+            quality_score=80,
+        )
+
+        payload = run_search_page("how to learn python")
+
+        self.assertIn("queryIntent", payload)
+        self.assertEqual(payload["queryIntent"]["intent"], "informational")
+
+    def test_run_search_prefers_cross_domain_comprehensive_result(self) -> None:
+        source = SearchSource.objects.create(
+            slug="cross-domain-ranking",
+            name="Cross Domain Ranking",
+            base_url="https://ranking.example.com",
+            start_urls=["https://ranking.example.com"],
+            allowed_domains=["ranking.example.com"],
+            language_hint="en",
+            category_hint="Development",
+        )
+        SearchDocument.objects.create(
+            source=source,
+            url="https://ranking.example.com/python-fastapi-overview",
+            title="Python FastAPI Overview",
+            summary="A short overview.",
+            content="Python FastAPI basics.",
+            language="en",
+            category="Development",
+            tags=["python", "fastapi"],
+            quality_score=80,
+        )
+        SearchDocument.objects.create(
+            source=source,
+            url="https://ranking.example.com/python-fastapi-django-tutorial",
+            title="Python FastAPI Django Tutorial",
+            summary="Step by step comparison guide.",
+            content="Learn Python FastAPI and Django with references to https://github.com/example/repo",
+            language="en",
+            category="Development",
+            tags=["python", "fastapi", "django", "tutorial"],
+            quality_score=80,
+        )
+
+        results = run_search("python fastapi django tutorial")
+
+        self.assertEqual(results[0]["url"], "https://ranking.example.com/python-fastapi-django-tutorial")
+
     def test_run_search_page_returns_pagination_metadata(self) -> None:
         source = SearchSource.objects.create(
             slug="page-test",
