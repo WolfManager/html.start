@@ -3725,6 +3725,391 @@
       "reformulatesSearchId": "s-1774292622977-3339",
       "reformulationType": "query-refinement",
       "at": "2026-03-23T19:03:53Z"
+    },
+    {
+      "id": "s-1774378326879-2040",
+      "query": "test",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-24T18:52:06.879Z"
+    },
+    {
+      "id": "s-1774378329813-5872",
+      "query": "test",
+      "normalizedQuery": "test",
+      "resultCount": 5,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "f73da59641feced472d79dfe",
+      "reformulatesSearchId": null,
+      "reformulationType": null,
+      "at": "2026-03-24T18:52:09Z"
+    },
+    {
+      "id": "s-1774378338675-4609",
+      "query": "test",
+      "normalizedQuery": "test",
+      "resultCount": 5,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "abec3ed3dda777c0ba45eac9",
+      "reformulatesSearchId": null,
+      "reformulationType": null,
+      "at": "2026-03-24T18:52:18Z"
+    },
+    {
+      "id": "s-1774378339213-5343",
+      "query": "api documentation",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-24T18:52:19.213Z"
+    },
+    {
+      "id": "s-1774378339332-2896",
+      "query": "api documentation",
+      "normalizedQuery": "api documentation",
+      "resultCount": 13,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "0a3d5293f11a5aca6df2cce2",
+      "reformulatesSearchId": "s-1774378338675-4609",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-24T18:52:19Z"
+    },
+    {
+      "id": "s-1774378342304-4172",
+      "query": "contract-test",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-24T18:52:22.304Z"
+    },
+    {
+      "id": "s-1774378346033-9049",
+      "query": "contract-test",
+      "normalizedQuery": "contract-test",
+      "resultCount": 2,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "bca50ce187d0a32d9a7f2c39",
+      "reformulatesSearchId": "s-1774378339332-2896",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-24T18:52:26Z"
+    },
+    {
+      "id": "s-1774378427787-8953",
+      "query": "test",
+      "normalizedQuery": "test",
+      "resultCount": 5,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "3dec2ff304aff1e3df53993b",
+      "reformulatesSearchId": "s-1774378346033-9049",
+      "reformulationType": "low-results-refinement",
+      "at": "2026-03-24T18:53:47Z"
+    },
+    {
+      "id": "s-1774378429220-2635",
+      "query": "test",
+      "normalizedQuery": "test",
+      "resultCount": 5,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "2038b45bf31fcbbb1df5e32f",
+      "reformulatesSearchId": "s-1774378346033-9049",
+      "reformulationType": "low-results-refinement",
+      "at": "2026-03-24T18:53:49Z"
+    },
+    {
+      "id": "s-1774378429859-5686",
+      "query": "api documentation",
+      "normalizedQuery": "api documentation",
+      "resultCount": 13,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "f3eee90d7fb4604d344d7c22",
+      "reformulatesSearchId": "s-1774378429220-2635",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-24T18:53:49Z"
+    },
+    {
+      "id": "s-1774378434863-8889",
+      "query": "api documentation",
+      "normalizedQuery": "api documentation",
+      "resultCount": 13,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "2121700068157057dc399bd6",
+      "reformulatesSearchId": "s-1774378429220-2635",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-24T18:53:54Z"
+    },
+    {
+      "id": "s-1774378435565-2644",
+      "query": "contract-test",
+      "normalizedQuery": "contract-test",
+      "resultCount": 2,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "4352a5096562c03ca054fb41",
+      "reformulatesSearchId": "s-1774378434863-8889",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-24T18:53:55Z"
+    },
+    {
+      "id": "s-1774380859815-5978",
+      "query": "test",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-24T19:34:19.815Z"
+    },
+    {
+      "id": "s-1774380955555-5556",
+      "query": "test",
+      "normalizedQuery": "test",
+      "resultCount": 5,
+      "zeroResults": false,
+      "ip": "::ffff:127.0.0.1",
+      "userHash": "0b007743ea0c75c0d42552f2",
+      "reformulatesSearchId": null,
+      "reformulationType": null,
+      "at": "2026-03-24T19:35:55Z"
+    },
+    {
+      "id": "s-1774380956160-6300",
+      "query": "test",
+      "normalizedQuery": "test",
+      "resultCount": 5,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "986686e33eb09bed72ea4844",
+      "reformulatesSearchId": null,
+      "reformulationType": null,
+      "at": "2026-03-24T19:35:56Z"
+    },
+    {
+      "id": "s-1774380960790-4309",
+      "query": "test",
+      "normalizedQuery": "test",
+      "resultCount": 5,
+      "zeroResults": false,
+      "ip": "::ffff:127.0.0.1",
+      "userHash": "d5ec5746f9b35ba63f58d711",
+      "reformulatesSearchId": null,
+      "reformulationType": null,
+      "at": "2026-03-24T19:36:00Z"
+    },
+    {
+      "id": "s-1774380961432-6390",
+      "query": "test",
+      "normalizedQuery": "test",
+      "resultCount": 5,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "1b09fb6a98e87d3b522b6645",
+      "reformulatesSearchId": null,
+      "reformulationType": null,
+      "at": "2026-03-24T19:36:01Z"
+    },
+    {
+      "id": "s-1774380962053-6092",
+      "query": "api documentation",
+      "normalizedQuery": "api documentation",
+      "resultCount": 13,
+      "zeroResults": false,
+      "ip": "::ffff:127.0.0.1",
+      "userHash": "cd27822506577afa101b4608",
+      "reformulatesSearchId": "s-1774380960790-4309",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-24T19:36:02Z"
+    },
+    {
+      "id": "s-1774380962172-7089",
+      "query": "api documentation",
+      "normalizedQuery": "api documentation",
+      "resultCount": 13,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "acf80ed01fd58f871f3da269",
+      "reformulatesSearchId": "s-1774380961432-6390",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-24T19:36:02Z"
+    },
+    {
+      "id": "s-1774380978507-3866",
+      "query": "api documentation",
+      "normalizedQuery": "api documentation",
+      "resultCount": 13,
+      "zeroResults": false,
+      "ip": "::ffff:127.0.0.1",
+      "userHash": "74d4459189e2a9609661ac34",
+      "reformulatesSearchId": "s-1774380960790-4309",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-24T19:36:18Z"
+    },
+    {
+      "id": "s-1774380978634-4111",
+      "query": "api documentation",
+      "normalizedQuery": "api documentation",
+      "resultCount": 13,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "f8b6d89282d9623910233a52",
+      "reformulatesSearchId": "s-1774380961432-6390",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-24T19:36:18Z"
+    },
+    {
+      "id": "s-1774380979348-9676",
+      "query": "contract-test",
+      "normalizedQuery": "contract-test",
+      "resultCount": 2,
+      "zeroResults": false,
+      "ip": "::ffff:127.0.0.1",
+      "userHash": "8385c689d00f8d434e8bbd35",
+      "reformulatesSearchId": "s-1774380978507-3866",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-24T19:36:19Z"
+    },
+    {
+      "id": "s-1774381320770-2858",
+      "query": "test",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-24T19:42:00.770Z"
+    },
+    {
+      "id": "s-1774381321393-3107",
+      "query": "test",
+      "normalizedQuery": "test",
+      "resultCount": 5,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "62a60b681ff3da9189d08de8",
+      "reformulatesSearchId": "s-1774380978634-4111",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-24T19:42:01Z"
+    },
+    {
+      "id": "s-1774381322889-5492",
+      "query": "test",
+      "normalizedQuery": "test",
+      "resultCount": 5,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "6379e5d57dbbc2eafa7e3b1f",
+      "reformulatesSearchId": "s-1774380978634-4111",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-24T19:42:02Z"
+    },
+    {
+      "id": "s-1774381323465-7874",
+      "query": "api documentation",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-24T19:42:03.465Z"
+    },
+    {
+      "id": "s-1774381323604-4465",
+      "query": "api documentation",
+      "normalizedQuery": "api documentation",
+      "resultCount": 13,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "1aa564492247a3653b07276a",
+      "reformulatesSearchId": "s-1774381322889-5492",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-24T19:42:03Z"
+    },
+    {
+      "id": "s-1774381336341-3189",
+      "query": "api documentation",
+      "normalizedQuery": "api documentation",
+      "resultCount": 13,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "4f691f2591c98a7f837fcd73",
+      "reformulatesSearchId": "s-1774381322889-5492",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-24T19:42:16Z"
+    },
+    {
+      "id": "s-1774381348181-1951",
+      "query": "contract-test",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-24T19:42:28.181Z"
+    },
+    {
+      "id": "s-1774381348314-1542",
+      "query": "contract-test",
+      "normalizedQuery": "contract-test",
+      "resultCount": 2,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "bb2174a1cae49aa7084db7f6",
+      "reformulatesSearchId": "s-1774381336341-3189",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-24T19:42:28Z"
+    },
+    {
+      "id": "s-1774381360043-5550",
+      "query": "test",
+      "normalizedQuery": "test",
+      "resultCount": 5,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "091fa291e4e666ee6ba008a8",
+      "reformulatesSearchId": "s-1774381348314-1542",
+      "reformulationType": "low-results-refinement",
+      "at": "2026-03-24T19:42:40Z"
+    },
+    {
+      "id": "s-1774381361575-6335",
+      "query": "test",
+      "normalizedQuery": "test",
+      "resultCount": 5,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "869014ff18a4e95a840bc7be",
+      "reformulatesSearchId": "s-1774381348314-1542",
+      "reformulationType": "low-results-refinement",
+      "at": "2026-03-24T19:42:41Z"
+    },
+    {
+      "id": "s-1774381362274-3828",
+      "query": "api documentation",
+      "normalizedQuery": "api documentation",
+      "resultCount": 13,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "149991194409d0a43dac4c77",
+      "reformulatesSearchId": "s-1774381361575-6335",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-24T19:42:42Z"
+    },
+    {
+      "id": "s-1774381363001-2902",
+      "query": "api documentation",
+      "normalizedQuery": "api documentation",
+      "resultCount": 13,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "49b71a3d780fbdb20f776b0f",
+      "reformulatesSearchId": "s-1774381361575-6335",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-24T19:42:42Z"
+    },
+    {
+      "id": "s-1774381363786-4329",
+      "query": "contract-test",
+      "normalizedQuery": "contract-test",
+      "resultCount": 2,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "eb33b869937e147c925795a6",
+      "reformulatesSearchId": "s-1774381363001-2902",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-24T19:42:43Z"
     }
   ],
   "pageViews": [
@@ -6142,6 +6527,286 @@
       "ip": "127.0.0.1",
       "userAgent": "node",
       "at": "2026-03-23T19:03:43Z"
+    },
+    {
+      "id": "p-1774378327020-5214",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T18:52:07.020Z"
+    },
+    {
+      "id": "p-1774378329658-8415",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T18:52:09Z"
+    },
+    {
+      "id": "p-1774378338064-8772",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T18:52:18.065Z"
+    },
+    {
+      "id": "p-1774378338579-3880",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T18:52:18Z"
+    },
+    {
+      "id": "p-1774378339401-7767",
+      "page": "critical-parity-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T18:52:19.401Z"
+    },
+    {
+      "id": "p-1774378339414-3585",
+      "page": "critical-parity-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T18:52:19Z"
+    },
+    {
+      "id": "p-1774378427172-8453",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T18:53:47.172Z"
+    },
+    {
+      "id": "p-1774378427697-6313",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T18:53:47Z"
+    },
+    {
+      "id": "p-1774378428595-4258",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T18:53:48.595Z"
+    },
+    {
+      "id": "p-1774378429132-5459",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T18:53:49Z"
+    },
+    {
+      "id": "p-1774378429904-9450",
+      "page": "critical-parity-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T18:53:49.904Z"
+    },
+    {
+      "id": "p-1774378429915-8662",
+      "page": "critical-parity-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T18:53:49Z"
+    },
+    {
+      "id": "p-1774378434908-8954",
+      "page": "critical-parity-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T18:53:54.908Z"
+    },
+    {
+      "id": "p-1774378434932-8630",
+      "page": "critical-parity-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T18:53:54Z"
+    },
+    {
+      "id": "p-1774380859710-2074",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T19:34:19.710Z"
+    },
+    {
+      "id": "p-1774380895705-5228",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T19:34:55.705Z"
+    },
+    {
+      "id": "p-1774380955417-1738",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T19:35:55.417Z"
+    },
+    {
+      "id": "p-1774380956044-2597",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T19:35:56Z"
+    },
+    {
+      "id": "p-1774380960674-3573",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T19:36:00.674Z"
+    },
+    {
+      "id": "p-1774380961331-7468",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T19:36:01Z"
+    },
+    {
+      "id": "p-1774380962237-1509",
+      "page": "critical-parity-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T19:36:02.237Z"
+    },
+    {
+      "id": "p-1774380962248-5645",
+      "page": "critical-parity-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T19:36:02Z"
+    },
+    {
+      "id": "p-1774380978690-4332",
+      "page": "critical-parity-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T19:36:18.690Z"
+    },
+    {
+      "id": "p-1774380978702-6420",
+      "page": "critical-parity-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T19:36:18Z"
+    },
+    {
+      "id": "p-1774381320783-5915",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T19:42:00.783Z"
+    },
+    {
+      "id": "p-1774381321280-2894",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T19:42:01Z"
+    },
+    {
+      "id": "p-1774381322242-3589",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T19:42:02.242Z"
+    },
+    {
+      "id": "p-1774381322797-8895",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T19:42:02Z"
+    },
+    {
+      "id": "p-1774381323670-9730",
+      "page": "critical-parity-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T19:42:03.670Z"
+    },
+    {
+      "id": "p-1774381323686-5906",
+      "page": "critical-parity-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T19:42:03Z"
+    },
+    {
+      "id": "p-1774381336400-1295",
+      "page": "critical-parity-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T19:42:16.400Z"
+    },
+    {
+      "id": "p-1774381336412-9877",
+      "page": "critical-parity-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T19:42:16Z"
+    },
+    {
+      "id": "p-1774381359357-2257",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T19:42:39.357Z"
+    },
+    {
+      "id": "p-1774381359939-4895",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T19:42:39Z"
+    },
+    {
+      "id": "p-1774381360936-5932",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T19:42:40.936Z"
+    },
+    {
+      "id": "p-1774381361474-5968",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T19:42:41Z"
+    },
+    {
+      "id": "p-1774381362328-8080",
+      "page": "critical-parity-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T19:42:42.328Z"
+    },
+    {
+      "id": "p-1774381362339-1288",
+      "page": "critical-parity-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T19:42:42Z"
+    },
+    {
+      "id": "p-1774381363060-2221",
+      "page": "critical-parity-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T19:42:43.060Z"
+    },
+    {
+      "id": "p-1774381363073-5229",
+      "page": "critical-parity-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-24T19:42:43Z"
     }
   ],
   "resultClicks": []
