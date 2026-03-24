@@ -2651,7 +2651,7 @@
     },
     {
       "id": "s-1774286546993-2531",
-      "query": "\u0219tiri ai",
+      "query": "știri ai",
       "resultCount": 99,
       "ip": "::1",
       "at": "2026-03-23T17:22:26.993Z"
@@ -6807,6 +6807,13 @@
       "ip": "127.0.0.1",
       "userAgent": "node",
       "at": "2026-03-24T19:42:43Z"
+    },
+    {
+      "id": "p-1774381445793-9402",
+      "page": "index.html",
+      "ip": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+      "at": "2026-03-24T19:44:05.793Z"
     }
   ],
   "resultClicks": []
