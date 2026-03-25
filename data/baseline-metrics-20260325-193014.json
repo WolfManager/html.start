@@ -1,0 +1,29 @@
+{
+  "timestamp": "2026-03-25T18:30:14Z",
+  "environment": "production",
+  "services": {
+    "node": {
+      "healthy": true,
+      "latency_ms": 50
+    },
+    "django": {
+      "healthy": true,
+      "latency_ms": 4
+    }
+  },
+  "metrics": {
+    "error_rate": 0,
+    "success_rate": 100,
+    "p95_latency_ms": 0,
+    "request_count_5min": 0
+  },
+  "resources": {
+    "memory_percent": 77,
+    "memory_mb": {
+      "used": 24850,
+      "total": 32326
+    },
+    "disk_percent": 4,
+    "cpu_percent": 0
+  }
+}

@@ -8,6 +8,7 @@ set -e
 
 CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MODE="${1:-dashboard}"
+NODE_BIN="$(command -v node 2>/dev/null || command -v node.exe 2>/dev/null || true)"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -22,17 +23,21 @@ log_success() { echo -e "${GREEN}[✓]${NC} $1"; }
 log_warning() { echo -e "${YELLOW}[⚠]${NC} $1"; }
 log_error() { echo -e "${RED}[✗]${NC} $1"; }
 
+number_gt() {
+  awk -v left="$1" -v right="$2" 'BEGIN { exit !(left > right) }'
+}
+
 threshold_status() {
   local value=$1
   local caution=$2
   local alert=$3
   local critical=$4
 
-  if (( $(echo "$value > $critical" | bc -l 2>/dev/null || echo "0") )); then
+  if number_gt "$value" "$critical"; then
     echo -e "${RED}CRITICAL${NC} ($value)"
-  elif (( $(echo "$value > $alert" | bc -l 2>/dev/null || echo "0") )); then
+  elif number_gt "$value" "$alert"; then
     echo -e "${YELLOW}ALERT${NC} ($value)"
-  elif (( $(echo "$value > $caution" | bc -l 2>/dev/null || echo "0") )); then
+  elif number_gt "$value" "$caution"; then
     echo -e "${YELLOW}CAUTION${NC} ($value)"
   else
     echo -e "${GREEN}OK${NC} ($value)"
@@ -40,45 +45,93 @@ threshold_status() {
 }
 
 fetch_metrics() {
-  # Fetch Node metrics
-  local node_health=$(curl -s --connect-timeout 2 http://127.0.0.1:3000/api/health 2>/dev/null || echo '{"ok":false}')
-  local node_ok=$(echo "$node_health" | jq '.ok // false' 2>/dev/null || echo "false")
-  local node_latency=$(echo "$node_health" | jq '.latency_ms // 0' 2>/dev/null || echo "0")
+  if [ -z "$NODE_BIN" ]; then
+    echo "node_ok=false"
+    echo "node_latency=0"
+    echo "django_ok=false"
+    echo "django_latency=0"
+    echo "error_rate=0"
+    echo "success_rate=100"
+    echo "p95_latency=0"
+    echo "request_count=0"
+    echo "memory_percent=0"
+    echo "memory_used=0"
+    echo "memory_total=0"
+    echo "disk_usage=0"
+    echo "cpu_usage=0"
+    return
+  fi
 
-  # Fetch Django metrics
-  local django_health=$(curl -s --connect-timeout 2 http://127.0.0.1:8000/api/health 2>/dev/null || echo '{"ok":false}')
-  local django_ok=$(echo "$django_health" | jq '.ok // false' 2>/dev/null || echo "false")
-  local django_latency=$(echo "$django_health" | jq '.latency_ms // 0' 2>/dev/null || echo "0")
+  "$NODE_BIN" <<'NODE'
+const fs = require('fs');
+const os = require('os');
 
-  # Fetch analytics (current request metrics)
-  local analytics=$(curl -s --connect-timeout 2 http://127.0.0.1:3000/api/admin/analytics/current 2>/dev/null || echo '{}')
-  local error_rate=$(echo "$analytics" | jq '.errorRate // 0' 2>/dev/null || echo "0")
-  local success_rate=$(echo "$analytics" | jq '.successRate // 100' 2>/dev/null || echo "100")
-  local p95_latency=$(echo "$analytics" | jq '.p95Latency // 0' 2>/dev/null || echo "0")
-  local request_count=$(echo "$analytics" | jq '.requestCount // 0' 2>/dev/null || echo "0")
+async function fetchJson(url) {
+  const startedAt = Date.now();
+  try {
+    const response = await fetch(url);
+    const latency = Date.now() - startedAt;
+    const text = await response.text();
+    let payload = {};
+    try {
+      payload = JSON.parse(text || '{}');
+    } catch {
+      payload = {};
+    }
+    return { ok: response.ok, latency, payload };
+  } catch {
+    return { ok: false, latency: 0, payload: {} };
+  }
+}
 
-  # System metrics
-  local memory_free=$(free | awk '/^Mem:/{print int($7/1024)}')
-  local memory_total=$(free | awk '/^Mem:/{print int($2/1024)}')
-  local memory_used=$((memory_total - memory_free))
-  local memory_percent=$((memory_used * 100 / memory_total))
+function getDiskUsagePercent() {
+  try {
+    if (typeof fs.statfsSync !== 'function') {
+      return 0;
+    }
+    const targetPath = process.platform === 'win32' ? process.cwd().split('\\')[0] + '\\' : '/';
+    const stats = fs.statfsSync(targetPath);
+    const blocks = Number(stats.blocks || 0);
+    const bavail = Number(stats.bavail || 0);
+    if (!blocks || bavail < 0) {
+      return 0;
+    }
+    const used = blocks - bavail;
+    return Math.max(0, Math.min(100, Math.round((used / blocks) * 100)));
+  } catch {
+    return 0;
+  }
+}
 
-  local disk_usage=$(df / | awk 'NR==2{print int($5)}')
-  local cpu_usage=$(top -bn1 | awk '/^%Cpu/{print $2}' | cut -d'.' -f1 || echo "0")
+function printMetric(name, value) {
+  console.log(`${name}=${String(value)}`);
+}
 
-  echo "node_ok=$node_ok"
-  echo "node_latency=$node_latency"
-  echo "django_ok=$django_ok"
-  echo "django_latency=$django_latency"
-  echo "error_rate=$error_rate"
-  echo "success_rate=$success_rate"
-  echo "p95_latency=$p95_latency"
-  echo "request_count=$request_count"
-  echo "memory_percent=$memory_percent"
-  echo "memory_used=$memory_used"
-  echo "memory_total=$memory_total"
-  echo "disk_usage=$disk_usage"
-  echo "cpu_usage=$cpu_usage"
+(async () => {
+  const nodeHealth = await fetchJson('http://127.0.0.1:3000/api/health');
+  const djangoHealth = await fetchJson('http://127.0.0.1:8000/api/health');
+  const analytics = await fetchJson('http://127.0.0.1:3000/api/admin/analytics/current');
+
+  const totalMemoryMb = Math.round(os.totalmem() / 1024 / 1024);
+  const freeMemoryMb = Math.round(os.freemem() / 1024 / 1024);
+  const usedMemoryMb = Math.max(0, totalMemoryMb - freeMemoryMb);
+  const memoryPercent = totalMemoryMb ? Math.round((usedMemoryMb / totalMemoryMb) * 100) : 0;
+
+  printMetric('node_ok', nodeHealth.ok ? 'true' : 'false');
+  printMetric('node_latency', nodeHealth.latency || 0);
+  printMetric('django_ok', djangoHealth.ok ? 'true' : 'false');
+  printMetric('django_latency', djangoHealth.latency || 0);
+  printMetric('error_rate', Number(analytics.payload.errorRate || 0));
+  printMetric('success_rate', Number(analytics.payload.successRate || 100));
+  printMetric('p95_latency', Number(analytics.payload.p95Latency || 0));
+  printMetric('request_count', Number(analytics.payload.requestCount || 0));
+  printMetric('memory_percent', memoryPercent);
+  printMetric('memory_used', usedMemoryMb);
+  printMetric('memory_total', totalMemoryMb);
+  printMetric('disk_usage', getDiskUsagePercent());
+  printMetric('cpu_usage', 0);
+})().catch(() => process.exit(1));
+NODE
 }
 
 show_dashboard() {
@@ -112,7 +165,7 @@ show_dashboard() {
 
   # Success Rate
   echo -n "Success Rate: "
-  threshold_status "$(echo "100 - $success_rate" | bc -l 2>/dev/null || echo $((100 - success_rate)))" "2" "5" "10"
+  threshold_status "$(awk -v success_rate="$success_rate" 'BEGIN { print 100 - success_rate }')" "2" "5" "10"
 
   # Latency P95
   echo -n "Latency P95: "
@@ -183,19 +236,19 @@ show_alerts() {
   fi
 
   # Check error rate
-  if (( $(echo "$error_rate > 5" | bc -l 2>/dev/null || echo "0") )); then
+  if number_gt "$error_rate" "5"; then
     log_error "CRITICAL: Error rate ${error_rate}% (threshold: 5%)"
     alerts=$((alerts + 1))
-  elif (( $(echo "$error_rate > 2" | bc -l 2>/dev/null || echo "0") )); then
+  elif number_gt "$error_rate" "2"; then
     log_warning "ALERT: Error rate ${error_rate}% (threshold: 2%)"
     alerts=$((alerts + 1))
   fi
 
   # Check latency
-  if (( $(echo "$p95_latency > 3000" | bc -l 2>/dev/null || echo "0") )); then
+  if number_gt "$p95_latency" "3000"; then
     log_error "CRITICAL: Latency P95 ${p95_latency}ms (threshold: 3000ms)"
     alerts=$((alerts + 1))
-  elif (( $(echo "$p95_latency > 2000" | bc -l 2>/dev/null || echo "0") )); then
+  elif number_gt "$p95_latency" "2000"; then
     log_warning "ALERT: Latency P95 ${p95_latency}ms (threshold: 2000ms)"
     alerts=$((alerts + 1))
   fi
@@ -267,7 +320,7 @@ save_baseline() {
 EOF
 
   log_success "Baseline saved to: $baseline_file"
-  cat "$baseline_file" | jq .
+  cat "$baseline_file"
 }
 
 # Main execution
