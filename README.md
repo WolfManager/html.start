@@ -61,9 +61,10 @@ MAGNETO now runs as a custom search engine with:
    - `ADMIN_USER=your-user`
    - `ADMIN_PASSWORD=your-strong-password`
    - `JWT_SECRET=your-strong-random-secret`
-  - `DJANGO_SECRET_KEY=your-strong-random-secret` in `backend-django/.env`
-  - never keep placeholder values like `admin`, `change-this-password`, or `change-this-secret`
-  - `.env` files are intentionally git-ignored; keep secrets only in local or deployment environment configuration
+
+- `DJANGO_SECRET_KEY=your-strong-random-secret` in `backend-django/.env`
+- never keep placeholder values like `admin`, `change-this-password`, or `change-this-secret`
+- `.env` files are intentionally git-ignored; keep secrets only in local or deployment environment configuration
 
 4. Optional tuning in `.env`:
    - login/lockout: `LOGIN_WINDOW_MINUTES`, `LOGIN_RATE_LIMIT_COUNT`, `LOCKOUT_THRESHOLD`, `LOCKOUT_MINUTES`
