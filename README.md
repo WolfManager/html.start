@@ -61,6 +61,10 @@ MAGNETO now runs as a custom search engine with:
    - `ADMIN_USER=your-user`
    - `ADMIN_PASSWORD=your-strong-password`
    - `JWT_SECRET=your-strong-random-secret`
+  - `DJANGO_SECRET_KEY=your-strong-random-secret` in `backend-django/.env`
+  - never keep placeholder values like `admin`, `change-this-password`, or `change-this-secret`
+  - `.env` files are intentionally git-ignored; keep secrets only in local or deployment environment configuration
+
 4. Optional tuning in `.env`:
    - login/lockout: `LOGIN_WINDOW_MINUTES`, `LOGIN_RATE_LIMIT_COUNT`, `LOCKOUT_THRESHOLD`, `LOCKOUT_MINUTES`
    - admin throttling: `ADMIN_WINDOW_SECONDS`, `ADMIN_RATE_LIMIT_COUNT`
@@ -89,6 +93,11 @@ After services are running, execute:
 - `node scripts/search-benchmark-romanian.js` or `npm run search:benchmark:romanian` (Romanian language search quality validation)
 - `npm run search:parity:gate` (strict semantic Node vs Django parity gate)
 - `npm run search:parity:compat` (relaxed parity profile for local debugging)
+
+Windows note:
+
+- use `npm.cmd` in PowerShell if script execution policy blocks `npm`
+- `scripts/prod-monitor.sh` is supported from Git Bash and produces the same alert/baseline output used by operations docs
 
 Gate flags:
 
@@ -140,6 +149,7 @@ Recommended next components for enterprise growth:
 - URL: `http://localhost:3000/admin.html`
 - Sign in with `ADMIN_USER` and `ADMIN_PASSWORD`
 - Admin token is stored in browser localStorage for current session flow
+- Rotate admin credentials and `JWT_SECRET` before any shared or production environment use
 - Use range filters and `Export CSV` directly from dashboard controls
 - Backup section supports:
   - `Create Backup` for manual snapshots

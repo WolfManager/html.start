@@ -210,6 +210,12 @@ This document describes the complete production deployment and operations infras
 ./scripts/prod-monitor.sh --baseline
 ```
 
+Windows operator note:
+
+- Run the monitor script from Git Bash.
+- Run Node/NPM commands from PowerShell with `npm.cmd` when `npm` is blocked by execution policy.
+- Keep `.env` and `backend-django/.env` local only; they are excluded from git and should never be committed.
+
 **Key Metrics Monitored:**
 
 - Service availability (Node, Django)
@@ -348,6 +354,12 @@ Before you deploy, ensure:
   - Monitoring
   - Backup & Rollback
   - Team Communication
+
+- [ ] **Rotate secrets before shared deployment:**
+  - `ADMIN_USER`
+  - `ADMIN_PASSWORD`
+  - `JWT_SECRET`
+  - `DJANGO_SECRET_KEY`
 
 - [ ] **Get approvals:** Ensure sign-offs from tech lead and on-call
 
