@@ -4110,6 +4110,147 @@
       "reformulatesSearchId": "s-1774381363001-2902",
       "reformulationType": "query-refinement",
       "at": "2026-03-24T19:42:43Z"
+    },
+    {
+      "id": "s-1774463130944-7432",
+      "query": "test",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-25T18:25:30.944Z"
+    },
+    {
+      "id": "s-1774463134808-8214",
+      "query": "test",
+      "normalizedQuery": "test",
+      "resultCount": 5,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "c28958e7ef492b98da00c046",
+      "reformulatesSearchId": null,
+      "reformulationType": null,
+      "at": "2026-03-25T18:25:34Z"
+    },
+    {
+      "id": "s-1774463140727-7836",
+      "query": "test",
+      "normalizedQuery": "test",
+      "resultCount": 5,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "8af8e91301d6f956b2e6b960",
+      "reformulatesSearchId": null,
+      "reformulationType": null,
+      "at": "2026-03-25T18:25:40Z"
+    },
+    {
+      "id": "s-1774463141310-6363",
+      "query": "api documentation",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-25T18:25:41.310Z"
+    },
+    {
+      "id": "s-1774463141421-2274",
+      "query": "api documentation",
+      "normalizedQuery": "api documentation",
+      "resultCount": 13,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "d8c9c2cb0178b78448a3e0e1",
+      "reformulatesSearchId": "s-1774463140727-7836",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-25T18:25:41Z"
+    },
+    {
+      "id": "s-1774463153451-4992",
+      "query": "api documentation",
+      "normalizedQuery": "api documentation",
+      "resultCount": 13,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "4b44c456dd53ae39758ce0f0",
+      "reformulatesSearchId": "s-1774463140727-7836",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-25T18:25:53Z"
+    },
+    {
+      "id": "s-1774463154112-6299",
+      "query": "contract-test",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-25T18:25:54.113Z"
+    },
+    {
+      "id": "s-1774463157166-3116",
+      "query": "contract-test",
+      "normalizedQuery": "contract-test",
+      "resultCount": 2,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "82d55cb112027aa5027a0ddb",
+      "reformulatesSearchId": "s-1774463153451-4992",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-25T18:25:57Z"
+    },
+    {
+      "id": "s-1774463309748-4620",
+      "query": "test",
+      "normalizedQuery": "test",
+      "resultCount": 5,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "f1e404f0b93fa79bb72a3e70",
+      "reformulatesSearchId": "s-1774463157166-3116",
+      "reformulationType": "low-results-refinement",
+      "at": "2026-03-25T18:28:29Z"
+    },
+    {
+      "id": "s-1774463311291-7515",
+      "query": "test",
+      "normalizedQuery": "test",
+      "resultCount": 5,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "0b5f825d1f57de30f3fd6a8e",
+      "reformulatesSearchId": "s-1774463157166-3116",
+      "reformulationType": "low-results-refinement",
+      "at": "2026-03-25T18:28:31Z"
+    },
+    {
+      "id": "s-1774463311947-4783",
+      "query": "api documentation",
+      "normalizedQuery": "api documentation",
+      "resultCount": 13,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "050f1a2b58c41da7c0798fcc",
+      "reformulatesSearchId": "s-1774463311291-7515",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-25T18:28:31Z"
+    },
+    {
+      "id": "s-1774463312652-1946",
+      "query": "api documentation",
+      "normalizedQuery": "api documentation",
+      "resultCount": 13,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "e6e4c92394921275031f4ad8",
+      "reformulatesSearchId": "s-1774463311291-7515",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-25T18:28:32Z"
+    },
+    {
+      "id": "s-1774463313401-7130",
+      "query": "contract-test",
+      "normalizedQuery": "contract-test",
+      "resultCount": 2,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "0bc1295ab6a952348c8436ed",
+      "reformulatesSearchId": "s-1774463312652-1946",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-25T18:28:33Z"
     }
   ],
   "pageViews": [
@@ -6814,6 +6955,132 @@
       "ip": "::1",
       "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
       "at": "2026-03-24T19:44:05.793Z"
+    },
+    {
+      "id": "p-1774463008806-7801",
+      "page": "index.html",
+      "ip": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+      "at": "2026-03-25T18:23:28.807Z"
+    },
+    {
+      "id": "p-1774463130955-731",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-25T18:25:30.955Z"
+    },
+    {
+      "id": "p-1774463134632-6654",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-25T18:25:34Z"
+    },
+    {
+      "id": "p-1774463140086-4942",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-25T18:25:40.086Z"
+    },
+    {
+      "id": "p-1774463140626-3414",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-25T18:25:40Z"
+    },
+    {
+      "id": "p-1774463141476-9831",
+      "page": "critical-parity-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-25T18:25:41.476Z"
+    },
+    {
+      "id": "p-1774463141487-2597",
+      "page": "critical-parity-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-25T18:25:41Z"
+    },
+    {
+      "id": "p-1774463153501-6211",
+      "page": "critical-parity-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-25T18:25:53.501Z"
+    },
+    {
+      "id": "p-1774463153516-1986",
+      "page": "critical-parity-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-25T18:25:53Z"
+    },
+    {
+      "id": "p-1774463309070-2128",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-25T18:28:29.070Z"
+    },
+    {
+      "id": "p-1774463309653-2976",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-25T18:28:29Z"
+    },
+    {
+      "id": "p-1774463310650-9156",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-25T18:28:30.650Z"
+    },
+    {
+      "id": "p-1774463311193-2111",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-25T18:28:31Z"
+    },
+    {
+      "id": "p-1774463312002-3507",
+      "page": "critical-parity-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-25T18:28:32.002Z"
+    },
+    {
+      "id": "p-1774463312014-2577",
+      "page": "critical-parity-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-25T18:28:32Z"
+    },
+    {
+      "id": "p-1774463312714-7750",
+      "page": "critical-parity-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-25T18:28:32.714Z"
+    },
+    {
+      "id": "p-1774463312728-8670",
+      "page": "critical-parity-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-25T18:28:32Z"
+    },
+    {
+      "id": "p-1774465040051-4175",
+      "page": "index.html",
+      "ip": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+      "at": "2026-03-25T18:57:20.051Z"
     }
   ],
   "resultClicks": []
