@@ -2651,7 +2651,7 @@
     },
     {
       "id": "s-1774286546993-2531",
-      "query": "știri ai",
+      "query": "\u0219tiri ai",
       "resultCount": 99,
       "ip": "::1",
       "at": "2026-03-23T17:22:26.993Z"
@@ -4251,6 +4251,218 @@
       "reformulatesSearchId": "s-1774463312652-1946",
       "reformulationType": "query-refinement",
       "at": "2026-03-25T18:28:33Z"
+    },
+    {
+      "id": "s-1774637917728-5379",
+      "query": "test",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-27T18:58:37.728Z"
+    },
+    {
+      "id": "s-1774637918404-4812",
+      "query": "test",
+      "normalizedQuery": "test",
+      "resultCount": 5,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "8f697cafc5527cf4e8e5858f",
+      "reformulatesSearchId": null,
+      "reformulationType": null,
+      "at": "2026-03-27T18:58:38Z"
+    },
+    {
+      "id": "s-1774637924685-6609",
+      "query": "test",
+      "normalizedQuery": "test",
+      "resultCount": 5,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "dcaff5c9201d1a5017793f91",
+      "reformulatesSearchId": null,
+      "reformulationType": null,
+      "at": "2026-03-27T18:58:44Z"
+    },
+    {
+      "id": "s-1774637926124-6932",
+      "query": "test",
+      "normalizedQuery": "test",
+      "resultCount": 5,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "3713619dcf98b67d12b342ed",
+      "reformulatesSearchId": null,
+      "reformulationType": null,
+      "at": "2026-03-27T18:58:46Z"
+    },
+    {
+      "id": "s-1774637926707-500",
+      "query": "api documentation",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-27T18:58:46.707Z"
+    },
+    {
+      "id": "s-1774637926807-2554",
+      "query": "api documentation",
+      "normalizedQuery": "api documentation",
+      "resultCount": 13,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "cab8725b2272b1c940cd1498",
+      "reformulatesSearchId": "s-1774637926124-6932",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-27T18:58:46Z"
+    },
+    {
+      "id": "s-1774637927492-2018",
+      "query": "api documentation",
+      "normalizedQuery": "api documentation",
+      "resultCount": 13,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "b7590bda1e64bfe55367e0e9",
+      "reformulatesSearchId": "s-1774637926124-6932",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-27T18:58:47Z"
+    },
+    {
+      "id": "s-1774637928140-3633",
+      "query": "contract-test",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-27T18:58:48.140Z"
+    },
+    {
+      "id": "s-1774637928266-9355",
+      "query": "contract-test",
+      "normalizedQuery": "contract-test",
+      "resultCount": 2,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "34032c3d42deff3923287d24",
+      "reformulatesSearchId": "s-1774637927492-2018",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-27T18:58:48Z"
+    },
+    {
+      "id": "s-1774638198231-5540",
+      "query": "python tutorial",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-27T19:03:18.231Z"
+    },
+    {
+      "id": "s-1774638198353-4261",
+      "query": "python tutorial",
+      "normalizedQuery": "python tutorial",
+      "resultCount": 17,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "b35932d7e1e0f27491158366",
+      "reformulatesSearchId": "s-1774637928266-9355",
+      "reformulationType": "low-results-refinement",
+      "at": "2026-03-27T19:03:18Z"
+    },
+    {
+      "id": "s-1774638655400-2562",
+      "query": "test",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-27T19:10:55.400Z"
+    },
+    {
+      "id": "s-1774638656011-2698",
+      "query": "test",
+      "normalizedQuery": "test",
+      "resultCount": 5,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "63a2af00befd3c602c0c2e26",
+      "reformulatesSearchId": "s-1774638198353-4261",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-27T19:10:56Z"
+    },
+    {
+      "id": "s-1774638657468-5242",
+      "query": "test",
+      "normalizedQuery": "test",
+      "resultCount": 5,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "8b61667089bcc13c93edee34",
+      "reformulatesSearchId": "s-1774638198353-4261",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-27T19:10:57Z"
+    },
+    {
+      "id": "s-1774638658028-4638",
+      "query": "api documentation",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-27T19:10:58.028Z"
+    },
+    {
+      "id": "s-1774638658141-7442",
+      "query": "api documentation",
+      "normalizedQuery": "api documentation",
+      "resultCount": 13,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "fb2bebac0b2fc41aa419b897",
+      "reformulatesSearchId": "s-1774638657468-5242",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-27T19:10:58Z"
+    },
+    {
+      "id": "s-1774638658825-4499",
+      "query": "api documentation",
+      "normalizedQuery": "api documentation",
+      "resultCount": 13,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "963a4a8c65be966e439a4447",
+      "reformulatesSearchId": "s-1774638657468-5242",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-27T19:10:58Z"
+    },
+    {
+      "id": "s-1774638659411-8666",
+      "query": "contract-test",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-27T19:10:59.411Z"
+    },
+    {
+      "id": "s-1774638659528-6483",
+      "query": "contract-test",
+      "normalizedQuery": "contract-test",
+      "resultCount": 2,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "c5cfc361c8fe179d681d02e7",
+      "reformulatesSearchId": "s-1774638658825-4499",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-27T19:10:59Z"
+    },
+    {
+      "id": "s-1774638839624-3390",
+      "query": "python tutorial",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-27T19:13:59.624Z"
+    },
+    {
+      "id": "s-1774638839796-7524",
+      "query": "python tutorial",
+      "normalizedQuery": "python tutorial",
+      "resultCount": 17,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "d9068f430bfa5c5a989f79c5",
+      "reformulatesSearchId": "s-1774638659528-6483",
+      "reformulationType": "low-results-refinement",
+      "at": "2026-03-27T19:13:59Z"
     }
   ],
   "pageViews": [
@@ -7081,6 +7293,132 @@
       "ip": "::1",
       "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
       "at": "2026-03-25T18:57:20.051Z"
+    },
+    {
+      "id": "p-1774637917659-7191",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-27T18:58:37.659Z"
+    },
+    {
+      "id": "p-1774637918258-9046",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-27T18:58:38Z"
+    },
+    {
+      "id": "p-1774637924045-5373",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-27T18:58:44.045Z"
+    },
+    {
+      "id": "p-1774637924595-9058",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-27T18:58:44Z"
+    },
+    {
+      "id": "p-1774637925514-5852",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-27T18:58:45.514Z"
+    },
+    {
+      "id": "p-1774637926041-5306",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-27T18:58:46Z"
+    },
+    {
+      "id": "p-1774637926861-6385",
+      "page": "critical-parity-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-27T18:58:46.861Z"
+    },
+    {
+      "id": "p-1774637926876-7356",
+      "page": "critical-parity-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-27T18:58:46Z"
+    },
+    {
+      "id": "p-1774637927538-8578",
+      "page": "critical-parity-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-27T18:58:47.538Z"
+    },
+    {
+      "id": "p-1774637927549-9732",
+      "page": "critical-parity-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-27T18:58:47Z"
+    },
+    {
+      "id": "p-1774638655413-3961",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-27T19:10:55.413Z"
+    },
+    {
+      "id": "p-1774638655909-5209",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-27T19:10:55Z"
+    },
+    {
+      "id": "p-1774638656845-1192",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-27T19:10:56.845Z"
+    },
+    {
+      "id": "p-1774638657366-8773",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-27T19:10:57Z"
+    },
+    {
+      "id": "p-1774638658190-6636",
+      "page": "critical-parity-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-27T19:10:58.190Z"
+    },
+    {
+      "id": "p-1774638658203-5190",
+      "page": "critical-parity-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-27T19:10:58Z"
+    },
+    {
+      "id": "p-1774638658873-4062",
+      "page": "critical-parity-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-27T19:10:58.873Z"
+    },
+    {
+      "id": "p-1774638658885-1765",
+      "page": "critical-parity-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-27T19:10:58Z"
     }
   ],
   "resultClicks": []

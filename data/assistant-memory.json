@@ -7185,6 +7185,226 @@
       "helper": "general",
       "model": "gpt-4o-mini",
       "at": "2026-03-25T18:28:33.285Z"
+    },
+    {
+      "id": "a-1774637917743-6538",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Pot sa te ajut mai bine daca imi spui rezultatul dorit: explicatie, pasi practici, comparatie sau rezumat.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-27T18:58:37.743Z"
+    },
+    {
+      "id": "a-1774637917754-9131",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Pot sa te ajut mai bine daca imi spui rezultatul dorit: explicatie, pasi practici, comparatie sau rezumat.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-27T18:58:37.754Z"
+    },
+    {
+      "id": "a-1774637918261",
+      "at": "2026-03-27T18:58:38Z",
+      "ip": "127.0.0.1",
+      "message": "health check",
+      "reply": "I can help with 'health check'. If you want higher-quality AI responses, configure a provider key.",
+      "provider": "local-fallback",
+      "model": "local-fallback",
+      "helper": "general"
+    },
+    {
+      "id": "a-1774637924056-9693",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Pot sa te ajut mai bine daca imi spui rezultatul dorit: explicatie, pasi practici, comparatie sau rezumat.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-27T18:58:44.056Z"
+    },
+    {
+      "id": "a-1774637924068-1749",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Pot sa te ajut mai bine daca imi spui rezultatul dorit: explicatie, pasi practici, comparatie sau rezumat.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-27T18:58:44.068Z"
+    },
+    {
+      "id": "a-1774637925517-4036",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Pot sa te ajut mai bine daca imi spui rezultatul dorit: explicatie, pasi practici, comparatie sau rezumat.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-27T18:58:45.517Z"
+    },
+    {
+      "id": "a-1774637925531-2387",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Pot sa te ajut mai bine daca imi spui rezultatul dorit: explicatie, pasi practici, comparatie sau rezumat.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-27T18:58:45.531Z"
+    },
+    {
+      "id": "a-1774637926881-4261",
+      "ip": "::ffff:127.0.0.1",
+      "message": "hello",
+      "reply": "Ask a concrete question and I can narrow it down quickly.",
+      "provider": "local-hybrid",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-27T18:58:46.881Z"
+    },
+    {
+      "id": "a-1774637926894",
+      "at": "2026-03-27T18:58:46Z",
+      "ip": "127.0.0.1",
+      "message": "hello",
+      "reply": "I can help with 'hello'. If you want higher-quality AI responses, configure a provider key.",
+      "provider": "local-fallback",
+      "model": "local-fallback",
+      "helper": "general"
+    },
+    {
+      "id": "a-1774637927553-6696",
+      "ip": "::ffff:127.0.0.1",
+      "message": "hello",
+      "reply": "Ask a concrete question and I can narrow it down quickly.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-27T18:58:47.553Z"
+    },
+    {
+      "id": "a-1774637928144-1890",
+      "ip": "::ffff:127.0.0.1",
+      "message": "contract-test",
+      "reply": "Pot sa te ajut mai bine daca imi spui rezultatul dorit: explicatie, pasi practici, comparatie sau rezumat.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-27T18:58:48.144Z"
+    },
+    {
+      "id": "a-1774637928291",
+      "at": "2026-03-27T18:58:48Z",
+      "ip": "127.0.0.1",
+      "message": "contract-test",
+      "reply": "I can help with 'contract-test'. If you want higher-quality AI responses, configure a provider key.",
+      "provider": "local-fallback",
+      "model": "local-fallback",
+      "helper": "general"
+    },
+    {
+      "id": "a-1774637951846-6497",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Pot sa te ajut mai bine daca imi spui rezultatul dorit: explicatie, pasi practici, comparatie sau rezumat.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-27T18:59:11.846Z"
+    },
+    {
+      "id": "a-1774638198387-7160",
+      "ip": "::ffff:127.0.0.1",
+      "message": "smoke test",
+      "reply": "Pot sa te ajut mai bine daca imi spui rezultatul dorit: explicatie, pasi practici, comparatie sau rezumat.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-27T19:03:18.387Z"
+    },
+    {
+      "id": "a-1774638655416-503",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Pot sa te ajut mai bine daca imi spui rezultatul dorit: explicatie, pasi practici, comparatie sau rezumat.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-27T19:10:55.416Z"
+    },
+    {
+      "id": "a-1774638655428-2986",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Pot sa te ajut mai bine daca imi spui rezultatul dorit: explicatie, pasi practici, comparatie sau rezumat.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-27T19:10:55.428Z"
+    },
+    {
+      "id": "a-1774638656850-7042",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Pot sa te ajut mai bine daca imi spui rezultatul dorit: explicatie, pasi practici, comparatie sau rezumat.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-27T19:10:56.850Z"
+    },
+    {
+      "id": "a-1774638656862-1161",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Pot sa te ajut mai bine daca imi spui rezultatul dorit: explicatie, pasi practici, comparatie sau rezumat.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-27T19:10:56.862Z"
+    },
+    {
+      "id": "a-1774638658209-9185",
+      "ip": "::ffff:127.0.0.1",
+      "message": "hello",
+      "reply": "Ask a concrete question and I can narrow it down quickly.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-27T19:10:58.209Z"
+    },
+    {
+      "id": "a-1774638658889-8731",
+      "ip": "::ffff:127.0.0.1",
+      "message": "hello",
+      "reply": "Ask a concrete question and I can narrow it down quickly.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-27T19:10:58.889Z"
+    },
+    {
+      "id": "a-1774638659416-4115",
+      "ip": "::ffff:127.0.0.1",
+      "message": "contract-test",
+      "reply": "Pot sa te ajut mai bine daca imi spui rezultatul dorit: explicatie, pasi practici, comparatie sau rezumat.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-27T19:10:59.416Z"
+    },
+    {
+      "id": "a-1774639006703-1475",
+      "ip": "::ffff:127.0.0.1",
+      "message": "smoke stage c",
+      "reply": "Pot sa te ajut mai bine daca imi spui rezultatul dorit: explicatie, pasi practici, comparatie sau rezumat.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-27T19:16:46.703Z"
     }
   ]
 }
