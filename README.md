@@ -169,10 +169,36 @@ Recommended next components for enterprise growth:
 - Endpoint: `POST /api/assistant/chat`
 - Admin status endpoint: `GET /api/admin/assistant-status` (requires admin auth)
 - Frontend assistant uses this endpoint automatically.
+
+### Operating Mode
+
+**Current operating mode: Local Fallback (no external AI providers configured)**
+
+The assistant runs entirely on local rule-based logic (`provider: fallback`, `model: rule-based`).
+No calls are made to external AI APIs. The system is fully operational in this mode.
+
+**Limitations in fallback mode:**
+
+- Responses are rule-based and do not use a language model.
+- Complex open-ended or conversational queries receive simplified answers.
+- No cost incurred from AI provider APIs.
+
+**To enable full AI mode:**
+
+1. Add provider key(s) to `.env` (see variables below).
+2. Set `AI_PRIMARY_PROVIDER` to the desired provider name.
+3. Restart the Node backend.
+4. Verify via `GET /api/admin/assistant-status` that `configured: true`.
+
+This decision was finalized as part of the Go-Live plan Etapa B (2026-03-27).
+The project is production-ready with fallback mode active.
+
+### Provider Architecture
+
 - Assistant supports multi-provider routing (OpenAI + Anthropic + Gemini) with primary/fallback selection.
 - Routing can be automatic (`smart`) so the assistant picks the best available provider based on helper type and recent provider health.
 - Models can auto-rotate using candidate lists when a model is deprecated or unavailable.
-- If providers are unavailable, assistant falls back to local rule-based suggestions.
+- If providers are unavailable or unconfigured, assistant falls back to local rule-based suggestions.
 - Keep API keys in `.env` only. Never expose them in frontend code.
 - Hybrid cost-safe mode is enabled by default:
   - cache-first responses for repeated prompts

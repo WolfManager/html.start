@@ -530,3 +530,42 @@ A deployment is considered **successful** when:
 ---
 
 **Questions?** Reach out in `#magneto-incidents` Slack channel.
+
+---
+
+## Assistant Operating Mode (Etapa B Decision — 2026-03-27)
+
+### Current Mode: Local Fallback
+
+**Decision:** The MAGNETO AI assistant runs in **local fallback mode** with no external AI providers configured.
+
+**Runtime confirmation:**
+
+- `POST /api/assistant/chat` returns `provider: fallback`, `model: rule-based`, HTTP 200
+- `GET /api/admin/assistant-status` returns `configured: false` for all providers (OpenAI, Anthropic, Gemini)
+
+**Behavior in this mode:**
+
+- All assistant responses are generated locally via rule-based logic
+- No API calls are made to external providers
+- No usage costs are incurred
+- Rate limiting and memory store remain active
+
+**Limitations:**
+
+- Responses to complex or open-ended queries are simplified
+- No language model inference is available until a provider is configured
+
+**To activate external AI providers:**
+
+1. Add to `.env`:
+   ```env
+   AI_PRIMARY_PROVIDER=openai
+   OPENAI_API_KEY=sk-...
+   OPENAI_MODEL=gpt-4o-mini
+   ```
+2. Optionally set `AI_FALLBACK_PROVIDER` and `AI_ROUTING_MODE=smart`
+3. Restart the Node backend
+4. Verify: `GET /api/admin/assistant-status` → `configured: true`
+
+**This mode is stable for production.** The full software stack (search, ranking, admin, analytics, monitoring, gates) operates independently of the assistant provider state.
