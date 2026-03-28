@@ -8185,6 +8185,66 @@
       "helper": "general",
       "model": "rule-based",
       "at": "2026-03-28T10:04:29.593Z"
+    },
+    {
+      "id": "a-1774692889657-1484",
+      "ip": "::ffff:127.0.0.1",
+      "message": "cum esti ?",
+      "reply": "Sunt bine si sunt aici sa te ajut. Putem vorbi normal sau putem merge direct pe ce ai nevoie.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T10:14:49.657Z"
+    },
+    {
+      "id": "a-1774692889671-3570",
+      "ip": "::ffff:127.0.0.1",
+      "message": "ce faci",
+      "reply": "Sunt bine si sunt aici sa te ajut. Putem vorbi normal sau putem merge direct pe ce ai nevoie.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T10:14:49.671Z"
+    },
+    {
+      "id": "a-1774692889685-1890",
+      "ip": "::ffff:127.0.0.1",
+      "message": "putem sa vorbim ?",
+      "reply": "Da. Putem vorbi normal. Scrie-mi liber ce ai pe gand si iti raspund cat mai clar.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T10:14:49.685Z"
+    },
+    {
+      "id": "a-1774692930793-1462",
+      "ip": "::ffff:127.0.0.1",
+      "message": "cum esti ?",
+      "reply": "Sunt bine si sunt aici sa te ajut. Putem vorbi normal sau putem merge direct pe ce ai nevoie.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T10:15:30.793Z"
+    },
+    {
+      "id": "a-1774692930807-5427",
+      "ip": "::ffff:127.0.0.1",
+      "message": "ce faci",
+      "reply": "Sunt bine si sunt aici sa te ajut. Putem vorbi normal sau putem merge direct pe ce ai nevoie.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T10:15:30.807Z"
+    },
+    {
+      "id": "a-1774692930817-7037",
+      "ip": "::ffff:127.0.0.1",
+      "message": "putem sa vorbim ?",
+      "reply": "Da. Putem vorbi normal. Scrie-mi liber ce ai pe gand si iti raspund cat mai clar.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T10:15:30.817Z"
     }
   ]
 }
