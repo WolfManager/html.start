@@ -2651,7 +2651,7 @@
     },
     {
       "id": "s-1774286546993-2531",
-      "query": "\u0219tiri ai",
+      "query": "știri ai",
       "resultCount": 99,
       "ip": "::1",
       "at": "2026-03-23T17:22:26.993Z"
@@ -5201,6 +5201,97 @@
       "reformulatesSearchId": "s-1774713489704-9243",
       "reformulationType": "query-refinement",
       "at": "2026-03-28T15:58:10Z"
+    },
+    {
+      "id": "s-1774715093487-6022",
+      "query": "api documentation",
+      "resultCount": 99,
+      "ip": "::1",
+      "at": "2026-03-28T16:24:53.489Z"
+    },
+    {
+      "id": "s-1774715093607-5036",
+      "query": "remote jobs",
+      "resultCount": 99,
+      "ip": "::1",
+      "at": "2026-03-28T16:24:53.607Z"
+    },
+    {
+      "id": "s-1774715093671-3215",
+      "query": "opnai",
+      "resultCount": 99,
+      "ip": "::1",
+      "at": "2026-03-28T16:24:53.671Z"
+    },
+    {
+      "id": "s-1774715093752-5226",
+      "query": "intitle:documentation api",
+      "resultCount": 3,
+      "ip": "::1",
+      "at": "2026-03-28T16:24:53.752Z"
+    },
+    {
+      "id": "s-1774715093879-5612",
+      "query": "ai site:openai.com",
+      "resultCount": 1,
+      "ip": "::1",
+      "at": "2026-03-28T16:24:53.879Z"
+    },
+    {
+      "id": "s-1774715094007-9623",
+      "query": "news",
+      "resultCount": 99,
+      "ip": "::1",
+      "at": "2026-03-28T16:24:54.007Z"
+    },
+    {
+      "id": "s-1774715094155-1737",
+      "query": "database indexing",
+      "resultCount": 99,
+      "ip": "::1",
+      "at": "2026-03-28T16:24:54.155Z"
+    },
+    {
+      "id": "s-1774715094257-1878",
+      "query": "ultimele stiri",
+      "resultCount": 99,
+      "ip": "::1",
+      "at": "2026-03-28T16:24:54.257Z"
+    },
+    {
+      "id": "s-1774715094337-3146",
+      "query": "joburi remote",
+      "resultCount": 99,
+      "ip": "::1",
+      "at": "2026-03-28T16:24:54.337Z"
+    },
+    {
+      "id": "s-1774715094424-4645",
+      "query": "ultimele stiri ai azi",
+      "resultCount": 99,
+      "ip": "::1",
+      "at": "2026-03-28T16:24:54.424Z"
+    },
+    {
+      "id": "s-1774715094555-7696",
+      "query": "curs programare javascript pentru incepatori",
+      "resultCount": 1,
+      "ip": "::1",
+      "at": "2026-03-28T16:24:54.555Z"
+    },
+    {
+      "id": "s-1774715094727-6453",
+      "query": "cum optimizez cautarea full text intr-un site cu ranking personalizat",
+      "resultCount": 2,
+      "ip": "::1",
+      "at": "2026-03-28T16:24:54.727Z"
+    },
+    {
+      "id": "s-1774715094842-5745",
+      "query": "cercetare ai",
+      "resultCount": 99,
+      "ip": "::1",
+      "at": "2026-03-28T16:24:54.843Z"
     }
   ],
   "pageViews": [
