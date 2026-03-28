@@ -90,6 +90,7 @@ After services are running, execute:
 - `npm.cmd run health:check:gate:save` (strict gate + save JSON report to `data/backups/health-check/`)
 - `npm.cmd run health:check:gate:daily` (strict gate + overwrite `data/backups/health-check/latest-gate.json`)
 - `node scripts/assistant-benchmark.js` or `npm run assistant:benchmark` (assistant latency/provider smoke benchmark)
+- `npm.cmd run smoke:local:regression` (validates API base persistence, fallback conversational replies, and long-tail zero-result refinement)
 - `node scripts/search-benchmark.js` or `npm run search:benchmark` (English search ranking quality validation)
 - `node scripts/search-benchmark-romanian.js` or `npm run search:benchmark:romanian` (Romanian language search quality validation)
 - `npm run search:parity:gate` (strict semantic Node vs Django parity gate)
