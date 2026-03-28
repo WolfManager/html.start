@@ -93,6 +93,7 @@ After services are running, execute:
 - `npm.cmd run smoke:local:regression` (validates API base persistence, fallback conversational replies, and long-tail zero-result refinement)
 - `node scripts/search-benchmark.js` or `npm run search:benchmark` (English search ranking quality validation)
 - `node scripts/search-benchmark-romanian.js` or `npm run search:benchmark:romanian` (Romanian language search quality validation)
+- `npm.cmd run search:benchmark:final` (final Stage 2 benchmark across intent, typo, operator, ambiguous, and long-tail search cases)
 - `npm run search:parity:gate` (strict semantic Node vs Django parity gate)
 - `npm run search:parity:compat` (relaxed parity profile for local debugging)
 
@@ -272,6 +273,7 @@ For detailed production deployment procedures, incident response, and operationa
 
 - **[BASELINE_STABLE_2026-03-28.md](BASELINE_STABLE_2026-03-28.md)** - Official stable reference for the currently validated system
 - **[PROJECT_CLOSURE_PLAN.md](PROJECT_CLOSURE_PLAN.md)** - 7-stage closure plan from stable baseline to finished product
+- **[SEARCH_FINAL_BENCHMARK_SET.md](SEARCH_FINAL_BENCHMARK_SET.md)** - Stage 2 final search benchmark set and pass criteria
 
 ### 🛠️ Essential Scripts
 

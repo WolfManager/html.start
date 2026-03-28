@@ -42,6 +42,11 @@ Status:
 
 ## Stage 2 — Finalize Search
 
+Status:
+
+- in progress
+- final benchmark set defined on 2026-03-28
+
 Goal:
 
 - take the current strong search engine to complete and repeatable product behavior

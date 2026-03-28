@@ -31,6 +31,7 @@
     "verify:update": "node scripts/post-update-verify.js",
     "search:benchmark": "node scripts/search-benchmark.js",
     "search:benchmark:romanian": "node scripts/search-benchmark-romanian.js",
+    "search:benchmark:final": "node scripts/search-benchmark-final.js --json",
     "search:parity": "node scripts/search-parity-check.js",
     "search:parity:gate": "npm run search:parity:strict",
     "search:parity:strict": "cross-env PARITY_MODE=strict node scripts/search-parity-check.js",
