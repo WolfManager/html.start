@@ -2196,82 +2196,171 @@ function isSimpleAssistantQuery(message) {
 function buildRuleBasedAssistantResponse(message) {
   const raw = String(message || "").trim() || "your topic";
   const q = normalizeAssistantQueryKey(message);
+  const isRomanian = detectAssistantLanguage(message) === "ro";
+
+  function reply(ro, en) {
+    return isRomanian ? ro : en;
+  }
 
   if (/^(hi|hello|hey|salut|buna|bună)\b/.test(q)) {
     return {
-      reply: "Ask a concrete question and I can narrow it down quickly.",
-      suggestions: [
-        "latest tech news",
-        "weather this weekend",
-        "improve my CV summary",
-      ],
+      reply: reply(
+        "Salut. Putem vorbi normal. Spune-mi ce vrei sa afli sau sa rezolvi si iti raspund direct.",
+        "Hi. We can talk normally. Tell me what you want to figure out or solve and I will answer directly.",
+      ),
+      suggestions: isRomanian
+        ? [
+            "explica-mi pe scurt un subiect",
+            "fa-mi un plan in 3 pasi",
+            "compara doua optiuni",
+          ]
+        : [
+            "explain a topic briefly",
+            "make a 3-step plan",
+            "compare two options",
+          ],
+    };
+  }
+
+  if (
+    /^(cum esti|ce mai faci|ce faci|esti bine|ești bine|cum merge)\b/.test(q)
+  ) {
+    return {
+      reply: reply(
+        "Sunt bine si sunt aici sa te ajut. Putem vorbi normal sau putem merge direct pe ce ai nevoie.",
+        "I am doing well and I am here to help. We can talk normally or go straight to what you need.",
+      ),
+      suggestions: isRomanian
+        ? ["vreau sa discutam", "am o problema tehnica", "ajuta-ma cu un plan"]
+        : ["let's talk", "I have a technical issue", "help me make a plan"],
+    };
+  }
+
+  if (
+    /^(putem sa vorbim|vrei sa vorbim|hai sa vorbim|vreau sa vorbim)\b/.test(q)
+  ) {
+    return {
+      reply: reply(
+        "Da. Putem vorbi normal. Scrie-mi liber ce ai pe gand si iti raspund cat mai clar.",
+        "Yes. We can talk normally. Write freely about what is on your mind and I will answer as clearly as I can.",
+      ),
+      suggestions: isRomanian
+        ? [
+            "am nevoie de o parere",
+            "vreau o explicatie simpla",
+            "ajuta-ma sa decid",
+          ]
+        : [
+            "I need an opinion",
+            "I want a simple explanation",
+            "help me decide",
+          ],
     };
   }
 
   if (/^(ce faci|ce mai faci|esti acolo|ești acolo|nu spui nimic)\b/.test(q)) {
     return {
-      reply:
-        "Sunt aici. Spune-mi exact ce vrei sa rezolvi si iti raspund direct, in pasi clari.",
-      suggestions: [
-        "explica pe scurt subiectul",
-        "fa-mi un plan in 3 pasi",
-        "compara doua optiuni",
-      ],
+      reply: reply(
+        "Sunt aici. Daca vrei, continuam direct pe problema ta sau pur si simplu vorbim.",
+        "I am here. If you want, we can go straight into your problem or just talk.",
+      ),
+      suggestions: isRomanian
+        ? [
+            "explica pe scurt subiectul",
+            "fa-mi un plan in 3 pasi",
+            "compara doua optiuni",
+          ]
+        : [
+            "explain the topic briefly",
+            "make a 3-step plan",
+            "compare two options",
+          ],
     };
   }
 
   if (/\b(time|date|today|azi|acum)\b/.test(q)) {
     return {
-      reply:
-        "Add your city or timezone if you want a precise current-time answer.",
-      suggestions: [
-        "current time in Bucharest",
-        "today date in Romania",
-        "weather and date today",
-      ],
+      reply: reply(
+        "Daca vrei ora exacta, spune-mi orasul sau fusul orar.",
+        "If you want the exact time, add your city or timezone.",
+      ),
+      suggestions: isRomanian
+        ? [
+            "ora exacta in Bucuresti",
+            "data de azi in Romania",
+            "vremea si data azi",
+          ]
+        : [
+            "current time in Bucharest",
+            "today date in Romania",
+            "weather and date today",
+          ],
     };
   }
 
   if (/weather|rain|sun|forecast|meteo|vreme/.test(q)) {
     return {
-      reply: "Add city and timeframe for more precise weather results.",
-      suggestions: [
-        `${raw} in my city`,
-        `${raw} this weekend`,
-        "hourly weather forecast",
-      ],
+      reply: reply(
+        "Pentru un raspuns mai bun despre vreme, spune orasul si intervalul de timp.",
+        "For a better weather answer, add the city and timeframe.",
+      ),
+      suggestions: isRomanian
+        ? [
+            `${raw} in Bucuresti`,
+            `${raw} weekendul acesta`,
+            "prognoza meteo pe ore",
+          ]
+        : [
+            `${raw} in my city`,
+            `${raw} this weekend`,
+            "hourly weather forecast",
+          ],
     };
   }
 
   if (/news|politics|economy|stiri|știri/.test(q)) {
     return {
-      reply: "Try trusted sources and a specific timeframe.",
-      suggestions: [
-        `${raw} last 24 hours`,
-        `${raw} trusted sources`,
-        `${raw} analysis`,
-      ],
+      reply: reply(
+        "Pentru stiri mai bune, foloseste surse de incredere si un interval clar.",
+        "For better news results, use trusted sources and a clear timeframe.",
+      ),
+      suggestions: isRomanian
+        ? [
+            `${raw} ultimele 24 ore`,
+            `${raw} surse de incredere`,
+            `${raw} analiza`,
+          ]
+        : [`${raw} last 24 hours`, `${raw} trusted sources`, `${raw} analysis`],
     };
   }
 
   if (/job|career|cv|hiring|angajare|joburi/.test(q)) {
     return {
-      reply: "Include location and seniority to narrow job results.",
-      suggestions: [`${raw} remote`, `${raw} entry level`, `${raw} salary`],
+      reply: reply(
+        "Adauga locatie si nivel de experienta ca sa restrang rezultatele pentru joburi.",
+        "Add location and seniority to narrow job results.",
+      ),
+      suggestions: isRomanian
+        ? [`${raw} remote`, `${raw} junior`, `${raw} salariu`]
+        : [`${raw} remote`, `${raw} entry level`, `${raw} salary`],
     };
   }
 
   return {
-    reply:
-      "Pot sa te ajut mai bine daca imi spui rezultatul dorit: explicatie, pasi practici, comparatie sau rezumat.",
-    suggestions: [`${raw} guide`, `${raw} 2026`, `${raw} explained`],
+    reply: reply(
+      "Sigur. Spune-mi liber ce vrei, iar daca mesajul este prea general te ajut eu sa-l clarificam pe parcurs.",
+      "Sure. Tell me what you want, and if the message is too broad I will help narrow it down as we go.",
+    ),
+    suggestions: isRomanian
+      ? ["explica-mi simplu", "da-mi pasi practici", "fa-mi un rezumat"]
+      : ["explain it simply", "give me practical steps", "summarize it"],
   };
 }
 
 function detectAssistantLanguage(message) {
   const normalized = normalizeAssistantQueryKey(message);
   if (
-    /\b(ce|vreme|acum|azi|maine|salut|buna|romanian|romana|schimba limba|in bucuresti|in romania)\b/.test(
+    /\b(ce|cum|esti|este|faci|faci\?|bine|vorbim|vorbi|putem|vreme|acum|azi|maine|salut|buna|romanian|romana|schimba limba|in bucuresti|in romania)\b/.test(
       normalized,
     )
   ) {
@@ -3370,12 +3459,18 @@ const QUERY_SYNONYMS = {
   ghid: ["guide", "tutorial"],
   joburi: ["jobs"],
   stiri: ["news"],
+  cautare: ["search", "query", "lookup"],
+  cautarea: ["search", "query", "lookup"],
   documentatie: ["documentation", "docs", "reference", "manual"],
   programare: ["programming", "coding", "code"],
   curs: ["course", "tutorial", "guide"],
   incepatori: ["beginner", "beginners", "basics", "starter"],
   cercetare: ["research", "paper", "study", "academic"],
   imagini: ["images", "photos", "pictures", "media"],
+  optimizez: ["optimize", "optimization", "improve", "tuning"],
+  optimizare: ["optimize", "optimization", "tuning"],
+  personalizat: ["personalized", "custom"],
+  personalizata: ["personalized", "custom"],
 };
 
 const OPTIONAL_QUERY_TOKENS = new Set([
@@ -4807,6 +4902,81 @@ function suggestQueryCorrection(query, source) {
   };
 }
 
+function buildZeroResultsQueryRefinement(query, source) {
+  const rawQuery = String(query || "").trim();
+  if (!rawQuery) {
+    return null;
+  }
+
+  const parsed = parseSearchOperators(rawQuery);
+  const baseTokens = tokenize(parsed.cleanedQuery);
+  if (baseTokens.length < 4) {
+    return null;
+  }
+
+  const vocabulary = new Set(
+    Array.isArray(source?.vocabulary) ? source.vocabulary : [],
+  );
+  if (vocabulary.size === 0) {
+    return null;
+  }
+
+  const optionalTokenSet = new Set(
+    (
+      getSearchRankingConfig()?.optionalQueryTokens || [
+        ...OPTIONAL_QUERY_TOKENS,
+      ]
+    )
+      .map((token) => normalizeSearchText(token))
+      .filter(Boolean),
+  );
+
+  const refinedTokens = [];
+  for (const token of baseTokens) {
+    const normalizedToken = normalizeSearchText(token);
+    if (!normalizedToken || optionalTokenSet.has(normalizedToken)) {
+      continue;
+    }
+
+    const candidates = [
+      normalizedToken,
+      ...(QUERY_SYNONYMS[normalizedToken] || []),
+    ]
+      .map((candidate) => normalizeSearchText(candidate))
+      .filter(Boolean);
+
+    const chosen = candidates.find((candidate) => vocabulary.has(candidate));
+    if (!chosen || refinedTokens.includes(chosen)) {
+      continue;
+    }
+
+    refinedTokens.push(chosen);
+    if (refinedTokens.length >= 4) {
+      break;
+    }
+  }
+
+  if (refinedTokens.length < 2) {
+    return null;
+  }
+
+  const refinedQuery = refinedTokens.join(" ").trim();
+  if (
+    !refinedQuery ||
+    normalizeSearchText(refinedQuery) ===
+      normalizeSearchText(parsed.cleanedQuery)
+  ) {
+    return null;
+  }
+
+  return {
+    originalQuery: parsed.cleanedQuery,
+    correctedQuery: refinedQuery,
+    autoApplied: true,
+    reason: "zero-results-refinement",
+  };
+}
+
 function buildSearchFacets(items) {
   const facets = {
     languages: new Map(),
@@ -5165,6 +5335,7 @@ function runSearchPage(
   const safePage = safeSearchPage(page);
   let queryUsed = String(query || "").trim();
   let queryCorrection = null;
+  const artifacts = getLocalSearchArtifacts();
 
   let allResults = runSearchAll(queryUsed, {
     language,
@@ -5174,7 +5345,6 @@ function runSearchPage(
   });
 
   if (allResults.length === 0) {
-    const artifacts = getLocalSearchArtifacts();
     const parsedForCorrection = parseSearchOperators(queryUsed);
     const correction = suggestQueryCorrection(
       parsedForCorrection.cleanedQuery,
@@ -5199,6 +5369,28 @@ function runSearchPage(
           autoApplied: true,
         };
         allResults = correctedResults;
+      }
+    }
+  }
+
+  if (allResults.length === 0 && !queryCorrection) {
+    const refinement = buildZeroResultsQueryRefinement(queryUsed, artifacts);
+    if (refinement?.correctedQuery) {
+      const parsedForRefinement = parseSearchOperators(queryUsed);
+      const refinedQueryWithOperators = rebuildQueryWithOperators(
+        refinement.correctedQuery,
+        parsedForRefinement.operators,
+      );
+      const refinedResults = runSearchAll(refinedQueryWithOperators, {
+        language,
+        category,
+        source,
+        sort,
+      });
+      if (refinedResults.length > 0) {
+        queryUsed = refinedQueryWithOperators;
+        queryCorrection = refinement;
+        allResults = refinedResults;
       }
     }
   }
