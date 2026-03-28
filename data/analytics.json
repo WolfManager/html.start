@@ -2651,7 +2651,7 @@
     },
     {
       "id": "s-1774286546993-2531",
-      "query": "\u0219tiri ai",
+      "query": "știri ai",
       "resultCount": 99,
       "ip": "::1",
       "at": "2026-03-23T17:22:26.993Z"
@@ -4556,6 +4556,480 @@
       "reformulatesSearchId": "s-1774684945323-7900",
       "reformulationType": "query-refinement",
       "at": "2026-03-28T08:02:27Z"
+    },
+    {
+      "id": "s-1774690239179-4554",
+      "query": "test",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-28T09:30:39.179Z"
+    },
+    {
+      "id": "s-1774690240451-9932",
+      "query": "test",
+      "normalizedQuery": "test",
+      "resultCount": 5,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "4e5be2371631786f23bfd0c8",
+      "reformulatesSearchId": null,
+      "reformulationType": null,
+      "at": "2026-03-28T09:30:40Z"
+    },
+    {
+      "id": "s-1774690250049-2723",
+      "query": "test",
+      "normalizedQuery": "test",
+      "resultCount": 5,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "5cbd9feaa2854c0a82d7e5fb",
+      "reformulatesSearchId": null,
+      "reformulationType": null,
+      "at": "2026-03-28T09:30:50Z"
+    },
+    {
+      "id": "s-1774690253144-3285",
+      "query": "test",
+      "normalizedQuery": "test",
+      "resultCount": 5,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "28f1af573d766754d1c02a75",
+      "reformulatesSearchId": null,
+      "reformulationType": null,
+      "at": "2026-03-28T09:30:53Z"
+    },
+    {
+      "id": "s-1774690254596-9164",
+      "query": "api documentation",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-28T09:30:54.596Z"
+    },
+    {
+      "id": "s-1774690255077-6122",
+      "query": "api documentation",
+      "normalizedQuery": "api documentation",
+      "resultCount": 13,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "55f7b592c90fa1e8cb0efd6e",
+      "reformulatesSearchId": "s-1774690253144-3285",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-28T09:30:55Z"
+    },
+    {
+      "id": "s-1774690256530-1865",
+      "query": "api documentation",
+      "normalizedQuery": "api documentation",
+      "resultCount": 13,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "e7c691d5c8d20ff07724a5ac",
+      "reformulatesSearchId": "s-1774690253144-3285",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-28T09:30:56Z"
+    },
+    {
+      "id": "s-1774690257649-6223",
+      "query": "contract-test",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-28T09:30:57.649Z"
+    },
+    {
+      "id": "s-1774690257937-9156",
+      "query": "contract-test",
+      "normalizedQuery": "contract-test",
+      "resultCount": 2,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "4332b852274b926a29cbc2b3",
+      "reformulatesSearchId": "s-1774690256530-1865",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-28T09:30:57Z"
+    },
+    {
+      "id": "s-1774690264041-5403",
+      "query": "vreme bucuresti",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-28T09:31:04.041Z"
+    },
+    {
+      "id": "s-1774690264151-4080",
+      "query": "python tutorial pentru incepatori",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-28T09:31:04.151Z"
+    },
+    {
+      "id": "s-1774690264265-2191",
+      "query": "cum optimizez cautarea full text intr-un site cu ranking personalizat",
+      "resultCount": 0,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-28T09:31:04.265Z"
+    },
+    {
+      "id": "s-1774690412532-4943",
+      "query": "cum optimizez cautarea full text intr-un site cu ranking personalizat",
+      "normalizedQuery": "cum optimizez cautarea full text intr-un site cu ranking personalizat",
+      "resultCount": 2,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "abb47a0e21b2fe740ca21eff",
+      "reformulatesSearchId": "s-1774690257937-9156",
+      "reformulationType": "low-results-refinement",
+      "at": "2026-03-28T09:33:32Z"
+    },
+    {
+      "id": "s-1774690512045-6545",
+      "query": "full text ranking",
+      "resultCount": 2,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-28T09:35:12.045Z"
+    },
+    {
+      "id": "s-1774690512078-546",
+      "query": "search ranking",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-28T09:35:12.078Z"
+    },
+    {
+      "id": "s-1774690512113-9087",
+      "query": "site ranking",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-28T09:35:12.113Z"
+    },
+    {
+      "id": "s-1774690512146-5945",
+      "query": "cautarea ranking",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-28T09:35:12.146Z"
+    },
+    {
+      "id": "s-1774690512188-6605",
+      "query": "full text search",
+      "resultCount": 2,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-28T09:35:12.188Z"
+    },
+    {
+      "id": "s-1774690553848-7937",
+      "query": "test",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-28T09:35:53.848Z"
+    },
+    {
+      "id": "s-1774690600104-1436",
+      "query": "cum optimizez cautarea full text intr-un site cu ranking personalizat",
+      "resultCount": 0,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-28T09:36:40.104Z"
+    },
+    {
+      "id": "s-1774690608486-3777",
+      "query": "test",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-28T09:36:48.486Z"
+    },
+    {
+      "id": "s-1774690609145-7338",
+      "query": "test",
+      "normalizedQuery": "test",
+      "resultCount": 5,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "e921669ab7b41ad91bdbd8d6",
+      "reformulatesSearchId": "s-1774690412532-4943",
+      "reformulationType": "low-results-refinement",
+      "at": "2026-03-28T09:36:49Z"
+    },
+    {
+      "id": "s-1774690610701-8542",
+      "query": "test",
+      "normalizedQuery": "test",
+      "resultCount": 5,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "b1dc810d1e9b52db4133077b",
+      "reformulatesSearchId": "s-1774690412532-4943",
+      "reformulationType": "low-results-refinement",
+      "at": "2026-03-28T09:36:50Z"
+    },
+    {
+      "id": "s-1774690611315-1201",
+      "query": "api documentation",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-28T09:36:51.315Z"
+    },
+    {
+      "id": "s-1774690611422-8546",
+      "query": "api documentation",
+      "normalizedQuery": "api documentation",
+      "resultCount": 13,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "0ae6655b8880eeb96c4df1ad",
+      "reformulatesSearchId": "s-1774690610701-8542",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-28T09:36:51Z"
+    },
+    {
+      "id": "s-1774690612145-9373",
+      "query": "api documentation",
+      "normalizedQuery": "api documentation",
+      "resultCount": 13,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "2d04bc2696b8ee1a532e3e1f",
+      "reformulatesSearchId": "s-1774690610701-8542",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-28T09:36:52Z"
+    },
+    {
+      "id": "s-1774690612792-4207",
+      "query": "contract-test",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-28T09:36:52.792Z"
+    },
+    {
+      "id": "s-1774690612924-2499",
+      "query": "contract-test",
+      "normalizedQuery": "contract-test",
+      "resultCount": 2,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "f30eb60d2becd15b28929273",
+      "reformulatesSearchId": "s-1774690612145-9373",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-28T09:36:52Z"
+    },
+    {
+      "id": "s-1774690632275-7930",
+      "query": "search full text ranking",
+      "resultCount": 2,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-28T09:37:12.275Z"
+    },
+    {
+      "id": "s-1774690632327-7689",
+      "query": "full text ranking custom",
+      "resultCount": 0,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-28T09:37:12.327Z"
+    },
+    {
+      "id": "s-1774690632385-6971",
+      "query": "optimize search ranking",
+      "resultCount": 0,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-28T09:37:12.385Z"
+    },
+    {
+      "id": "s-1774690632443-6952",
+      "query": "search ranking custom",
+      "resultCount": 0,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-28T09:37:12.443Z"
+    },
+    {
+      "id": "s-1774690632502-559",
+      "query": "full text ranking search",
+      "resultCount": 2,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-28T09:37:12.502Z"
+    },
+    {
+      "id": "s-1774690645088-6360",
+      "query": "search full text site ranking",
+      "resultCount": 2,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-28T09:37:25.088Z"
+    },
+    {
+      "id": "s-1774690741507-2465",
+      "query": "cum optimizez cautarea full text intr-un site cu ranking personalizat",
+      "resultCount": 2,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-28T09:39:01.507Z"
+    },
+    {
+      "id": "s-1774690745101-5031",
+      "query": "test",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-28T09:39:05.101Z"
+    },
+    {
+      "id": "s-1774690757470-7235",
+      "query": "test",
+      "normalizedQuery": "test",
+      "resultCount": 5,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "f87373e76234ef8513ccf5c9",
+      "reformulatesSearchId": "s-1774690612924-2499",
+      "reformulationType": "low-results-refinement",
+      "at": "2026-03-28T09:39:17Z"
+    },
+    {
+      "id": "s-1774690758847-9690",
+      "query": "test",
+      "normalizedQuery": "test",
+      "resultCount": 5,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "e3e9a4d743e1844ac1850a38",
+      "reformulatesSearchId": "s-1774690612924-2499",
+      "reformulationType": "low-results-refinement",
+      "at": "2026-03-28T09:39:18Z"
+    },
+    {
+      "id": "s-1774690759387-4864",
+      "query": "api documentation",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-28T09:39:19.387Z"
+    },
+    {
+      "id": "s-1774690759487-2855",
+      "query": "api documentation",
+      "normalizedQuery": "api documentation",
+      "resultCount": 13,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "e2bf82e3d45e589bdb360f2f",
+      "reformulatesSearchId": "s-1774690758847-9690",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-28T09:39:19Z"
+    },
+    {
+      "id": "s-1774690760227-7162",
+      "query": "api documentation",
+      "normalizedQuery": "api documentation",
+      "resultCount": 13,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "750c0cfb925dca1fd080e854",
+      "reformulatesSearchId": "s-1774690758847-9690",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-28T09:39:20Z"
+    },
+    {
+      "id": "s-1774690760855-3537",
+      "query": "contract-test",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-28T09:39:20.855Z"
+    },
+    {
+      "id": "s-1774690760988-8989",
+      "query": "contract-test",
+      "normalizedQuery": "contract-test",
+      "resultCount": 2,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "187447cbac731f873db6b9d0",
+      "reformulatesSearchId": "s-1774690760227-7162",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-28T09:39:20Z"
+    },
+    {
+      "id": "s-1774691192089-4007",
+      "query": "test",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-28T09:46:32.089Z"
+    },
+    {
+      "id": "s-1774691192684-2491",
+      "query": "test",
+      "normalizedQuery": "test",
+      "resultCount": 5,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "3f5179a5f65360183f93d90e",
+      "reformulatesSearchId": "s-1774690760988-8989",
+      "reformulationType": "low-results-refinement",
+      "at": "2026-03-28T09:46:32Z"
+    },
+    {
+      "id": "s-1774691194208-2155",
+      "query": "test",
+      "normalizedQuery": "test",
+      "resultCount": 5,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "b26c67ddcf59c3a791fcc443",
+      "reformulatesSearchId": "s-1774690760988-8989",
+      "reformulationType": "low-results-refinement",
+      "at": "2026-03-28T09:46:34Z"
+    },
+    {
+      "id": "s-1774691194761-4026",
+      "query": "api documentation",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-28T09:46:34.761Z"
+    },
+    {
+      "id": "s-1774691194888-7847",
+      "query": "api documentation",
+      "normalizedQuery": "api documentation",
+      "resultCount": 13,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "0fda6cbcfeaaa73aed559add",
+      "reformulatesSearchId": "s-1774691194208-2155",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-28T09:46:34Z"
+    },
+    {
+      "id": "s-1774691195616-4635",
+      "query": "api documentation",
+      "normalizedQuery": "api documentation",
+      "resultCount": 13,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "3d81c9f9e46066e245394e6a",
+      "reformulatesSearchId": "s-1774691194208-2155",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-28T09:46:35Z"
+    },
+    {
+      "id": "s-1774691196305-8799",
+      "query": "contract-test",
+      "resultCount": 99,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-28T09:46:36.305Z"
+    },
+    {
+      "id": "s-1774691196445-8182",
+      "query": "contract-test",
+      "normalizedQuery": "contract-test",
+      "resultCount": 2,
+      "zeroResults": false,
+      "ip": "127.0.0.1",
+      "userHash": "2265139d11d6cdfb2122a47c",
+      "reformulatesSearchId": "s-1774691195616-4635",
+      "reformulationType": "query-refinement",
+      "at": "2026-03-28T09:46:36Z"
+    },
+    {
+      "id": "s-1774691529361-5677",
+      "query": "cum optimizez cautarea full text intr-un site cu ranking personalizat",
+      "resultCount": 2,
+      "ip": "::ffff:127.0.0.1",
+      "at": "2026-03-28T09:52:09.361Z"
     }
   ],
   "pageViews": [
@@ -7582,6 +8056,279 @@
       "ip": "127.0.0.1",
       "userAgent": "node",
       "at": "2026-03-28T08:02:25Z"
+    },
+    {
+      "id": "p-1774688556931-8785",
+      "page": "index.html",
+      "ip": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+      "at": "2026-03-28T09:02:36.931Z"
+    },
+    {
+      "id": "p-1774688673573-3757",
+      "page": "index.html",
+      "ip": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+      "at": "2026-03-28T09:04:33.573Z"
+    },
+    {
+      "id": "p-1774690239206-903",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:30:39.206Z"
+    },
+    {
+      "id": "p-1774690240176-1165",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:30:40Z"
+    },
+    {
+      "id": "p-1774690248630-3681",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:30:48.630Z"
+    },
+    {
+      "id": "p-1774690249578-5339",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:30:49Z"
+    },
+    {
+      "id": "p-1774690251596-407",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:30:51.596Z"
+    },
+    {
+      "id": "p-1774690252686-7725",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:30:52Z"
+    },
+    {
+      "id": "p-1774690255179-3211",
+      "page": "critical-parity-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:30:55.179Z"
+    },
+    {
+      "id": "p-1774690255206-6099",
+      "page": "critical-parity-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:30:55Z"
+    },
+    {
+      "id": "p-1774690256624-4606",
+      "page": "critical-parity-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:30:56.624Z"
+    },
+    {
+      "id": "p-1774690256651-8477",
+      "page": "critical-parity-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:30:56Z"
+    },
+    {
+      "id": "p-1774690383203-2897",
+      "page": "index.html",
+      "ip": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+      "at": "2026-03-28T09:33:03.203Z"
+    },
+    {
+      "id": "p-1774690553860-5926",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:35:53.860Z"
+    },
+    {
+      "id": "p-1774690608499-9380",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:36:48.499Z"
+    },
+    {
+      "id": "p-1774690609041-7228",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:36:49Z"
+    },
+    {
+      "id": "p-1774690610060-6660",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:36:50.060Z"
+    },
+    {
+      "id": "p-1774690610592-5945",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:36:50Z"
+    },
+    {
+      "id": "p-1774690611479-5075",
+      "page": "critical-parity-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:36:51.479Z"
+    },
+    {
+      "id": "p-1774690611491-4070",
+      "page": "critical-parity-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:36:51Z"
+    },
+    {
+      "id": "p-1774690612215-3758",
+      "page": "critical-parity-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:36:52.215Z"
+    },
+    {
+      "id": "p-1774690612228-7584",
+      "page": "critical-parity-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:36:52Z"
+    },
+    {
+      "id": "p-1774690745111-7714",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:39:05.111Z"
+    },
+    {
+      "id": "p-1774690756845-3603",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:39:16.845Z"
+    },
+    {
+      "id": "p-1774690757369-2762",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:39:17Z"
+    },
+    {
+      "id": "p-1774690758265-4415",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:39:18.265Z"
+    },
+    {
+      "id": "p-1774690758761-8764",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:39:18Z"
+    },
+    {
+      "id": "p-1774690759560-1761",
+      "page": "critical-parity-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:39:19.560Z"
+    },
+    {
+      "id": "p-1774690759574-8199",
+      "page": "critical-parity-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:39:19Z"
+    },
+    {
+      "id": "p-1774690760285-6099",
+      "page": "critical-parity-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:39:20.285Z"
+    },
+    {
+      "id": "p-1774690760299-8146",
+      "page": "critical-parity-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:39:20Z"
+    },
+    {
+      "id": "p-1774691192037-3151",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:46:32.037Z"
+    },
+    {
+      "id": "p-1774691192580-4814",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:46:32Z"
+    },
+    {
+      "id": "p-1774691193560-5050",
+      "page": "health-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:46:33.560Z"
+    },
+    {
+      "id": "p-1774691194109-1081",
+      "page": "health-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:46:34Z"
+    },
+    {
+      "id": "p-1774691194956-4749",
+      "page": "critical-parity-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:46:34.956Z"
+    },
+    {
+      "id": "p-1774691194970-8036",
+      "page": "critical-parity-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:46:34Z"
+    },
+    {
+      "id": "p-1774691195685-5392",
+      "page": "critical-parity-check",
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:46:35.685Z"
+    },
+    {
+      "id": "p-1774691195700-7295",
+      "page": "critical-parity-check",
+      "ip": "127.0.0.1",
+      "userAgent": "node",
+      "at": "2026-03-28T09:46:35Z"
     }
   ],
   "resultClicks": []
