@@ -363,6 +363,20 @@
             >
               Open Magneto AI Assistant
             </button>
+            <div class="assistant-runtime-card" aria-live="polite">
+              <div class="assistant-runtime-head">
+                <p class="assistant-runtime-kicker">Assistant runtime</p>
+                <span
+                  id="assistantRuntimeBadge"
+                  class="assistant-runtime-badge"
+                  data-state="ready"
+                  >Ready</span
+                >
+              </div>
+              <p id="assistantRuntimeSummary" class="assistant-runtime-summary">
+                Assistant ready. API base and mode will appear here.
+              </p>
+            </div>
           </section>
         </section>
       </div>
@@ -410,6 +424,12 @@
             class="assistant-suggestions"
             aria-label="Assistant suggestions"
           ></div>
+
+          <p
+            id="assistantStatusMessage"
+            class="assistant-status"
+            aria-live="polite"
+          ></p>
 
           <form id="assistantForm" class="assistant-form">
             <label for="assistantInput" class="sr-only"

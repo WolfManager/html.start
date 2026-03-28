@@ -30,6 +30,10 @@ const assistantModalHeader = document.getElementById("assistantModalHeader");
 const assistantCloseBtn = document.getElementById("assistantCloseBtn");
 const assistantMinimizeBtn = document.getElementById("assistantMinimizeBtn");
 const assistantMaximizeBtn = document.getElementById("assistantMaximizeBtn");
+const assistantRuntimeBadge = document.getElementById("assistantRuntimeBadge");
+const assistantRuntimeSummary = document.getElementById(
+  "assistantRuntimeSummary",
+);
 const assistantStatusMessage = document.getElementById(
   "assistantStatusMessage",
 );
@@ -357,6 +361,8 @@ const API_BASE_URL = String(
 )
   .trim()
   .replace(/\/+$/, "");
+let assistantLastProvider = "ready";
+let assistantLastReason = "";
 let currentAdminRange = "all";
 let currentBackupReason = "all";
 let currentIndexBackupReason = "all";
@@ -683,6 +689,98 @@ function updateAssistantStatus(message, isError = false) {
 
   assistantStatusMessage.textContent = String(message || "");
   assistantStatusMessage.classList.toggle("error", isError);
+}
+
+function getAssistantApiBaseSummary() {
+  return API_BASE_URL || window.MAGNETO_API_BASE_URL || "(relative /api)";
+}
+
+function formatApiBaseSourceLabel(source) {
+  const normalized = String(source || "default")
+    .trim()
+    .toLowerCase();
+
+  if (normalized === "query") {
+    return "URL override";
+  }
+
+  if (normalized === "localstorage") {
+    return "saved browser override";
+  }
+
+  return "default base";
+}
+
+function getAssistantRuntimeView(
+  provider = assistantLastProvider,
+  reason = "",
+) {
+  const normalizedProvider = String(provider || "ready").trim();
+  const providerKey = normalizedProvider.toLowerCase();
+  const apiBase = getAssistantApiBaseSummary();
+  const sourceLabel = formatApiBaseSourceLabel(window.MAGNETO_API_BASE_SOURCE);
+  const trimmedReason = String(reason || "").trim();
+
+  if (providerKey === "local-fallback" || providerKey === "fallback") {
+    return {
+      badge: "Fallback",
+      badgeState: "fallback",
+      summary: trimmedReason
+        ? `Using local fallback replies. API base: ${apiBase}. Source: ${sourceLabel}. ${trimmedReason}`
+        : `Using local fallback replies. API base: ${apiBase}. Source: ${sourceLabel}.`,
+      status: trimmedReason
+        ? `Fallback mode active. ${trimmedReason}`
+        : `Fallback mode active. API base source: ${sourceLabel}.`,
+      statusIsError: Boolean(trimmedReason),
+    };
+  }
+
+  if (providerKey && providerKey !== "ready" && providerKey !== "unknown") {
+    return {
+      badge: "Live API",
+      badgeState: "live",
+      summary: `Connected through ${normalizedProvider}. API base: ${apiBase}. Source: ${sourceLabel}.`,
+      status: `Assistant connected through ${normalizedProvider}. API base source: ${sourceLabel}.`,
+      statusIsError: false,
+    };
+  }
+
+  return {
+    badge: "Ready",
+    badgeState: "ready",
+    summary: `Assistant ready. API base: ${apiBase}. Source: ${sourceLabel}.`,
+    status: `Assistant ready. API base source: ${sourceLabel}.`,
+    statusIsError: false,
+  };
+}
+
+function renderAssistantRuntime(
+  provider = assistantLastProvider,
+  reason = assistantLastReason,
+) {
+  assistantLastProvider =
+    String(provider || assistantLastProvider || "ready").trim() || "ready";
+  const providerKey = assistantLastProvider.toLowerCase();
+  assistantLastReason =
+    providerKey === "local-fallback" || providerKey === "fallback"
+      ? String(reason || assistantLastReason || "").trim()
+      : String(reason || "").trim();
+
+  const view = getAssistantRuntimeView(
+    assistantLastProvider,
+    assistantLastReason,
+  );
+
+  if (assistantRuntimeBadge) {
+    assistantRuntimeBadge.textContent = view.badge;
+    assistantRuntimeBadge.dataset.state = view.badgeState;
+  }
+
+  if (assistantRuntimeSummary) {
+    assistantRuntimeSummary.textContent = view.summary;
+  }
+
+  updateAssistantStatus(view.status, view.statusIsError);
 }
 
 function initHomeKeyboardShortcuts() {
@@ -1082,6 +1180,7 @@ function initAssistantChat() {
       return;
     }
     clearAssistantSurface();
+    renderAssistantRuntime();
     assistantModal.hidden = false;
     setAssistantMinimized(false);
 
@@ -1219,15 +1318,15 @@ function initAssistantChat() {
 
     if (result.provider === "local-fallback" && result.reason) {
       console.warn(`Assistant fallback active: ${result.reason}`);
-      updateAssistantStatus(result.reason, true);
-    } else {
-      updateAssistantStatus("");
     }
+
+    renderAssistantRuntime(result.provider, result.reason || "");
 
     assistantInput.value = "";
     requestAnimationFrame(syncSidePanelHeights);
   });
 
+  renderAssistantRuntime();
   requestAnimationFrame(syncSidePanelHeights);
 }
 

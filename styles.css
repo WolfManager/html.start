@@ -1143,6 +1143,74 @@ select:focus,
   outline-offset: 2px;
 }
 
+.assistant-runtime-card {
+  margin-top: 12px;
+  border: 1px solid rgba(95, 167, 211, 0.3);
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: linear-gradient(
+    180deg,
+    rgba(248, 252, 255, 0.94),
+    rgba(234, 247, 255, 0.86)
+  );
+  text-align: left;
+  box-shadow: 0 10px 22px rgba(40, 102, 139, 0.08);
+}
+
+.assistant-runtime-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.assistant-runtime-kicker {
+  margin: 0;
+  color: #3f6988;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.assistant-runtime-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 10px;
+  border: 1px solid rgba(95, 167, 211, 0.34);
+  border-radius: 999px;
+  background: rgba(241, 250, 255, 0.94);
+  color: #2b668a;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.assistant-runtime-badge[data-state="ready"] {
+  border-color: rgba(95, 167, 211, 0.34);
+  background: rgba(241, 250, 255, 0.94);
+  color: #2b668a;
+}
+
+.assistant-runtime-badge[data-state="live"] {
+  border-color: rgba(56, 165, 123, 0.4);
+  background: rgba(233, 250, 242, 0.95);
+  color: #228058;
+}
+
+.assistant-runtime-badge[data-state="fallback"] {
+  border-color: rgba(207, 117, 70, 0.35);
+  background: rgba(255, 241, 235, 0.95);
+  color: #a34e32;
+}
+
+.assistant-runtime-summary {
+  margin: 8px 0 0;
+  color: #4b7593;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
 .home-ops-panel {
   margin-top: 12px;
   border: 1px solid rgba(98, 171, 214, 0.34);
