@@ -8265,6 +8265,286 @@
       "helper": "general",
       "model": "rule-based",
       "at": "2026-03-28T15:49:06.911Z"
+    },
+    {
+      "id": "a-1774713245594-3213",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Sure. Tell me what you want, and if the message is too broad I will help narrow it down as we go.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T15:54:05.594Z"
+    },
+    {
+      "id": "a-1774713245612-6055",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Sure. Tell me what you want, and if the message is too broad I will help narrow it down as we go.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T15:54:05.612Z"
+    },
+    {
+      "id": "a-1774713257778-2964",
+      "ip": "::ffff:127.0.0.1",
+      "message": "cum esti ?",
+      "reply": "Sunt bine si sunt aici sa te ajut. Putem vorbi normal sau putem merge direct pe ce ai nevoie.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T15:54:17.778Z"
+    },
+    {
+      "id": "a-1774713257797-1164",
+      "ip": "::ffff:127.0.0.1",
+      "message": "ce faci",
+      "reply": "Sunt bine si sunt aici sa te ajut. Putem vorbi normal sau putem merge direct pe ce ai nevoie.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T15:54:17.797Z"
+    },
+    {
+      "id": "a-1774713257814-4547",
+      "ip": "::ffff:127.0.0.1",
+      "message": "putem sa vorbim ?",
+      "reply": "Da. Putem vorbi normal. Scrie-mi liber ce ai pe gand si iti raspund cat mai clar.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T15:54:17.814Z"
+    },
+    {
+      "id": "a-1774713265597-2423",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Sure. Tell me what you want, and if the message is too broad I will help narrow it down as we go.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T15:54:25.597Z"
+    },
+    {
+      "id": "a-1774713265669-9324",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Sure. Tell me what you want, and if the message is too broad I will help narrow it down as we go.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T15:54:25.670Z"
+    },
+    {
+      "id": "a-1774713322196-5329",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Sure. Tell me what you want, and if the message is too broad I will help narrow it down as we go.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T15:55:22.197Z"
+    },
+    {
+      "id": "a-1774713322229-9322",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Sure. Tell me what you want, and if the message is too broad I will help narrow it down as we go.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T15:55:22.229Z"
+    },
+    {
+      "id": "a-1774713328987-127",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Sure. Tell me what you want, and if the message is too broad I will help narrow it down as we go.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T15:55:28.987Z"
+    },
+    {
+      "id": "a-1774713329005-5994",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Sure. Tell me what you want, and if the message is too broad I will help narrow it down as we go.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T15:55:29.005Z"
+    },
+    {
+      "id": "a-1774713334012-5728",
+      "ip": "::ffff:127.0.0.1",
+      "message": "contract-test",
+      "reply": "Sure. Tell me what you want, and if the message is too broad I will help narrow it down as we go.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T15:55:34.012Z"
+    },
+    {
+      "id": "a-1774713446754-7493",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Sure. Tell me what you want, and if the message is too broad I will help narrow it down as we go.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T15:57:26.754Z"
+    },
+    {
+      "id": "a-1774713446842-537",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Sure. Tell me what you want, and if the message is too broad I will help narrow it down as we go.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T15:57:26.842Z"
+    },
+    {
+      "id": "a-1774713448031",
+      "at": "2026-03-28T15:57:28Z",
+      "ip": "127.0.0.1",
+      "message": "health check",
+      "reply": "I can help with 'health check'. If you want higher-quality AI responses, configure a provider key.",
+      "provider": "local-fallback",
+      "model": "local-fallback",
+      "helper": "general"
+    },
+    {
+      "id": "a-1774713455132-9484",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Sure. Tell me what you want, and if the message is too broad I will help narrow it down as we go.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T15:57:35.132Z"
+    },
+    {
+      "id": "a-1774713455149-2150",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Sure. Tell me what you want, and if the message is too broad I will help narrow it down as we go.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T15:57:35.149Z"
+    },
+    {
+      "id": "a-1774713458824-9045",
+      "ip": "::ffff:127.0.0.1",
+      "message": "hello",
+      "reply": "Hi. We can talk normally. Tell me what you want to figure out or solve and I will answer directly.",
+      "provider": "local-hybrid",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T15:57:38.824Z"
+    },
+    {
+      "id": "a-1774713458846",
+      "at": "2026-03-28T15:57:38Z",
+      "ip": "127.0.0.1",
+      "message": "hello",
+      "reply": "I can help with 'hello'. If you want higher-quality AI responses, configure a provider key.",
+      "provider": "local-fallback",
+      "model": "local-fallback",
+      "helper": "general"
+    },
+    {
+      "id": "a-1774713459781-5711",
+      "ip": "::ffff:127.0.0.1",
+      "message": "contract-test",
+      "reply": "Sure. Tell me what you want, and if the message is too broad I will help narrow it down as we go.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T15:57:39.781Z"
+    },
+    {
+      "id": "a-1774713460291",
+      "at": "2026-03-28T15:57:40Z",
+      "ip": "127.0.0.1",
+      "message": "contract-test",
+      "reply": "I can help with 'contract-test'. If you want higher-quality AI responses, configure a provider key.",
+      "provider": "local-fallback",
+      "model": "local-fallback",
+      "helper": "general"
+    },
+    {
+      "id": "a-1774713483261-7944",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Sure. Tell me what you want, and if the message is too broad I will help narrow it down as we go.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T15:58:03.261Z"
+    },
+    {
+      "id": "a-1774713483280-6540",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Sure. Tell me what you want, and if the message is too broad I will help narrow it down as we go.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T15:58:03.280Z"
+    },
+    {
+      "id": "a-1774713485750-5051",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Sure. Tell me what you want, and if the message is too broad I will help narrow it down as we go.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T15:58:05.750Z"
+    },
+    {
+      "id": "a-1774713485776-181",
+      "ip": "::ffff:127.0.0.1",
+      "message": "health check",
+      "reply": "Sure. Tell me what you want, and if the message is too broad I will help narrow it down as we go.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T15:58:05.776Z"
+    },
+    {
+      "id": "a-1774713488600-2353",
+      "ip": "::ffff:127.0.0.1",
+      "message": "hello",
+      "reply": "Hi. We can talk normally. Tell me what you want to figure out or solve and I will answer directly.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T15:58:08.600Z"
+    },
+    {
+      "id": "a-1774713489835-6996",
+      "ip": "::ffff:127.0.0.1",
+      "message": "hello",
+      "reply": "Hi. We can talk normally. Tell me what you want to figure out or solve and I will answer directly.",
+      "provider": "cache",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T15:58:09.835Z"
+    },
+    {
+      "id": "a-1774713490564-2168",
+      "ip": "::ffff:127.0.0.1",
+      "message": "contract-test",
+      "reply": "Sure. Tell me what you want, and if the message is too broad I will help narrow it down as we go.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T15:58:10.564Z"
     }
   ]
 }
