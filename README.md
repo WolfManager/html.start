@@ -165,6 +165,24 @@ Recommended next components for enterprise growth:
 - Returns service status plus safe runtime configuration snapshot (rate limits, backup intervals, trend window sizes).
 - Does not expose credentials or secrets.
 
+## API Base Override Stability
+
+Frontend API base selection is resolved in this order:
+
+1. `?apiBase=...` query parameter
+2. `localStorage.MAGNETO_API_BASE_URL`
+3. safe default (localhost in local dev, `window.location.origin` on public host)
+
+To avoid confusing behavior between sessions, use the runtime helpers from browser console:
+
+- `window.setMagnetoApiBase("http://127.0.0.1:8000")` - persist a specific backend
+- `window.resetMagnetoApiBase()` - clear override and return to default
+
+Safety behavior:
+
+- On non-local hosts, stale localhost overrides are automatically cleared.
+- Explicit `?apiBase=...` values are persisted so reloads remain consistent.
+
 ## MAGNETO Assistant AI
 
 - Endpoint: `POST /api/assistant/chat`
