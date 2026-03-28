@@ -46,6 +46,7 @@ Status:
 
 - in progress
 - final benchmark set defined on 2026-03-28
+- refinement backlog documented in `SEARCH_REFINEMENT_NOTES.md`
 
 Goal:
 
@@ -69,6 +70,7 @@ Suggested deliverables:
 - final benchmark list
 - benchmark result report
 - search-specific regression notes
+- search refinement backlog
 
 ## Stage 3 — Finalize AI Chatbot
 

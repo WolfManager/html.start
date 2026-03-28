@@ -274,6 +274,7 @@ For detailed production deployment procedures, incident response, and operationa
 - **[BASELINE_STABLE_2026-03-28.md](BASELINE_STABLE_2026-03-28.md)** - Official stable reference for the currently validated system
 - **[PROJECT_CLOSURE_PLAN.md](PROJECT_CLOSURE_PLAN.md)** - 7-stage closure plan from stable baseline to finished product
 - **[SEARCH_FINAL_BENCHMARK_SET.md](SEARCH_FINAL_BENCHMARK_SET.md)** - Stage 2 final search benchmark set and pass criteria
+- **[SEARCH_REFINEMENT_NOTES.md](SEARCH_REFINEMENT_NOTES.md)** - Stage 2 backlog of search cases that pass technically but still need relevance polish
 
 ### 🛠️ Essential Scripts
 
