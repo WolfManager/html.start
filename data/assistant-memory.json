@@ -8125,6 +8125,36 @@
       "helper": "general",
       "model": "rule-based",
       "at": "2026-03-28T09:52:09.254Z"
+    },
+    {
+      "id": "a-1774692169187-1065",
+      "ip": "::ffff:127.0.0.1",
+      "message": "cum esti ?",
+      "reply": "Sunt bine si sunt aici sa te ajut. Putem vorbi normal sau putem merge direct pe ce ai nevoie.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T10:02:49.187Z"
+    },
+    {
+      "id": "a-1774692169202-5611",
+      "ip": "::ffff:127.0.0.1",
+      "message": "ce faci",
+      "reply": "Sunt bine si sunt aici sa te ajut. Putem vorbi normal sau putem merge direct pe ce ai nevoie.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T10:02:49.202Z"
+    },
+    {
+      "id": "a-1774692169215-5370",
+      "ip": "::ffff:127.0.0.1",
+      "message": "putem sa vorbim ?",
+      "reply": "Da. Putem vorbi normal. Scrie-mi liber ce ai pe gand si iti raspund cat mai clar.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-03-28T10:02:49.215Z"
     }
   ]
 }
