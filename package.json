@@ -61,6 +61,7 @@
     "contract:validate:gate:daily": "node scripts/contract-validation.js --json --out=data/backups/contract/latest-contract-gate.json --label=contract-daily",
     "contract:validate:gate:admin:daily": "node scripts/contract-validation.js --json --require-admin --out=data/backups/contract/latest-contract-gate-admin.json --label=contract-admin-daily",
     "assistant:benchmark": "node scripts/assistant-benchmark.js",
+    "smoke:local:regression": "node scripts/regression-local-smoke.js",
     "benchmark:all": "node test-all-benchmarks.js"
   },
   "dependencies": {
