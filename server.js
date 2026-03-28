@@ -3446,7 +3446,7 @@ function tokenize(query) {
 }
 
 const QUERY_SYNONYMS = {
-  ai: ["artificial", "intelligence", "machine", "learning", "llm"],
+  ai: ["artificial", "intelligence"],
   ml: ["machine", "learning"],
   js: ["javascript"],
   ux: ["design", "experience"],
@@ -3509,6 +3509,8 @@ const OPTIONAL_QUERY_TOKENS = new Set([
   "noi",
   "recent",
   "recente",
+  // Romanian learning query modifiers (core term is the subject, not the mode)
+  "curs", // course — treated like "guide" or "tutorial"
 ]);
 
 const COVERAGE_THRESHOLD_BY_INTENT = {
@@ -3930,11 +3932,19 @@ function computeFreshnessScore(fetchedAt) {
 // Weight for freshness signal in relevance ranking (per intent type).
 // News queries heavily weight recency; docs/code prefer stability.
 function getFreshnessWeight(intents) {
-  if (!Array.isArray(intents) || intents.length === 0) return 0.04;
-  if (intents.includes("news")) return 0.18;
-  if (intents.includes("jobs")) return 0.1;
-  if (intents.includes("research")) return 0.06;
-  if (intents.includes("docs") || intents.includes("code")) return 0.02;
+  if (!intents) return 0.04;
+  // intents may be a Set (from detectQueryIntents) or an Array — handle both.
+  const hasIntent =
+    intents instanceof Set
+      ? (v) => intents.has(v)
+      : (v) => Array.isArray(intents) && intents.includes(v);
+  const empty =
+    intents instanceof Set ? intents.size === 0 : intents.length === 0;
+  if (empty) return 0.04;
+  if (hasIntent("news")) return 0.18;
+  if (hasIntent("jobs")) return 0.1;
+  if (hasIntent("research")) return 0.06;
+  if (hasIntent("docs") || hasIntent("code")) return 0.02;
   return 0.04;
 }
 
@@ -4707,7 +4717,8 @@ function computeIntentBoost(doc, intents) {
 
   if (intents.has("news")) {
     if (category === "news") {
-      boost += 8;
+      // Strong boost so news sources decisively outrank brand pages for news queries.
+      boost += 50;
     }
     if (category === "technology" || category === "media") {
       boost += 3;
@@ -4775,14 +4786,15 @@ function computeIntentBoost(doc, intents) {
 
   if (intents.has("research")) {
     if (category === "research" || category === "science") {
-      boost += 8;
+      // Elevated boost so research repositories rank above brand/company pages.
+      boost += 14;
     }
     if (
       tags.some((tag) =>
         ["papers", "research", "academic", "scholarly"].includes(tag),
       )
     ) {
-      boost += 4;
+      boost += 8;
     }
   }
 
