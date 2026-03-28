@@ -268,6 +268,11 @@ For detailed production deployment procedures, incident response, and operationa
 
 - **[INCIDENT_RESPONSE_PLAYBOOK.md](INCIDENT_RESPONSE_PLAYBOOK.md)** - Procedures for common production issues (high error rate, slow search, service unavailable, etc.)
 
+### 🧭 Stable Baseline & Closure
+
+- **[BASELINE_STABLE_2026-03-28.md](BASELINE_STABLE_2026-03-28.md)** - Official stable reference for the currently validated system
+- **[PROJECT_CLOSURE_PLAN.md](PROJECT_CLOSURE_PLAN.md)** - 7-stage closure plan from stable baseline to finished product
+
 ### 🛠️ Essential Scripts
 
 **Canary Traffic Management:**
