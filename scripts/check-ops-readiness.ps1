@@ -1,5 +1,7 @@
 param(
-  [switch]$Strict
+  [switch]$Strict,
+  [switch]$Json,
+  [string]$Out = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -39,6 +41,14 @@ function Add-ErrorItem {
 
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $envPath = Join-Path $projectRoot ".env"
+$resolvedOutPath = ""
+if ($Out) {
+  $resolvedOutPath = if ([System.IO.Path]::IsPathRooted($Out)) {
+    $Out
+  } else {
+    Join-Path $projectRoot $Out
+  }
+}
 
 $warnings = New-Object System.Collections.Generic.List[string]
 $errors = New-Object System.Collections.Generic.List[string]
@@ -108,6 +118,32 @@ if (Test-Path $freshnessScript) {
   Add-ErrorItem "Missing freshness script: $freshnessScript"
 }
 
+$exitCode = 0
+if ($errors.Count -gt 0) {
+  $exitCode = 1
+} elseif ($Strict.IsPresent -and $warnings.Count -gt 0) {
+  $exitCode = 2
+}
+
+$status = if ($exitCode -eq 0) { "PASS" } else { "FAIL" }
+$report = [ordered]@{
+  generatedAt = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ssK")
+  strict = $Strict.IsPresent
+  status = $status
+  exitCode = $exitCode
+  errors = @($errors)
+  warnings = @($warnings)
+}
+
+if ($resolvedOutPath) {
+  New-Item -Path (Split-Path -Parent $resolvedOutPath) -ItemType Directory -Force | Out-Null
+  ($report | ConvertTo-Json -Depth 5) + "`n" | Set-Content -Path $resolvedOutPath -Encoding UTF8
+}
+
+if ($Json.IsPresent) {
+  Write-Output ($report | ConvertTo-Json -Depth 5)
+}
+
 Write-Host ""
 Write-Host "Ops readiness summary:"
 Write-Host "- Errors: $($errors.Count)"
@@ -121,14 +157,9 @@ foreach ($warn in $warnings) {
   Write-Host "WARN: $warn"
 }
 
-if ($errors.Count -gt 0) {
-  exit 1
-}
-
-if ($Strict.IsPresent -and $warnings.Count -gt 0) {
+if ($exitCode -eq 2) {
   Write-Host "Strict mode failed because warnings are present."
-  exit 2
 }
 
-Write-Host "Ops readiness check: PASS"
-exit 0
+Write-Host "Ops readiness check: $status"
+exit $exitCode

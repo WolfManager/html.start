@@ -64,6 +64,8 @@
     "ops:gates:freshness:strict": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check-daily-gates-freshness.ps1 -RequireGo",
     "ops:readiness": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check-ops-readiness.ps1",
     "ops:readiness:strict": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check-ops-readiness.ps1 -Strict",
+    "ops:readiness:json": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check-ops-readiness.ps1 -Json",
+    "ops:readiness:daily": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check-ops-readiness.ps1 -Strict -Json -Out data/backups/ops-readiness/latest-readiness.json",
     "contract:validate": "node scripts/contract-validation.js",
     "contract:validate:json": "node scripts/contract-validation.js --json",
     "contract:validate:node": "node scripts/contract-validation.js --api-target=node",

@@ -330,6 +330,12 @@ npm.cmd run ops:readiness
 # Same check but fails on warnings too
 npm.cmd run ops:readiness:strict
 
+# Print readiness JSON to console
+npm.cmd run ops:readiness:json
+
+# Save strict readiness report to latest JSON artifact
+npm.cmd run ops:readiness:daily
+
 # Run full admin daily gates immediately (manual trigger)
 npm.cmd run ops:gates:daily:admin:run
 
@@ -363,6 +369,7 @@ Generated files:
 - parity gate: `data/backups/parity/latest-critical-admin-gate.json`
 - contract gate: `data/backups/contract/latest-contract-gate-admin.json`
 - release gate: `data/backups/release-gate/latest-release-gate-admin.json`
+- readiness: `data/backups/ops-readiness/latest-readiness.json`
 
 Quick troubleshooting:
 
