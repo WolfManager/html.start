@@ -60,6 +60,8 @@
     "ops:logs:prune": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/prune-ops-logs.ps1",
     "ops:gates:notify": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/notify-daily-gates-result.ps1 -ExitCode 0",
     "ops:gates:notify:test": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/notify-daily-gates-result.ps1 -ExitCode 0 -ForceNotify",
+    "ops:gates:freshness": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check-daily-gates-freshness.ps1",
+    "ops:gates:freshness:strict": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check-daily-gates-freshness.ps1 -RequireGo",
     "contract:validate": "node scripts/contract-validation.js",
     "contract:validate:json": "node scripts/contract-validation.js --json",
     "contract:validate:node": "node scripts/contract-validation.js --api-target=node",

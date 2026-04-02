@@ -318,6 +318,12 @@ npm.cmd run ops:gates:daily:admin:register -- -Time 09:30
 # Check task status + latest log tail
 npm.cmd run ops:gates:daily:admin:status
 
+# Check if daily artifacts are recent enough
+npm.cmd run ops:gates:freshness
+
+# Same check but also require GO verdicts
+npm.cmd run ops:gates:freshness:strict
+
 # Run full admin daily gates immediately (manual trigger)
 npm.cmd run ops:gates:daily:admin:run
 
@@ -356,7 +362,8 @@ Quick troubleshooting:
 
 1. Run `npm.cmd run ops:gates:daily:admin:status`
 2. Check `LastTaskResult` and latest log tail
-3. If needed, run `npm.cmd run ops:gates:daily:admin:run` for immediate re-validation
+3. Run `npm.cmd run ops:gates:freshness:strict` to validate freshness + GO
+4. If needed, run `npm.cmd run ops:gates:daily:admin:run` for immediate re-validation
 
 ### Pre-Deployment Checklist
 
