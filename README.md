@@ -324,6 +324,12 @@ npm.cmd run ops:gates:freshness
 # Same check but also require GO verdicts
 npm.cmd run ops:gates:freshness:strict
 
+# Unified ops readiness check (config + task + freshness)
+npm.cmd run ops:readiness
+
+# Same check but fails on warnings too
+npm.cmd run ops:readiness:strict
+
 # Run full admin daily gates immediately (manual trigger)
 npm.cmd run ops:gates:daily:admin:run
 
@@ -364,6 +370,7 @@ Quick troubleshooting:
 2. Check `LastTaskResult` and latest log tail
 3. Run `npm.cmd run ops:gates:freshness:strict` to validate freshness + GO
 4. If needed, run `npm.cmd run ops:gates:daily:admin:run` for immediate re-validation
+5. Run `npm.cmd run ops:readiness` for one-shot consolidated validation
 
 ### Pre-Deployment Checklist
 

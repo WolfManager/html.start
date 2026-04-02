@@ -62,6 +62,8 @@
     "ops:gates:notify:test": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/notify-daily-gates-result.ps1 -ExitCode 0 -ForceNotify",
     "ops:gates:freshness": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check-daily-gates-freshness.ps1",
     "ops:gates:freshness:strict": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check-daily-gates-freshness.ps1 -RequireGo",
+    "ops:readiness": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check-ops-readiness.ps1",
+    "ops:readiness:strict": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check-ops-readiness.ps1 -Strict",
     "contract:validate": "node scripts/contract-validation.js",
     "contract:validate:json": "node scripts/contract-validation.js --json",
     "contract:validate:node": "node scripts/contract-validation.js --api-target=node",
