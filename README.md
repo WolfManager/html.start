@@ -302,6 +302,62 @@ For detailed production deployment procedures, incident response, and operationa
 bash scripts/emergency-rollback.sh "Brief reason"
 ```
 
+### 🗓️ Windows Daily Automation (Task Scheduler)
+
+For Windows operations, daily gate checks are automated through a scheduled task.
+
+Use `npm.cmd` in PowerShell:
+
+```powershell
+# Register daily task (default: 08:00)
+npm.cmd run ops:gates:daily:admin:register
+
+# Register at a custom hour (24h format)
+npm.cmd run ops:gates:daily:admin:register -- -Time 09:30
+
+# Check task status + latest log tail
+npm.cmd run ops:gates:daily:admin:status
+
+# Run full admin daily gates immediately (manual trigger)
+npm.cmd run ops:gates:daily:admin:run
+
+# Prune old ops logs (keep latest and remove old by age)
+npm.cmd run ops:logs:prune
+
+# Run notifier (writes summary; sends webhook only on failure by default)
+npm.cmd run ops:gates:notify
+
+# Force webhook test notification
+npm.cmd run ops:gates:notify:test
+
+# Remove scheduled task if needed
+npm.cmd run ops:gates:daily:admin:unregister
+```
+
+Optional webhook config in `.env`:
+
+- `OPS_ALERT_WEBHOOK_URL` - Teams/Slack incoming webhook URL
+- `OPS_ALERT_WEBHOOK_ENABLED` - `true|false` global switch
+- `OPS_ALERT_ON_SUCCESS` - `true` to notify on successful runs as well
+- `OPS_ALERT_RETRY_COUNT` - webhook retry attempts (default: `2`)
+- `OPS_ALERT_TIMEOUT_SECONDS` - webhook request timeout seconds (default: `10`)
+- `OPS_DAILY_TASK_TIME` - default scheduler time used by register script (example: `08:00`)
+
+Generated files:
+
+- ops logs: `data/backups/ops-logs/`
+- ops summary: `data/backups/ops-logs/latest-daily-gates-summary.json`
+- health gate: `data/backups/health-check/latest-gate.json`
+- parity gate: `data/backups/parity/latest-critical-admin-gate.json`
+- contract gate: `data/backups/contract/latest-contract-gate-admin.json`
+- release gate: `data/backups/release-gate/latest-release-gate-admin.json`
+
+Quick troubleshooting:
+
+1. Run `npm.cmd run ops:gates:daily:admin:status`
+2. Check `LastTaskResult` and latest log tail
+3. If needed, run `npm.cmd run ops:gates:daily:admin:run` for immediate re-validation
+
 ### Pre-Deployment Checklist
 
 Before deploying to production:
