@@ -441,6 +441,15 @@
                 _
               </button>
               <button
+                id="assistantMaximizeBtn"
+                type="button"
+                class="assistant-modal-control assistant-modal-control-expand"
+                aria-label="Toggle fullscreen"
+                title="Fullscreen"
+              >
+                []
+              </button>
+              <button
                 id="assistantCloseBtn"
                 type="button"
                 class="assistant-modal-control assistant-modal-control-close"
@@ -469,6 +478,10 @@
             class="assistant-status"
             aria-live="polite"
           ></p>
+
+          <p class="assistant-modal-hint">
+            Drag the header to move. Press Esc to close.
+          </p>
 
           <form id="assistantForm" class="assistant-form">
             <label for="assistantInput" class="sr-only"
