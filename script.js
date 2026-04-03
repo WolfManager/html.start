@@ -387,6 +387,7 @@ let csvPreviewTotalDataRowCount = 0;
 let adminSearchExpandedRunId = null;
 const ADMIN_SEARCH_RUNS_PAGE_SIZE = 10;
 const ADMIN_SEARCH_RUNS_HIDDEN_COLS_KEY = "magneto.admin.search.hiddenCols";
+const RESULTS_FILTER_PREFS_KEY = "magneto.results.filterPrefs";
 const ADMIN_SEARCH_RUNS_COL_KEYS = [
   "startedAt",
   "source",
@@ -2180,14 +2181,49 @@ async function initResultsPage() {
   }
 
   const params = new URLSearchParams(window.location.search);
+  const savedResultsPrefs = (() => {
+    try {
+      const raw = localStorage.getItem(RESULTS_FILTER_PREFS_KEY);
+      if (!raw) {
+        return {};
+      }
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") {
+        return {};
+      }
+      return parsed;
+    } catch {
+      return {};
+    }
+  })();
+
+  const hasParam = (name) => params.has(name);
+  const pickParamOrSaved = (name, fallback = "") => {
+    if (hasParam(name)) {
+      return String(params.get(name) || "").trim();
+    }
+    return String(savedResultsPrefs?.[name] || fallback).trim();
+  };
+
+  const normalizeSort = (value) => {
+    const normalized = String(value || "relevance").trim().toLowerCase();
+    if (normalized === "newest" || normalized === "quality") {
+      return normalized;
+    }
+    return "relevance";
+  };
+
+  const normalizeLimit = (value) => {
+    const normalized = String(value || "20").trim();
+    return /^\d+$/.test(normalized) ? normalized : "20";
+  };
+
   const initialQuery = String(params.get("q") || "").trim();
-  const initialLanguage = String(params.get("language") || "").trim();
+  const initialLanguage = pickParamOrSaved("language", "");
   const initialCategory = String(params.get("category") || "").trim();
   const initialSource = String(params.get("source") || "").trim();
-  const initialSort =
-    String(params.get("sort") || "relevance").trim() || "relevance";
-  const initialLimitRaw = String(params.get("limit") || "").trim();
-  const initialLimit = /^\d+$/.test(initialLimitRaw) ? initialLimitRaw : "20";
+  const initialSort = normalizeSort(pickParamOrSaved("sort", "relevance"));
+  const initialLimit = normalizeLimit(pickParamOrSaved("limit", "20"));
   const initialPageRaw = String(params.get("page") || "").trim();
   const initialPage = /^\d+$/.test(initialPageRaw) ? Number(initialPageRaw) : 1;
 
@@ -2344,6 +2380,20 @@ async function initResultsPage() {
       urlParams.set("sort", sort);
     }
     window.history.replaceState({}, "", `results.html?${urlParams.toString()}`);
+  }
+
+  function persistResultsFilterPrefs() {
+    const nextPrefs = {
+      language: String(resultsFilterLanguage?.value || "").trim(),
+      sort: normalizeSort(String(resultsFilterSort?.value || "relevance")),
+      limit: normalizeLimit(String(resultsFilterLimit?.value || "20")),
+    };
+
+    try {
+      localStorage.setItem(RESULTS_FILTER_PREFS_KEY, JSON.stringify(nextPrefs));
+    } catch {
+      // Keep search functional even if browser storage is unavailable.
+    }
   }
 
   function renderFacets(facets) {
@@ -2574,6 +2624,8 @@ async function initResultsPage() {
     if (updateUrl) {
       setResultsUrl(targetPage);
     }
+
+    persistResultsFilterPrefs();
 
     resultsMeta.textContent = "Loading data from MAGNETO Core...";
     renderResultsActiveContext({
@@ -2961,6 +3013,7 @@ async function initResultsPage() {
         resultsFilterLimit.value = "20";
       }
       currentPage = 1;
+      persistResultsFilterPrefs();
       await performResultsSearch(true, 1);
     });
   }
