@@ -2439,6 +2439,56 @@ async function initResultsPage() {
     }
   }
 
+  function renderResultsStateCard(
+    message,
+    tone = "neutral",
+    withRetry = false,
+  ) {
+    resultsList.innerHTML = "";
+
+    const li = document.createElement("li");
+    li.className = `result-card results-state-card ${tone === "error" ? "results-state-card-error" : "results-state-card-neutral"}`;
+
+    const description = document.createElement("p");
+    description.className = "result-description";
+    description.textContent = String(message || "No data available.");
+    li.appendChild(description);
+
+    if (withRetry) {
+      const retryBtn = document.createElement("button");
+      retryBtn.type = "button";
+      retryBtn.className = "results-state-action";
+      retryBtn.textContent = "Retry";
+      retryBtn.addEventListener("click", async () => {
+        await performResultsSearch(true, currentPage);
+      });
+      li.appendChild(retryBtn);
+    }
+
+    resultsList.appendChild(li);
+  }
+
+  function renderResultsLoadingState() {
+    resultsList.innerHTML = "";
+    for (let index = 0; index < 3; index += 1) {
+      const li = document.createElement("li");
+      li.className = "result-card result-card-loading";
+
+      const title = document.createElement("span");
+      title.className = "results-skeleton results-skeleton-title";
+
+      const lineA = document.createElement("span");
+      lineA.className = "results-skeleton results-skeleton-line";
+
+      const lineB = document.createElement("span");
+      lineB.className =
+        "results-skeleton results-skeleton-line results-skeleton-line-short";
+
+      li.append(title, lineA, lineB);
+      resultsList.appendChild(li);
+    }
+  }
+
   async function performResultsSearch(updateUrl = false, pageOverride = null) {
     const language = String(resultsFilterLanguage?.value || "").trim();
     const category = String(resultsFilterCategory?.value || "").trim();
@@ -2476,7 +2526,11 @@ async function initResultsPage() {
     }
 
     resultsMeta.textContent = "Loading data from MAGNETO Core...";
-    resultsList.innerHTML = "";
+    resultsList.setAttribute("aria-busy", "true");
+    renderResultsLoadingState();
+    if (resultsRelated) {
+      resultsRelated.hidden = true;
+    }
 
     try {
       const response = await apiFetch(
@@ -2636,19 +2690,15 @@ async function initResultsPage() {
       renderPagination(payload.pagination || {});
 
       if (!Array.isArray(payload.results) || payload.results.length === 0) {
-        const li = document.createElement("li");
-        li.className = "result-card";
-
-        const description = document.createElement("p");
-        description.className = "result-description";
-        description.textContent =
-          "No exact matches in MAGNETO Core index. Try broader terms or relax one filter.";
-
-        li.appendChild(description);
-        resultsList.appendChild(li);
+        renderResultsStateCard(
+          "No exact matches in MAGNETO Core index. Try broader terms or relax one filter.",
+        );
         renderPagination(payload.pagination || {});
+        resultsList.setAttribute("aria-busy", "false");
         return;
       }
+
+      resultsList.innerHTML = "";
 
       for (const item of payload.results) {
         const li = document.createElement("li");
@@ -2780,10 +2830,16 @@ async function initResultsPage() {
           resultsRelated.hidden = false;
         }
       }
+      resultsList.setAttribute("aria-busy", "false");
     } catch (error) {
       const apiBaseLabel = API_BASE_URL || "(relative /api)";
       const baseMessage = error.message || "Could not load results.";
       resultsMeta.textContent = `${baseMessage} API base: ${apiBaseLabel}`;
+      renderResultsStateCard(
+        "We could not load results right now. Check connectivity or try again.",
+        "error",
+        true,
+      );
       if (resultsAssist) {
         resultsAssist.hidden = true;
       }
@@ -2797,6 +2853,7 @@ async function initResultsPage() {
       if (resultsPagination) {
         resultsPagination.hidden = true;
       }
+      resultsList.setAttribute("aria-busy", "false");
     }
   }
 
