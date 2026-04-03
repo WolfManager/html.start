@@ -335,11 +335,45 @@
         </aside>
 
         <section class="center-panel" aria-label="MAGNETO search">
-          <section class="hero" aria-label="MAGNETO brand">
+          <section class="hero hero-home" aria-label="MAGNETO brand">
             <h1>Magneto</h1>
+            <p class="subtitle home-subtitle">
+              Search faster with production-grade relevance, trusted sources,
+              and assistant-guided exploration in one clean workspace.
+            </p>
+            <div class="hero-metrics" aria-label="Platform highlights">
+              <article class="hero-metric-card">
+                <p class="hero-metric-value">Fast Resulting</p>
+                <p class="hero-metric-label">
+                  Optimized search path with low-latency ranking signals.
+                </p>
+              </article>
+              <article class="hero-metric-card">
+                <p class="hero-metric-value">Transparent Runtime</p>
+                <p class="hero-metric-label">
+                  Live readiness status for assistant mode and API routing.
+                </p>
+              </article>
+              <article class="hero-metric-card">
+                <p class="hero-metric-value">Multi-Provider Ready</p>
+                <p class="hero-metric-label">
+                  Architecture aligned for OpenAI, Anthropic, and Gemini flows.
+                </p>
+              </article>
+            </div>
           </section>
 
-          <section class="search-panel" aria-label="Search form">
+          <section
+            class="search-panel search-panel-home"
+            aria-label="Search form"
+          >
+            <header class="search-panel-head">
+              <p class="search-kicker">What do you want to discover today?</p>
+              <p class="search-copy">
+                Ask naturally, refine quickly, and jump into high-signal
+                results.
+              </p>
+            </header>
             <form id="searchForm" class="search-form">
               <label for="searchQuery" class="sr-only"
                 >What do you want to search?</label
@@ -356,6 +390,11 @@
 
               <button type="submit" class="search-btn">Search</button>
             </form>
+            <div class="search-signal-strip" aria-label="Search features">
+              <span class="search-signal">Smart ranking</span>
+              <span class="search-signal">Intent-aware refinement</span>
+              <span class="search-signal">Assistant escalation</span>
+            </div>
             <button
               id="assistantLaunchBtn"
               type="button"
