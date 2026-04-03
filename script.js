@@ -2357,6 +2357,14 @@ async function initResultsPage() {
       chips.push(`Results: ${Number(context.total)}`);
     }
 
+    const hasRefinements =
+      Boolean(context.language) ||
+      Boolean(context.category) ||
+      Boolean(context.source) ||
+      String(context.sort || "relevance").toLowerCase() !== "relevance" ||
+      String(context.limit || "20") !== "20" ||
+      (Number.isFinite(Number(context.page)) && Number(context.page) > 1);
+
     resultsActiveContext.innerHTML = "";
     chips.forEach((chipText) => {
       const chip = document.createElement("span");
@@ -2364,6 +2372,35 @@ async function initResultsPage() {
       chip.textContent = chipText;
       resultsActiveContext.appendChild(chip);
     });
+
+    if (hasRefinements) {
+      const clearChip = document.createElement("button");
+      clearChip.type = "button";
+      clearChip.className = "results-active-chip results-active-chip-action";
+      clearChip.textContent = "Clear filters";
+      clearChip.addEventListener("click", async () => {
+        if (resultsFilterLanguage) {
+          resultsFilterLanguage.value = "";
+        }
+        if (resultsFilterCategory) {
+          resultsFilterCategory.value = "";
+        }
+        if (resultsFilterSource) {
+          resultsFilterSource.value = "";
+        }
+        if (resultsFilterSort) {
+          resultsFilterSort.value = "relevance";
+        }
+        if (resultsFilterLimit) {
+          resultsFilterLimit.value = "20";
+        }
+        currentPage = 1;
+        persistResultsFilterPrefs();
+        await performResultsSearch(true, 1);
+      });
+      resultsActiveContext.appendChild(clearChip);
+    }
+
     resultsActiveContext.hidden = chips.length === 0;
   }
 
