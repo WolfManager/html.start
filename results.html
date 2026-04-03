@@ -91,11 +91,7 @@
             >
           </div>
           <label class="results-filter-pref">
-            <input
-              id="resultsRememberFilters"
-              type="checkbox"
-              checked
-            />
+            <input id="resultsRememberFilters" type="checkbox" checked />
             <span>Remember my filters</span>
           </label>
         </div>
@@ -199,6 +195,14 @@
       <p class="results-back-wrap">
         <a href="index.html" class="results-back-link">Back to search</a>
       </p>
+
+      <div
+        id="resultsPrefsToast"
+        class="results-pref-toast"
+        role="status"
+        aria-live="polite"
+        hidden
+      ></div>
     </main>
 
     <script src="config.js?v=20260321a"></script>

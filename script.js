@@ -57,6 +57,7 @@ const resultsFilterReset = document.getElementById("resultsFilterReset");
 const resultsRememberFilters = document.getElementById(
   "resultsRememberFilters",
 );
+const resultsPrefsToast = document.getElementById("resultsPrefsToast");
 const resultsFacets = document.getElementById("resultsFacets");
 const resultsPagination = document.getElementById("resultsPagination");
 const resultsPrevPage = document.getElementById("resultsPrevPage");
@@ -2385,6 +2386,7 @@ async function initResultsPage() {
     });
   }
   let currentPage = Math.max(1, initialPage);
+  let resultsPrefsToastTimerId = null;
   let lastPagination = {
     page: currentPage,
     totalPages: 0,
@@ -2438,6 +2440,33 @@ async function initResultsPage() {
     } catch {
       // Keep search functional even if browser storage is unavailable.
     }
+  }
+
+  function showResultsPrefsToast(message) {
+    if (!resultsPrefsToast) {
+      return;
+    }
+
+    if (resultsPrefsToastTimerId != null) {
+      window.clearTimeout(resultsPrefsToastTimerId);
+      resultsPrefsToastTimerId = null;
+    }
+
+    resultsPrefsToast.textContent = String(message || "");
+    resultsPrefsToast.hidden = false;
+    resultsPrefsToast.classList.remove("is-visible");
+    window.requestAnimationFrame(() => {
+      resultsPrefsToast.classList.add("is-visible");
+    });
+
+    resultsPrefsToastTimerId = window.setTimeout(() => {
+      resultsPrefsToast.classList.remove("is-visible");
+      window.setTimeout(() => {
+        if (resultsPrefsToast) {
+          resultsPrefsToast.hidden = true;
+        }
+      }, 190);
+    }, 1800);
   }
 
   function renderFacets(facets) {
@@ -3068,8 +3097,10 @@ async function initResultsPage() {
       setResultsPrefsEnabled(enabled);
       if (enabled) {
         persistResultsFilterPrefs();
+        showResultsPrefsToast("Filter memory enabled.");
       } else {
         removeStoredResultsPrefs();
+        showResultsPrefsToast("Filter memory disabled.");
       }
     });
   }

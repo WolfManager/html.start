@@ -2328,6 +2328,33 @@ select:focus,
   box-shadow: 0 10px 18px rgba(36, 95, 129, 0.16);
 }
 
+.results-pref-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translate(-50%, 12px);
+  z-index: 50;
+  min-height: 38px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(121, 200, 240, 0.42);
+  background: rgba(8, 33, 50, 0.9);
+  color: #d2f1ff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: 0 14px 24px rgba(0, 0, 0, 0.24);
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+.results-pref-toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
 .admin-dashboard {
   margin-top: 16px;
 }
@@ -3664,6 +3691,18 @@ mark {
   .results-filter-pref {
     justify-content: center;
     width: 100%;
+  }
+
+  .results-pref-toast {
+    left: 8px;
+    right: 8px;
+    bottom: 10px;
+    transform: translateY(12px);
+    width: auto;
+  }
+
+  .results-pref-toast.is-visible {
+    transform: translateY(0);
   }
 
   .assistant-modal {
