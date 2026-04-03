@@ -57,6 +57,9 @@ const resultsFilterReset = document.getElementById("resultsFilterReset");
 const resultsRememberFilters = document.getElementById(
   "resultsRememberFilters",
 );
+const resultsRememberFiltersState = document.getElementById(
+  "resultsRememberFiltersState",
+);
 const resultsPrefsToast = document.getElementById("resultsPrefsToast");
 const resultsFacets = document.getElementById("resultsFacets");
 const resultsPagination = document.getElementById("resultsPagination");
@@ -2205,6 +2208,16 @@ async function initResultsPage() {
     }
   };
 
+  const syncResultsPrefsStateBadge = (enabled) => {
+    if (!resultsRememberFiltersState) {
+      return;
+    }
+    resultsRememberFiltersState.textContent = enabled
+      ? "Preferences active"
+      : "Preferences off";
+    resultsRememberFiltersState.classList.toggle("is-off", !enabled);
+  };
+
   const removeStoredResultsPrefs = () => {
     try {
       localStorage.removeItem(RESULTS_FILTER_PREFS_KEY);
@@ -2296,7 +2309,11 @@ async function initResultsPage() {
     resultsFilterLimit.value = initialLimit;
   }
   if (resultsRememberFilters) {
-    resultsRememberFilters.checked = areResultsPrefsEnabled();
+    const enabled = areResultsPrefsEnabled();
+    resultsRememberFilters.checked = enabled;
+    syncResultsPrefsStateBadge(enabled);
+  } else {
+    syncResultsPrefsStateBadge(areResultsPrefsEnabled());
   }
 
   let currentQuery = initialQuery;
@@ -3095,6 +3112,7 @@ async function initResultsPage() {
     resultsRememberFilters.addEventListener("change", () => {
       const enabled = Boolean(resultsRememberFilters.checked);
       setResultsPrefsEnabled(enabled);
+      syncResultsPrefsStateBadge(enabled);
       if (enabled) {
         persistResultsFilterPrefs();
         showResultsPrefsToast("Filter memory enabled.");
