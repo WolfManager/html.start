@@ -61,6 +61,7 @@ const resultsRememberFiltersState = document.getElementById(
   "resultsRememberFiltersState",
 );
 const resultsPrefsToast = document.getElementById("resultsPrefsToast");
+const resultsScrollTopBtn = document.getElementById("resultsScrollTopBtn");
 const resultsFacets = document.getElementById("resultsFacets");
 const resultsPagination = document.getElementById("resultsPagination");
 const resultsPrevPage = document.getElementById("resultsPrevPage");
@@ -3194,6 +3195,23 @@ async function initResultsPage() {
         showResultsPrefsToast("Filter memory disabled.");
       }
     });
+  }
+
+  if (resultsScrollTopBtn) {
+    const syncScrollTopButton = () => {
+      const isVisible = window.scrollY > 420;
+      resultsScrollTopBtn.hidden = !isVisible;
+      resultsScrollTopBtn.classList.toggle("is-visible", isVisible);
+    };
+
+    resultsScrollTopBtn.addEventListener("click", () => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    window.addEventListener("scroll", syncScrollTopButton, {
+      passive: true,
+    });
+    syncScrollTopButton();
   }
 
   if (resultsPrevPage) {
