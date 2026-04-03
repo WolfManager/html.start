@@ -1901,6 +1901,27 @@ select:focus,
   gap: 8px;
 }
 
+.results-filter-pref {
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #b9e5fb;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.results-filter-pref input[type="checkbox"] {
+  inline-size: 16px;
+  block-size: 16px;
+  accent-color: #66c0ec;
+  cursor: pointer;
+}
+
+.results-filter-pref span {
+  line-height: 1.2;
+}
+
 .results-tip-chip {
   display: inline-flex;
   align-items: center;
@@ -3638,6 +3659,11 @@ mark {
 
   .results-tips-strip {
     justify-content: center;
+  }
+
+  .results-filter-pref {
+    justify-content: center;
+    width: 100%;
   }
 
   .assistant-modal {

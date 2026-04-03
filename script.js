@@ -54,6 +54,9 @@ const resultsSourceOptions = document.getElementById("resultsSourceOptions");
 const resultsFilterSort = document.getElementById("resultsFilterSort");
 const resultsFilterLimit = document.getElementById("resultsFilterLimit");
 const resultsFilterReset = document.getElementById("resultsFilterReset");
+const resultsRememberFilters = document.getElementById(
+  "resultsRememberFilters",
+);
 const resultsFacets = document.getElementById("resultsFacets");
 const resultsPagination = document.getElementById("resultsPagination");
 const resultsPrevPage = document.getElementById("resultsPrevPage");
@@ -388,6 +391,7 @@ let adminSearchExpandedRunId = null;
 const ADMIN_SEARCH_RUNS_PAGE_SIZE = 10;
 const ADMIN_SEARCH_RUNS_HIDDEN_COLS_KEY = "magneto.admin.search.hiddenCols";
 const RESULTS_FILTER_PREFS_KEY = "magneto.results.filterPrefs";
+const RESULTS_FILTER_PREFS_ENABLED_KEY = "magneto.results.filterPrefs.enabled";
 const ADMIN_SEARCH_RUNS_COL_KEYS = [
   "startedAt",
   "source",
@@ -2181,7 +2185,37 @@ async function initResultsPage() {
   }
 
   const params = new URLSearchParams(window.location.search);
+  const areResultsPrefsEnabled = () => {
+    try {
+      return localStorage.getItem(RESULTS_FILTER_PREFS_ENABLED_KEY) !== "0";
+    } catch {
+      return true;
+    }
+  };
+
+  const setResultsPrefsEnabled = (enabled) => {
+    try {
+      localStorage.setItem(
+        RESULTS_FILTER_PREFS_ENABLED_KEY,
+        enabled ? "1" : "0",
+      );
+    } catch {
+      // Keep search usable even if browser storage is unavailable.
+    }
+  };
+
+  const removeStoredResultsPrefs = () => {
+    try {
+      localStorage.removeItem(RESULTS_FILTER_PREFS_KEY);
+    } catch {
+      // Keep search usable even if browser storage is unavailable.
+    }
+  };
+
   const savedResultsPrefs = (() => {
+    if (!areResultsPrefsEnabled()) {
+      return {};
+    }
     try {
       const raw = localStorage.getItem(RESULTS_FILTER_PREFS_KEY);
       if (!raw) {
@@ -2206,7 +2240,9 @@ async function initResultsPage() {
   };
 
   const normalizeSort = (value) => {
-    const normalized = String(value || "relevance").trim().toLowerCase();
+    const normalized = String(value || "relevance")
+      .trim()
+      .toLowerCase();
     if (normalized === "newest" || normalized === "quality") {
       return normalized;
     }
@@ -2257,6 +2293,9 @@ async function initResultsPage() {
   }
   if (resultsFilterLimit) {
     resultsFilterLimit.value = initialLimit;
+  }
+  if (resultsRememberFilters) {
+    resultsRememberFilters.checked = areResultsPrefsEnabled();
   }
 
   let currentQuery = initialQuery;
@@ -2383,6 +2422,11 @@ async function initResultsPage() {
   }
 
   function persistResultsFilterPrefs() {
+    if (!areResultsPrefsEnabled()) {
+      removeStoredResultsPrefs();
+      return;
+    }
+
     const nextPrefs = {
       language: String(resultsFilterLanguage?.value || "").trim(),
       sort: normalizeSort(String(resultsFilterSort?.value || "relevance")),
@@ -3015,6 +3059,18 @@ async function initResultsPage() {
       currentPage = 1;
       persistResultsFilterPrefs();
       await performResultsSearch(true, 1);
+    });
+  }
+
+  if (resultsRememberFilters) {
+    resultsRememberFilters.addEventListener("change", () => {
+      const enabled = Boolean(resultsRememberFilters.checked);
+      setResultsPrefsEnabled(enabled);
+      if (enabled) {
+        persistResultsFilterPrefs();
+      } else {
+        removeStoredResultsPrefs();
+      }
     });
   }
 
