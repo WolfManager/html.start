@@ -1766,6 +1766,30 @@ select:focus,
   outline-offset: 2px;
 }
 
+.results-active-chip-share {
+  cursor: pointer;
+  border-color: rgba(127, 205, 246, 0.5);
+  background: rgba(16, 57, 82, 0.78);
+  color: #d5f3ff;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease;
+}
+
+.results-active-chip-share:hover {
+  transform: translateY(-1px);
+  border-color: rgba(146, 220, 255, 0.78);
+  background: rgba(22, 72, 102, 0.9);
+  box-shadow: 0 10px 16px rgba(0, 0, 0, 0.18);
+}
+
+.results-active-chip-share:focus-visible {
+  outline: 2px solid rgba(154, 227, 255, 0.9);
+  outline-offset: 2px;
+}
+
 .results-didyoumean {
   margin: 0;
   color: #bde7ff;

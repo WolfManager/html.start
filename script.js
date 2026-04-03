@@ -2322,6 +2322,33 @@ async function initResultsPage() {
   };
   renderResultsHeading();
 
+  async function copyCurrentResultsLink() {
+    const shareUrl = String(window.location.href || "");
+    if (!shareUrl) {
+      showResultsPrefsToast("Could not read current link.");
+      return;
+    }
+
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+      } else {
+        const fallbackInput = document.createElement("textarea");
+        fallbackInput.value = shareUrl;
+        fallbackInput.setAttribute("readonly", "true");
+        fallbackInput.style.position = "fixed";
+        fallbackInput.style.opacity = "0";
+        document.body.appendChild(fallbackInput);
+        fallbackInput.select();
+        document.execCommand("copy");
+        fallbackInput.remove();
+      }
+      showResultsPrefsToast("Shareable link copied.");
+    } catch {
+      showResultsPrefsToast("Could not copy link. Use the address bar.");
+    }
+  }
+
   function renderResultsActiveContext(context) {
     if (!resultsActiveContext) {
       return;
@@ -2372,6 +2399,15 @@ async function initResultsPage() {
       chip.textContent = chipText;
       resultsActiveContext.appendChild(chip);
     });
+
+    const shareChip = document.createElement("button");
+    shareChip.type = "button";
+    shareChip.className = "results-active-chip results-active-chip-share";
+    shareChip.textContent = "Copy shareable link";
+    shareChip.addEventListener("click", async () => {
+      await copyCurrentResultsLink();
+    });
+    resultsActiveContext.appendChild(shareChip);
 
     if (hasRefinements) {
       const clearChip = document.createElement("button");
