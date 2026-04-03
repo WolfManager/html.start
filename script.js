@@ -40,6 +40,7 @@ const assistantStatusMessage = document.getElementById(
 
 const resultsQuery = document.getElementById("resultsQuery");
 const resultsMeta = document.getElementById("resultsMeta");
+const resultsActiveContext = document.getElementById("resultsActiveContext");
 const resultsAssist = document.getElementById("resultsAssist");
 const resultsDidYouMean = document.getElementById("resultsDidYouMean");
 const resultsSuggestChips = document.getElementById("resultsSuggestChips");
@@ -2193,6 +2194,10 @@ async function initResultsPage() {
   if (!initialQuery) {
     resultsQuery.textContent = "No active search";
     resultsMeta.textContent = "Go back to homepage and enter a query.";
+    if (resultsActiveContext) {
+      resultsActiveContext.hidden = true;
+      resultsActiveContext.innerHTML = "";
+    }
     if (resultsPagination) {
       resultsPagination.hidden = true;
     }
@@ -2223,6 +2228,51 @@ async function initResultsPage() {
     resultsQuery.textContent = `Results for: ${currentQuery}`;
   };
   renderResultsHeading();
+
+  function renderResultsActiveContext(context) {
+    if (!resultsActiveContext) {
+      return;
+    }
+
+    if (!context || !String(context.query || "").trim()) {
+      resultsActiveContext.hidden = true;
+      resultsActiveContext.innerHTML = "";
+      return;
+    }
+
+    const chips = [];
+    chips.push(`Query: ${context.query}`);
+    if (context.language) {
+      chips.push(`Language: ${context.language}`);
+    }
+    if (context.category) {
+      chips.push(`Category: ${context.category}`);
+    }
+    if (context.source) {
+      chips.push(`Source: ${context.source}`);
+    }
+    if (context.sort) {
+      chips.push(`Sort: ${context.sort}`);
+    }
+    if (context.limit) {
+      chips.push(`Limit: ${context.limit}`);
+    }
+    if (Number.isFinite(Number(context.page)) && Number(context.page) > 1) {
+      chips.push(`Page: ${Number(context.page)}`);
+    }
+    if (Number.isFinite(Number(context.total))) {
+      chips.push(`Results: ${Number(context.total)}`);
+    }
+
+    resultsActiveContext.innerHTML = "";
+    chips.forEach((chipText) => {
+      const chip = document.createElement("span");
+      chip.className = "results-active-chip";
+      chip.textContent = chipText;
+      resultsActiveContext.appendChild(chip);
+    });
+    resultsActiveContext.hidden = chips.length === 0;
+  }
 
   function formatResultsSort(value) {
     const normalized = String(value || "relevance")
@@ -2526,6 +2576,15 @@ async function initResultsPage() {
     }
 
     resultsMeta.textContent = "Loading data from MAGNETO Core...";
+    renderResultsActiveContext({
+      query: currentQuery,
+      language,
+      category,
+      source,
+      sort,
+      limit,
+      page: targetPage,
+    });
     resultsList.setAttribute("aria-busy", "true");
     renderResultsLoadingState();
     if (resultsRelated) {
@@ -2675,6 +2734,16 @@ async function initResultsPage() {
         ? ` | Filters: ${appliedParts.join(", ")}`
         : "";
       resultsMeta.textContent = `${payload.total} results from ${payload.engine}${filtersText}`;
+      renderResultsActiveContext({
+        query: currentQuery,
+        language: applied.language || language,
+        category: applied.category || category,
+        source: applied.source || source,
+        sort: applied.sort || sort,
+        limit: applied.limit || limit,
+        page: applied.page || currentPage,
+        total: payload.total,
+      });
       if (resultsCountValue) {
         resultsCountValue.textContent = String(payload.total || 0);
       }
@@ -2835,6 +2904,15 @@ async function initResultsPage() {
       const apiBaseLabel = API_BASE_URL || "(relative /api)";
       const baseMessage = error.message || "Could not load results.";
       resultsMeta.textContent = `${baseMessage} API base: ${apiBaseLabel}`;
+      renderResultsActiveContext({
+        query: currentQuery,
+        language,
+        category,
+        source,
+        sort,
+        limit,
+        page: targetPage,
+      });
       renderResultsStateCard(
         "We could not load results right now. Check connectivity or try again.",
         "error",
