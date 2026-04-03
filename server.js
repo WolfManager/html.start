@@ -177,6 +177,12 @@ const {
   PORT,
 } = env;
 
+const DISABLE_RUNTIME_TELEMETRY = ["1", "true", "yes", "on"].includes(
+  String(process.env.MAGNETO_DISABLE_RUNTIME_TELEMETRY || "")
+    .trim()
+    .toLowerCase(),
+);
+
 // --- Smart Search Result Cache ---
 const SEARCH_CACHE_TTL_MS =
   envNumber("SEARCH_CACHE_TTL_SECONDS", 300, { min: 30, max: 3600 }) * 1000;
@@ -2738,6 +2744,9 @@ async function buildDateNewsAssistantResponse(message) {
 }
 
 function storeAssistantMemory({ ip, message, reply, provider, helper, model }) {
+  if (DISABLE_RUNTIME_TELEMETRY) {
+    return;
+  }
   const db = readJson(assistantMemoryPath, { chats: [] });
   const chats = Array.isArray(db.chats) ? db.chats : [];
   chats.push({
@@ -6466,6 +6475,9 @@ async function executeDjangoIndexSync({
 }
 
 function logSearch({ query, resultCount, ip }) {
+  if (DISABLE_RUNTIME_TELEMETRY) {
+    return;
+  }
   trackQuerySequence(query, ip);
   const analytics = readJson(analyticsPath, { searches: [], pageViews: [] });
   analytics.searches.push({
@@ -6485,6 +6497,9 @@ function logSearch({ query, resultCount, ip }) {
 }
 
 function logPageView({ page, ip, userAgent }) {
+  if (DISABLE_RUNTIME_TELEMETRY) {
+    return;
+  }
   const analytics = readJson(analyticsPath, { searches: [], pageViews: [] });
   analytics.pageViews.push({
     id: `p-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
@@ -6503,6 +6518,9 @@ function logPageView({ page, ip, userAgent }) {
 }
 
 function logResultClick({ url, title, query, ip }) {
+  if (DISABLE_RUNTIME_TELEMETRY) {
+    return;
+  }
   const analytics = readJson(analyticsPath, {
     searches: [],
     pageViews: [],

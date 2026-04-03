@@ -8,6 +8,7 @@
     "dev": "node server.js",
     "dev:full": "node scripts/dev-full.js",
     "dev:full:stable": "node scripts/dev-full.js --noreload",
+    "dev:full:stable:no-telemetry": "cross-env MAGNETO_DISABLE_RUNTIME_TELEMETRY=1 node scripts/dev-full.js --noreload",
     "dev:full:dry": "node scripts/dev-full.js --dry-run",
     "dev:node": "node scripts/dev-full.js --node-only",
     "dev:django": "node scripts/dev-full.js --django-only",

@@ -32,7 +32,7 @@ function startProcess(label, command, args, cwd, envOverrides = {}) {
 
   const child = spawn(command, args, {
     cwd,
-    shell: true,
+    shell: false,
     stdio: ["inherit", "pipe", "pipe"],
     env: {
       ...process.env,
