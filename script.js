@@ -3197,6 +3197,44 @@ async function initResultsPage() {
     });
   }
 
+  window.addEventListener("keydown", async (event) => {
+    if (!resultsFilters) {
+      return;
+    }
+
+    const activeElement = document.activeElement;
+    const activeTag = String(activeElement?.tagName || "").toLowerCase();
+    const isTypingContext =
+      activeTag === "input" ||
+      activeTag === "textarea" ||
+      activeTag === "select" ||
+      Boolean(activeElement?.isContentEditable);
+
+    if (
+      event.key === "/" &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      !event.altKey &&
+      !isTypingContext &&
+      resultsFilterSource
+    ) {
+      event.preventDefault();
+      resultsFilterSource.focus();
+      resultsFilterSource.select();
+      return;
+    }
+
+    if (
+      event.key === "Enter" &&
+      (event.ctrlKey || event.metaKey) &&
+      !event.altKey
+    ) {
+      event.preventDefault();
+      currentPage = 1;
+      await performResultsSearch(true, 1);
+    }
+  });
+
   if (resultsScrollTopBtn) {
     const syncScrollTopButton = () => {
       const isVisible = window.scrollY > 420;

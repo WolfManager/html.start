@@ -1970,6 +1970,13 @@ select:focus,
   line-height: 1.2;
 }
 
+.results-shortcut-hint {
+  margin: 8px 0 0;
+  color: #95c7de;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
 .results-filter-pref-state {
   display: inline-flex;
   align-items: center;
