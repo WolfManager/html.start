@@ -840,14 +840,171 @@ function initHomeKeyboardShortcuts() {
 
 function addAssistantMessage(role, text) {
   if (!assistantThread) {
-    return;
+    return null;
   }
+
+  const wrapper = document.createElement("div");
+  wrapper.className = `assistant-message ${role}`;
 
   const message = document.createElement("p");
   message.className = `assistant-bubble ${role}`;
   message.textContent = text;
-  assistantThread.appendChild(message);
+
+  wrapper.appendChild(message);
+
+  if (role === "bot") {
+    const speakBtn = document.createElement("button");
+    speakBtn.type = "button";
+    speakBtn.className = "assistant-tts-btn";
+    speakBtn.textContent = "Speak";
+    speakBtn.setAttribute("aria-label", "Speak this assistant response");
+    speakBtn.disabled = String(text || "").trim() === "Thinking...";
+    speakBtn.addEventListener("click", async () => {
+      if (speakBtn.dataset.state === "playing") {
+        stopAssistantSpeech();
+        speakBtn.dataset.state = "idle";
+        speakBtn.textContent = "Replay";
+        speakBtn.disabled = false;
+        return;
+      }
+      speakBtn.disabled = true;
+      speakBtn.dataset.state = "generating";
+      speakBtn.textContent = "Generating…";
+      const played = await playAssistantSpeech(message.textContent, () => {
+        speakBtn.dataset.state = "idle";
+        speakBtn.textContent = "Replay";
+        speakBtn.disabled = false;
+      });
+      if (played) {
+        speakBtn.dataset.state = "playing";
+        speakBtn.textContent = "Stop";
+        speakBtn.disabled = false;
+      } else {
+        speakBtn.dataset.state = "idle";
+        speakBtn.textContent = "Speak";
+        speakBtn.disabled = false;
+      }
+    });
+    wrapper.appendChild(speakBtn);
+  }
+
+  assistantThread.appendChild(wrapper);
   assistantThread.scrollTop = assistantThread.scrollHeight;
+  return message;
+}
+
+let assistantAudioElement = null;
+let assistantAudioObjectUrl = "";
+
+function releaseAssistantAudioObjectUrl() {
+  if (assistantAudioObjectUrl) {
+    URL.revokeObjectURL(assistantAudioObjectUrl);
+    assistantAudioObjectUrl = "";
+  }
+}
+
+async function requestAssistantSpeechAudioBase64(text) {
+  const detectedLanguage = detectSpeechLanguage(text);
+  const body = { text: String(text || "") };
+  if (detectedLanguage) body.language = detectedLanguage;
+
+  const response = await apiFetch("/api/assistant/tts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload.error || "Assistant speech request failed.");
+  }
+
+  const audioBase64 = String(payload.audioBase64 || "").trim();
+  const mimeType = String(payload.mimeType || "audio/wav").trim();
+  if (!audioBase64) {
+    throw new Error("Assistant speech payload was empty.");
+  }
+
+  return { audioBase64, mimeType };
+}
+
+function decodeBase64AudioToBlob(base64, mimeType) {
+  const binary = atob(base64);
+  const len = binary.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new Blob([bytes], { type: mimeType || "audio/wav" });
+}
+
+/**
+ * Detect speech language from text using diacritics/word heuristics.
+ * Returns a BCP-47-like code accepted by Coqui ("ro", "es", etc.) or null.
+ */
+function detectSpeechLanguage(text) {
+  if (/[ăâîșțĂÂÎȘȚ]/.test(text)) return "ro";
+  if (/[áéíóúüñÁÉÍÓÚÜÑ]/.test(text)) return "es";
+  if (/[àâæçèéêëîïôùûüÿœÀÂÆÇÈÉÊËÎÏÔÙÛÜŸŒ]/.test(text)) return "fr";
+  if (/[äöüßÄÖÜ]/.test(text)) return "de";
+  return null;
+}
+
+function stopAssistantSpeech() {
+  if (assistantAudioElement) {
+    assistantAudioElement.pause();
+    assistantAudioElement.currentTime = 0;
+    assistantAudioElement = null;
+  }
+  releaseAssistantAudioObjectUrl();
+  updateAssistantStatus("");
+}
+
+async function playAssistantSpeech(text, onEnd) {
+  const cleanText = String(text || "").trim();
+  if (!cleanText || cleanText === "Thinking...") {
+    return false;
+  }
+
+  try {
+    updateAssistantStatus("Generating voice...");
+    const payload = await requestAssistantSpeechAudioBase64(cleanText);
+    const audioBlob = decodeBase64AudioToBlob(
+      payload.audioBase64,
+      payload.mimeType,
+    );
+
+    if (assistantAudioElement) {
+      stopAssistantSpeech();
+    }
+
+    releaseAssistantAudioObjectUrl();
+    assistantAudioObjectUrl = URL.createObjectURL(audioBlob);
+
+    const audio = new Audio(assistantAudioObjectUrl);
+    assistantAudioElement = audio;
+    audio.onended = () => {
+      updateAssistantStatus("");
+      releaseAssistantAudioObjectUrl();
+      assistantAudioElement = null;
+      if (typeof onEnd === "function") onEnd();
+    };
+    audio.onerror = () => {
+      updateAssistantStatus("Voice playback failed.", true);
+      releaseAssistantAudioObjectUrl();
+      assistantAudioElement = null;
+      if (typeof onEnd === "function") onEnd();
+    };
+    await audio.play();
+    updateAssistantStatus("Playing assistant voice...");
+    return true;
+  } catch (error) {
+    updateAssistantStatus(
+      `Voice unavailable: ${String(error?.message || "Unknown error")}`,
+      true,
+    );
+    return false;
+  }
 }
 
 function buildAssistantContent(rawQuery) {
@@ -1319,12 +1476,19 @@ function initAssistantChat() {
     }
 
     addAssistantMessage("user", userText);
-    addAssistantMessage("bot", "Thinking...");
+    const pendingReplyBubble = addAssistantMessage("bot", "Thinking...");
     updateAssistantStatus("Assistant is replying...");
 
     const result = await requestAssistantResponse(userText);
-    if (assistantThread && assistantThread.lastElementChild) {
-      assistantThread.lastElementChild.textContent = result.reply;
+    if (pendingReplyBubble) {
+      pendingReplyBubble.textContent = result.reply;
+      const messageRow = pendingReplyBubble.closest(".assistant-message");
+      const speakButton = messageRow
+        ? messageRow.querySelector(".assistant-tts-btn")
+        : null;
+      if (speakButton) {
+        speakButton.disabled = false;
+      }
     }
 
     if (result.provider === "local-fallback" && result.reason) {

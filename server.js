@@ -40,6 +40,9 @@ const {
   createAssistantChatController,
 } = require("./apps/api-node/src/controllers/assistant.controller");
 const {
+  createAssistantTtsController,
+} = require("./apps/api-node/src/controllers/assistant-tts.controller");
+const {
   createSearchController,
 } = require("./apps/api-node/src/controllers/search.controller");
 const {
@@ -120,6 +123,9 @@ const {
 const {
   createAssistantRoutes,
 } = require("./apps/api-node/src/routes/assistant.routes");
+const {
+  createAssistantTtsRoutes,
+} = require("./apps/api-node/src/routes/assistant-tts.routes");
 const {
   createLocationRoutes,
 } = require("./apps/api-node/src/routes/location.routes");
@@ -402,6 +408,37 @@ const ASSISTANT_REPLY_MAX_CHARS = envNumber("ASSISTANT_REPLY_MAX_CHARS", 1200, {
   min: 280,
   max: 4000,
 });
+const ASSISTANT_TTS_MAX_CHARS = envNumber("ASSISTANT_TTS_MAX_CHARS", 1200, {
+  min: 80,
+  max: 4000,
+});
+const ASSISTANT_TTS_TIMEOUT_MS = envNumber("ASSISTANT_TTS_TIMEOUT_MS", 20000, {
+  min: 1000,
+  max: 120000,
+});
+const ASSISTANT_TTS_ENABLED = ["1", "true", "yes", "on"].includes(
+  String(process.env.ASSISTANT_TTS_ENABLED || "1")
+    .trim()
+    .toLowerCase(),
+);
+const COQUI_TTS_API_URL = String(
+  process.env.COQUI_TTS_API_URL || "http://localhost:5002/api/tts",
+)
+  .trim()
+  .replace(/\/+$/, "");
+const COQUI_TTS_API_KEY = String(process.env.COQUI_TTS_API_KEY || "").trim();
+const COQUI_TTS_API_KEY_HEADER = String(
+  process.env.COQUI_TTS_API_KEY_HEADER || "X-API-Key",
+).trim();
+const COQUI_TTS_DEFAULT_SPEAKER = String(
+  process.env.COQUI_TTS_DEFAULT_SPEAKER || "Daisy Studious",
+).trim();
+const COQUI_TTS_DEFAULT_LANGUAGE = String(
+  process.env.COQUI_TTS_DEFAULT_LANGUAGE || "en",
+).trim();
+const COQUI_TTS_DEFAULT_MODEL = String(
+  process.env.COQUI_TTS_DEFAULT_MODEL || "",
+).trim();
 const ASSISTANT_MODEL_TEMPERATURE = envNumber(
   "ASSISTANT_MODEL_TEMPERATURE",
   0.5,
@@ -632,6 +669,17 @@ const assistantChatController = createAssistantChatController({
   isSimpleAssistantQuery,
   buildRuleBasedAssistantResponse,
   generateAssistantResponse,
+});
+const assistantTtsController = createAssistantTtsController({
+  assistantTtsEnabled: ASSISTANT_TTS_ENABLED,
+  assistantTtsMaxChars: ASSISTANT_TTS_MAX_CHARS,
+  assistantTtsTimeoutMs: ASSISTANT_TTS_TIMEOUT_MS,
+  coquiTtsApiUrl: COQUI_TTS_API_URL,
+  coquiTtsApiKey: COQUI_TTS_API_KEY,
+  coquiTtsApiKeyHeader: COQUI_TTS_API_KEY_HEADER,
+  coquiTtsSpeaker: COQUI_TTS_DEFAULT_SPEAKER,
+  coquiTtsLanguage: COQUI_TTS_DEFAULT_LANGUAGE,
+  coquiTtsModel: COQUI_TTS_DEFAULT_MODEL,
 });
 const popularSearchesController = createPopularSearchesController({
   fs,
@@ -879,6 +927,11 @@ app.use(
 app.use(
   createAssistantRoutes({
     assistantChatController,
+  }),
+);
+app.use(
+  createAssistantTtsRoutes({
+    assistantTtsController,
   }),
 );
 app.use(

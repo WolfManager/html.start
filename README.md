@@ -246,6 +246,30 @@ Assistant tuning variables:
 - `ASSISTANT_MEMORY_MAX_ITEMS`
 - `ASSISTANT_SIMPLE_QUERY_WORDS`
 
+### Assistant Voice (Coqui TTS)
+
+MAGNETO Assistant supports voice playback through a local Coqui TTS server.
+
+Quick setup (Windows + project `.venv`):
+
+- `npm.cmd run tts:install`
+- `npm.cmd run tts:doctor`
+- `npm.cmd run tts:serve`
+
+Then start MAGNETO backend (`npm.cmd start`) and use the `Speak` button from Assistant responses.
+
+Voice environment variables:
+
+- `ASSISTANT_TTS_ENABLED`
+- `ASSISTANT_TTS_MAX_CHARS`
+- `ASSISTANT_TTS_TIMEOUT_MS`
+- `COQUI_TTS_API_URL` (default: `http://127.0.0.1:5002/api/tts`)
+- `COQUI_TTS_API_KEY`
+- `COQUI_TTS_API_KEY_HEADER`
+- `COQUI_TTS_DEFAULT_SPEAKER`
+- `COQUI_TTS_DEFAULT_LANGUAGE`
+- `COQUI_TTS_DEFAULT_MODEL`
+
 Assistant billing observability:
 
 - Check runtime/AI status from `GET /api/admin/assistant-status`
