@@ -30,6 +30,13 @@ function parseProviderOrder(value) {
     .filter(Boolean);
 }
 
+function parseStringList(value) {
+  return String(value || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 function envNumber(
   name,
   fallback,
@@ -62,6 +69,11 @@ const AI_PRIMARY_PROVIDER = normalizeAiProvider(
 
 const env = {
   PORT: Number(process.env.PORT || 3000),
+  LOG_LEVEL:
+    String(process.env.LOG_LEVEL || "info")
+      .trim()
+      .toLowerCase() || "info",
+  CORS_ALLOWED_ORIGINS: parseStringList(process.env.CORS_ALLOWED_ORIGINS),
   JWT_SECRET: process.env.JWT_SECRET || "change-this-secret",
   ADMIN_USER: process.env.ADMIN_USER || "admin",
   ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || "change-this-password",

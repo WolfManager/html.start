@@ -1,3 +1,8 @@
+const {
+  assistantChatRequestSchema,
+  formatZodError,
+} = require("../schemas/assistant.schemas");
+
 function createAssistantChatController({
   checkAssistantRateLimit,
   assistantMetrics,
@@ -25,15 +30,16 @@ function createAssistantChatController({
 
     assistantMetrics.requestsTotal += 1;
 
-    const ip = getClientIp(req);
-    const message = String(req.body?.message || "").trim();
-    const history = req.body?.history;
-    const helper = classifyAssistantHelper(message);
-
-    if (!message) {
-      res.status(400).json({ error: "Message is required." });
+    const parsedRequest = assistantChatRequestSchema.safeParse(req.body || {});
+    if (!parsedRequest.success) {
+      res.status(400).json({ error: formatZodError(parsedRequest.error) });
       return;
     }
+
+    const ip = getClientIp(req);
+    const message = parsedRequest.data.message;
+    const history = parsedRequest.data.history;
+    const helper = classifyAssistantHelper(message);
 
     if (message.length > assistantMaxChars) {
       res.status(400).json({

@@ -1,7 +1,11 @@
 const express = require("express");
+const cors = require("cors");
 const fs = require("fs");
+const helmet = require("helmet");
 const path = require("path");
 const jwt = require("jsonwebtoken");
+const { LRUCache } = require("lru-cache");
+const pino = require("pino");
 const { randomUUID } = require("crypto");
 const { env } = require("./apps/api-node/src/config/env");
 const {
@@ -169,6 +173,7 @@ const {
   ANTHROPIC_API_KEY,
   ANTHROPIC_MODEL,
   ANTHROPIC_MODEL_CANDIDATES,
+  CORS_ALLOWED_ORIGINS,
   DJANGO_ADMIN_TOKEN,
   DJANGO_API_URL,
   DJANGO_INDEX_SYNC_ENABLED,
@@ -177,6 +182,7 @@ const {
   GEMINI_MODEL,
   GEMINI_MODEL_CANDIDATES,
   JWT_SECRET,
+  LOG_LEVEL,
   OPENAI_API_KEY,
   OPENAI_MODEL,
   OPENAI_MODEL_CANDIDATES,
@@ -189,6 +195,11 @@ const DISABLE_RUNTIME_TELEMETRY = ["1", "true", "yes", "on"].includes(
     .toLowerCase(),
 );
 
+const logger = pino({
+  level: LOG_LEVEL,
+  base: undefined,
+});
+
 // --- Smart Search Result Cache ---
 const SEARCH_CACHE_TTL_MS =
   envNumber("SEARCH_CACHE_TTL_SECONDS", 300, { min: 30, max: 3600 }) * 1000;
@@ -196,7 +207,11 @@ const SEARCH_CACHE_MAX_ENTRIES = envNumber("SEARCH_CACHE_MAX_ENTRIES", 500, {
   min: 50,
   max: 5000,
 });
-const searchResultCache = new Map(); // cacheKey -> { payload, expiresAt }
+const searchResultCache = new LRUCache({
+  max: SEARCH_CACHE_MAX_ENTRIES,
+  ttl: SEARCH_CACHE_TTL_MS,
+  ttlAutopurge: true,
+});
 
 function makeSearchCacheKey(query, opts) {
   return [
@@ -213,24 +228,11 @@ function makeSearchCacheKey(query, opts) {
 }
 
 function getFromSearchCache(key) {
-  const entry = searchResultCache.get(key);
-  if (!entry) return null;
-  if (Date.now() > entry.expiresAt) {
-    searchResultCache.delete(key);
-    return null;
-  }
-  return entry.payload;
+  return searchResultCache.get(key) || null;
 }
 
 function setInSearchCache(key, payload) {
-  if (searchResultCache.size >= SEARCH_CACHE_MAX_ENTRIES) {
-    const oldest = searchResultCache.keys().next().value;
-    searchResultCache.delete(oldest);
-  }
-  searchResultCache.set(key, {
-    payload,
-    expiresAt: Date.now() + SEARCH_CACHE_TTL_MS,
-  });
+  searchResultCache.set(key, payload);
 }
 
 function invalidateSearchCache() {
@@ -537,7 +539,11 @@ const CLICK_SIGNAL_DEDUP_WINDOW_MS =
 const loginAttemptMap = new Map();
 const adminRateMap = new Map();
 const assistantRateMap = new Map();
-const assistantCacheMap = new Map();
+const assistantCacheMap = new LRUCache({
+  max: ASSISTANT_CACHE_MAX_ENTRIES,
+  ttl: ASSISTANT_CACHE_TTL_MS,
+  ttlAutopurge: true,
+});
 const assistantContextMap = new Map();
 const assistantProviderHealthMap = new Map();
 const assistantProviderModelStateMap = new Map();
@@ -891,8 +897,30 @@ const adminExportCsvController = createAdminExportCsvController({
   escapeCsv,
 });
 
+app.disable("x-powered-by");
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+  }),
+);
+if (CORS_ALLOWED_ORIGINS.length > 0) {
+  app.use(
+    cors({
+      origin(origin, callback) {
+        if (!origin || CORS_ALLOWED_ORIGINS.includes(origin)) {
+          callback(null, true);
+          return;
+        }
+
+        callback(new Error("Origin not allowed by CORS."));
+      },
+      optionsSuccessStatus: 204,
+    }),
+  );
+}
 app.use(express.json({ limit: "250kb" }));
-app.use(createRequestObservabilityMiddleware({ randomUUID }));
+app.use(createRequestObservabilityMiddleware({ randomUUID, logger }));
 app.use(express.static(__dirname));
 app.use(createAuthRoutes({ loginController }));
 app.use(createHealthRoutes({ healthController }));
@@ -2236,38 +2264,11 @@ function classifyAssistantHelper(message) {
 }
 
 function getAssistantCacheEntry(key) {
-  const entry = assistantCacheMap.get(key);
-  if (!entry) {
-    return null;
-  }
-
-  if (Date.now() > entry.expiresAt) {
-    assistantCacheMap.delete(key);
-    return null;
-  }
-
-  return entry.value;
+  return assistantCacheMap.get(key) || null;
 }
 
 function setAssistantCacheEntry(key, value) {
-  assistantCacheMap.set(key, {
-    value,
-    expiresAt: Date.now() + ASSISTANT_CACHE_TTL_MS,
-  });
-
-  if (assistantCacheMap.size <= ASSISTANT_CACHE_MAX_ENTRIES) {
-    return;
-  }
-
-  const overflow = assistantCacheMap.size - ASSISTANT_CACHE_MAX_ENTRIES;
-  const keys = assistantCacheMap.keys();
-  for (let i = 0; i < overflow; i += 1) {
-    const next = keys.next();
-    if (next.done) {
-      break;
-    }
-    assistantCacheMap.delete(next.value);
-  }
+  assistantCacheMap.set(key, value);
 }
 
 function normalizeAssistantQueryKey(message) {
@@ -7206,5 +7207,8 @@ if (DJANGO_INDEX_SYNC_ENABLED) {
 }
 
 app.listen(PORT, () => {
-  console.log(`MAGNETO server running on http://localhost:${PORT}`);
+  logger.info(
+    { port: PORT },
+    `MAGNETO server running on http://localhost:${PORT}`,
+  );
 });

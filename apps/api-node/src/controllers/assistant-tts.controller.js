@@ -1,3 +1,8 @@
+const {
+  assistantTtsRequestSchema,
+  formatZodError,
+} = require("../schemas/assistant.schemas");
+
 function sanitizeAssistantTtsText(value) {
   return String(value || "")
     .replace(/\s+/g, " ")
@@ -23,17 +28,19 @@ function createAssistantTtsController({
       return;
     }
 
-    const text = sanitizeAssistantTtsText(req.body?.text);
-    const speakerOverride = req.body?.speaker
-      ? String(req.body.speaker).slice(0, 120).trim()
-      : null;
-    const languageOverride = req.body?.language
-      ? String(req.body.language).slice(0, 8).trim().toLowerCase()
-      : null;
-    if (!text) {
-      res.status(400).json({ error: "Text is required." });
+    const parsedRequest = assistantTtsRequestSchema.safeParse(req.body || {});
+    if (!parsedRequest.success) {
+      res.status(400).json({ error: formatZodError(parsedRequest.error) });
       return;
     }
+
+    const text = sanitizeAssistantTtsText(parsedRequest.data.text);
+    const speakerOverride = parsedRequest.data.speaker
+      ? String(parsedRequest.data.speaker).slice(0, 120).trim()
+      : null;
+    const languageOverride = parsedRequest.data.language
+      ? String(parsedRequest.data.language).slice(0, 8).trim().toLowerCase()
+      : null;
 
     if (text.length > assistantTtsMaxChars) {
       res.status(400).json({
