@@ -1284,6 +1284,66 @@ function resetQueryRewriteRules() {
   return writeQueryRewriteRules(getDefaultQueryRewriteRules());
 }
 
+function applyConfiguredQueryRewrite(rawQuery) {
+  const query = String(rawQuery || "").trim();
+  if (!query) {
+    return null;
+  }
+
+  const normalizedQuery = normalizeSearchText(query);
+  const rules = getQueryRewriteRules().filter((rule) => rule.enabled !== false);
+
+  for (const rule of rules) {
+    const source = String(rule.from || "").trim();
+    const target = String(rule.to || "").trim();
+    const reason =
+      String(rule.reason || "configured-rewrite").trim() ||
+      "configured-rewrite";
+    const matchType = normalizeSearchText(String(rule.matchType || "exact"));
+    const normalizedSource = normalizeSearchText(source);
+
+    if (!source || !target || !normalizedSource) {
+      continue;
+    }
+
+    if (matchType === "exact") {
+      if (normalizedQuery === normalizedSource) {
+        return {
+          originalQuery: query,
+          correctedQuery: target,
+          reason,
+          autoApplied: true,
+        };
+      }
+      continue;
+    }
+
+    if (
+      matchType === "contains" &&
+      normalizedQuery.includes(normalizedSource)
+    ) {
+      const replaced = query.replace(
+        new RegExp(escapeRegexTerm(source), "ig"),
+        target,
+      );
+      const correctedQuery = String(replaced || "").trim();
+      if (
+        correctedQuery &&
+        normalizeSearchText(correctedQuery) !== normalizedQuery
+      ) {
+        return {
+          originalQuery: query,
+          correctedQuery,
+          reason,
+          autoApplied: true,
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
 function looksLikeOperatorQuery(query) {
   return /(^|\s)(site:|-site:|filetype:|inurl:|intitle:)/i.test(
     String(query || ""),
@@ -3520,6 +3580,10 @@ const OPTIONAL_QUERY_TOKENS = new Set([
   "recente",
   // Romanian learning query modifiers (core term is the subject, not the mode)
   "curs", // course — treated like "guide" or "tutorial"
+  "incepatori", // beginner audience qualifier
+  "incepator", // singular beginner qualifier
+  "beginner", // English beginner qualifier
+  "beginners", // plural beginner qualifier
 ]);
 
 const COVERAGE_THRESHOLD_BY_INTENT = {
@@ -4602,6 +4666,249 @@ function rerankBySourceDiversity(
   return reranked;
 }
 
+function rerankByTypoRecoveryFocus(items, queryCorrection) {
+  if (!Array.isArray(items) || items.length <= 2) {
+    return Array.isArray(items) ? items : [];
+  }
+
+  const correction = queryCorrection || {};
+  if (
+    !correction.autoApplied ||
+    correction.reason === "zero-results-refinement"
+  ) {
+    return items;
+  }
+
+  const focusTokens = tokenize(String(correction.correctedQuery || ""));
+  if (focusTokens.length === 0 || focusTokens.length > 2) {
+    return items;
+  }
+
+  const ranked = items.map((item, index) => {
+    const titleTokens = tokenize(item.title || "");
+    const normalizedSource = normalizeFilterValue(
+      item.sourceName || item.sourceSlug || "",
+    );
+    const normalizedUrl = normalizeFilterValue(item.url || "");
+    let matched = 0;
+    let titleMatches = 0;
+
+    for (const token of focusTokens) {
+      const inTitle = titleTokens.some(
+        (candidate) => candidate === token || candidate.startsWith(token),
+      );
+      const inSource =
+        normalizedSource.includes(token) || normalizedUrl.includes(token);
+
+      if (inTitle || inSource) {
+        matched += 1;
+      }
+      if (inTitle) {
+        titleMatches += 1;
+      }
+    }
+
+    const focusScore = matched * 8 + titleMatches * 3;
+    return {
+      item,
+      index,
+      focusScore,
+    };
+  });
+
+  const focusedHits = ranked.filter((entry) => entry.focusScore > 0).length;
+  if (focusedHits < 2) {
+    return items;
+  }
+
+  if (focusTokens.length === 1 && focusedHits >= 3) {
+    return ranked
+      .filter((entry) => entry.focusScore > 0)
+      .sort((left, right) => {
+        if (right.focusScore !== left.focusScore) {
+          return right.focusScore - left.focusScore;
+        }
+        return left.index - right.index;
+      })
+      .map((entry) => entry.item);
+  }
+
+  ranked.sort((left, right) => {
+    if (right.focusScore !== left.focusScore) {
+      return right.focusScore - left.focusScore;
+    }
+    return left.index - right.index;
+  });
+
+  return ranked.map((entry) => entry.item);
+}
+
+function rerankByNewsIntentCoherence(items, query, intents) {
+  if (!Array.isArray(items) || items.length <= 1) {
+    return Array.isArray(items) ? items : [];
+  }
+  if (!intents || !intents.has("news")) {
+    return items;
+  }
+
+  const normalizedQuery = normalizeSearchText(query);
+  const isTemporalNewsQuery =
+    /\b(today|latest|breaking|now|azi|acum|ultime(le)?)\b/.test(
+      normalizedQuery,
+    );
+  if (!isTemporalNewsQuery) {
+    return items;
+  }
+
+  const trustedNewsHosts = [
+    "bbc.com",
+    "reuters.com",
+    "theguardian.com",
+    "news.google.com",
+    "techcrunch.com",
+  ];
+  const nonNewsBrandHosts = [
+    "openai.com",
+    "anthropic.com",
+    "huggingface.co",
+    "chat.openai.com",
+    "platform.openai.com",
+  ];
+
+  const reranked = items.map((item, index) => {
+    const category = normalizeFilterValue(item.category || "");
+    const source = normalizeFilterValue(
+      item.sourceName || item.sourceSlug || "",
+    );
+    const hostname = source.replace(/^www\./, "");
+    const isTrustedNewsHost = trustedNewsHosts.some(
+      (host) => hostname === host || hostname.endsWith(`.${host}`),
+    );
+    const isNewsCategory =
+      category === "news" || category === "media" || category === "technology";
+
+    let coherenceBoost = 0;
+    if (category === "news") {
+      coherenceBoost += 16;
+    } else if (category === "media" || category === "technology") {
+      coherenceBoost += 5;
+    }
+    if (isTrustedNewsHost) {
+      coherenceBoost += 8;
+    }
+
+    if (!isNewsCategory && !isTrustedNewsHost) {
+      coherenceBoost -= 18;
+    }
+
+    const isAiOrBrandCategory =
+      category === "ai" ||
+      category === "research" ||
+      category === "development" ||
+      category === "cloud";
+    const isNonNewsBrandHost = nonNewsBrandHosts.some(
+      (host) => hostname === host || hostname.endsWith(`.${host}`),
+    );
+    if (isAiOrBrandCategory || isNonNewsBrandHost) {
+      coherenceBoost -= 10;
+    }
+
+    const freshness = Number(item.freshnessScore || 0);
+    if (isNewsCategory || isTrustedNewsHost) {
+      coherenceBoost += Math.min(6, freshness * 0.08);
+    }
+
+    return {
+      ...item,
+      _newsCoherenceScore: Number(item._score || 0) + coherenceBoost,
+      _newsOrder: index,
+    };
+  });
+
+  reranked.sort((left, right) => {
+    if (right._newsCoherenceScore !== left._newsCoherenceScore) {
+      return right._newsCoherenceScore - left._newsCoherenceScore;
+    }
+    return left._newsOrder - right._newsOrder;
+  });
+
+  return reranked;
+}
+
+function rerankByResearchIntentCoherence(items, query, intents) {
+  if (!Array.isArray(items) || items.length <= 1) {
+    return Array.isArray(items) ? items : [];
+  }
+  if (!intents || !intents.has("research")) {
+    return items;
+  }
+
+  const normalizedQuery = normalizeSearchText(query);
+  const asksResearch =
+    /\b(research|paper|papers|academic|study|cercetare|studiu|studii|lucrare|lucrari)\b/.test(
+      normalizedQuery,
+    );
+  if (!asksResearch) {
+    return items;
+  }
+
+  const trustedResearchHosts = [
+    "arxiv.org",
+    "semanticscholar.org",
+    "scholar.google.com",
+    "pubmed.ncbi.nlm.nih.gov",
+    "nature.com",
+    "sciencedirect.com",
+  ];
+  const brandAiHosts = [
+    "openai.com",
+    "anthropic.com",
+    "chat.openai.com",
+    "platform.openai.com",
+    "huggingface.co",
+  ];
+
+  const reranked = items.map((item, index) => {
+    const category = normalizeFilterValue(item.category || "");
+    const source = normalizeFilterValue(
+      item.sourceName || item.sourceSlug || "",
+    );
+    const hostname = source.replace(/^www\./, "");
+    const isTrustedResearchHost = trustedResearchHosts.some(
+      (host) => hostname === host || hostname.endsWith(`.${host}`),
+    );
+    const isBrandAiHost = brandAiHosts.some(
+      (host) => hostname === host || hostname.endsWith(`.${host}`),
+    );
+
+    let coherenceBoost = 0;
+    if (category === "research" || category === "science") {
+      coherenceBoost += 14;
+    }
+    if (isTrustedResearchHost) {
+      coherenceBoost += 10;
+    }
+    if (category === "ai" || isBrandAiHost) {
+      coherenceBoost -= 12;
+    }
+
+    return {
+      ...item,
+      _researchCoherenceScore: Number(item._score || 0) + coherenceBoost,
+      _researchOrder: index,
+    };
+  });
+
+  reranked.sort((left, right) => {
+    if (right._researchCoherenceScore !== left._researchCoherenceScore) {
+      return right._researchCoherenceScore - left._researchCoherenceScore;
+    }
+    return left._researchOrder - right._researchOrder;
+  });
+
+  return reranked;
+}
+
 function detectQueryIntents(query, tokens) {
   const normalizedQuery = normalizeSearchText(query);
   const tokenSet = new Set(tokens);
@@ -5041,6 +5348,88 @@ function buildSearchFacets(items) {
   };
 }
 
+function isLearningRecallQuery(query) {
+  const tokens = tokenize(query);
+  if (tokens.length === 0) {
+    return false;
+  }
+
+  const learningTokens = new Set([
+    "learn",
+    "learning",
+    "tutorial",
+    "tutorials",
+    "course",
+    "courses",
+    "guide",
+    "curs",
+    "ghid",
+    "incepator",
+    "incepatori",
+    "beginner",
+    "beginners",
+    "programare",
+    "programming",
+    "coding",
+  ]);
+
+  return tokens.some((token) => learningTokens.has(token));
+}
+
+function buildLearningRecallExpansionQuery(query) {
+  const tokens = tokenize(query);
+  if (tokens.length === 0) {
+    return "";
+  }
+
+  const learningQualifierTokens = new Set([
+    "learn",
+    "learning",
+    "tutorial",
+    "tutorials",
+    "course",
+    "courses",
+    "guide",
+    "guides",
+    "curs",
+    "ghid",
+    "incepator",
+    "incepatori",
+    "beginner",
+    "beginners",
+    "starter",
+    "starters",
+  ]);
+
+  const optionalTokens = new Set(
+    (
+      getSearchRankingConfig()?.optionalQueryTokens || [
+        ...OPTIONAL_QUERY_TOKENS,
+      ]
+    )
+      .map((token) => normalizeSearchText(token))
+      .filter(Boolean),
+  );
+
+  const coreTokens = tokens.filter(
+    (token) =>
+      !optionalTokens.has(token) && !learningQualifierTokens.has(token),
+  );
+
+  if (coreTokens.length === 0) {
+    return "";
+  }
+
+  const expansion = [...coreTokens];
+  if (coreTokens.some((token) => token === "javascript" || token === "js")) {
+    expansion.push("tutorial");
+  } else {
+    expansion.push("guide");
+  }
+
+  return [...new Set(expansion)].join(" ").trim();
+}
+
 function escapeRegexTerm(value) {
   return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -5329,6 +5718,8 @@ function runSearchAll(
 
   if (normalizedSort === "relevance") {
     ranked = rerankBySourceDiversity(ranked);
+    ranked = rerankByNewsIntentCoherence(ranked, searchQuery, intents);
+    ranked = rerankByResearchIntentCoherence(ranked, searchQuery, intents);
   }
 
   return ranked.map(({ _score, _finalScore, ...rest }) => {
@@ -5354,9 +5745,22 @@ function runSearchPage(
 ) {
   const safeLimit = safeSearchLimit(limit);
   const safePage = safeSearchPage(page);
-  let queryUsed = String(query || "").trim();
+  const originalQuery = String(query || "").trim();
+  let queryUsed = originalQuery;
   let queryCorrection = null;
   const artifacts = getLocalSearchArtifacts();
+
+  const parsedInitialQuery = parseSearchOperators(originalQuery);
+  const configuredRewrite = applyConfiguredQueryRewrite(
+    parsedInitialQuery.cleanedQuery,
+  );
+  if (configuredRewrite?.correctedQuery) {
+    queryUsed = rebuildQueryWithOperators(
+      configuredRewrite.correctedQuery,
+      parsedInitialQuery.operators,
+    );
+    queryCorrection = configuredRewrite;
+  }
 
   let allResults = runSearchAll(queryUsed, {
     language,
@@ -5365,7 +5769,7 @@ function runSearchPage(
     sort,
   });
 
-  if (allResults.length === 0) {
+  if (allResults.length === 0 && !queryCorrection) {
     const parsedForCorrection = parseSearchOperators(queryUsed);
     const correction = suggestQueryCorrection(
       parsedForCorrection.cleanedQuery,
@@ -5415,6 +5819,51 @@ function runSearchPage(
       }
     }
   }
+
+  if (
+    sort === "relevance" &&
+    allResults.length > 0 &&
+    allResults.length < 8 &&
+    isLearningRecallQuery(queryUsed)
+  ) {
+    const expandedQuery = buildLearningRecallExpansionQuery(queryUsed);
+    if (expandedQuery) {
+      const expandedResults = runSearchAll(expandedQuery, {
+        language,
+        category,
+        source,
+        sort,
+      });
+      if (expandedResults.length > 0) {
+        const merged = [...allResults];
+        const seenUrls = new Set(
+          allResults
+            .map((item) =>
+              String(item.url || "")
+                .trim()
+                .toLowerCase(),
+            )
+            .filter(Boolean),
+        );
+        for (const item of expandedResults) {
+          const normalizedUrl = String(item.url || "")
+            .trim()
+            .toLowerCase();
+          if (!normalizedUrl || seenUrls.has(normalizedUrl)) {
+            continue;
+          }
+          seenUrls.add(normalizedUrl);
+          merged.push(item);
+          if (merged.length >= 12) {
+            break;
+          }
+        }
+        allResults = merged;
+      }
+    }
+  }
+
+  allResults = rerankByTypoRecoveryFocus(allResults, queryCorrection);
 
   const total = allResults.length;
   const offset = (safePage - 1) * safeLimit;

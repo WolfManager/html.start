@@ -36,6 +36,11 @@ const CASES = [
     description: "Common typo should still recover OpenAI-related results.",
     minResults: 1,
     expectAnyTitleIncludes: ["openai"],
+    expectTopSourceCoverage: {
+      topN: 3,
+      sources: ["openai.com", "chat.openai.com", "platform.openai.com"],
+      minCount: 3,
+    },
   },
   {
     name: "operator-intitle-en",
@@ -51,8 +56,13 @@ const CASES = [
     query: "ai site:openai.com",
     description:
       "Site operator should preserve intent toward OpenAI documents.",
-    minResults: 1,
+    minResults: 3,
     expectAnyTitleIncludes: ["openai"],
+    expectTopSourceCoverage: {
+      topN: 3,
+      sources: ["openai.com", "chat.openai.com", "platform.openai.com"],
+      minCount: 3,
+    },
   },
   {
     name: "ambiguous-news-en",
@@ -97,6 +107,16 @@ const CASES = [
       "Romanian long-tail news query should still produce relevant non-zero results.",
     minResults: 1,
     expectAnyCategory: ["News", "Technology", "Media"],
+    expectTopCategoryCoverage: {
+      topN: 3,
+      categories: ["News", "Technology", "Media"],
+      minCount: 3,
+    },
+    expectTopSourceCoverage: {
+      topN: 3,
+      sources: ["bbc.com", "reuters.com", "theguardian.com", "techcrunch.com"],
+      minCount: 2,
+    },
   },
   {
     name: "longtail-learning-ro",
@@ -104,8 +124,13 @@ const CASES = [
     query: "curs programare javascript pentru incepatori",
     description:
       "Romanian long-tail learning query should surface educational/development results.",
-    minResults: 1,
+    minResults: 8,
     expectAnyCategory: ["Education", "Development", "AI"],
+    expectTopCategoryCoverage: {
+      topN: 6,
+      categories: ["Education", "Development"],
+      minCount: 4,
+    },
   },
   {
     name: "longtail-search-quality-ro",
@@ -126,6 +151,23 @@ const CASES = [
       "Short Romanian research query should remain coherent and non-empty.",
     minResults: 1,
     expectAnyCategory: ["Research", "AI", "Technology"],
+    expectTopCategoryCoverage: {
+      topN: 3,
+      categories: ["Research", "Science"],
+      minCount: 2,
+    },
+    expectTopSourceCoverage: {
+      topN: 5,
+      sources: [
+        "arxiv.org",
+        "semanticscholar.org",
+        "scholar.google.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "nature.com",
+        "sciencedirect.com",
+      ],
+      minCount: 3,
+    },
   },
 ];
 
@@ -236,6 +278,81 @@ async function runCase(testCase) {
         ok: false,
         latencyMs,
         reason: `No result category matched expected set: ${testCase.expectAnyCategory.join(", ")}`,
+        queryUsed,
+        correctionReason,
+        topTitles,
+        resultCount: results.length,
+      };
+    }
+  }
+
+  if (testCase.expectTopCategoryCoverage) {
+    const topN = Math.max(
+      1,
+      Number.parseInt(String(testCase.expectTopCategoryCoverage.topN || 3), 10),
+    );
+    const allowedCategories = Array.isArray(
+      testCase.expectTopCategoryCoverage.categories,
+    )
+      ? testCase.expectTopCategoryCoverage.categories
+      : [];
+    const minCount = Math.max(
+      1,
+      Number.parseInt(
+        String(testCase.expectTopCategoryCoverage.minCount || 1),
+        10,
+      ),
+    );
+
+    const topSlice = results.slice(0, topN);
+    const matchingCount = topSlice.filter((item) =>
+      allowedCategories.includes(String(item.category || "")),
+    ).length;
+
+    if (matchingCount < minCount) {
+      return {
+        ok: false,
+        latencyMs,
+        reason: `Top-${topN} category coverage check failed: expected at least ${minCount} in [${allowedCategories.join(", ")}], got ${matchingCount}`,
+        queryUsed,
+        correctionReason,
+        topTitles,
+        resultCount: results.length,
+      };
+    }
+  }
+
+  if (testCase.expectTopSourceCoverage) {
+    const topN = Math.max(
+      1,
+      Number.parseInt(String(testCase.expectTopSourceCoverage.topN || 3), 10),
+    );
+    const allowedSources = Array.isArray(
+      testCase.expectTopSourceCoverage.sources,
+    )
+      ? testCase.expectTopSourceCoverage.sources.map((item) => normalize(item))
+      : [];
+    const minCount = Math.max(
+      1,
+      Number.parseInt(
+        String(testCase.expectTopSourceCoverage.minCount || 1),
+        10,
+      ),
+    );
+
+    const topSlice = results.slice(0, topN);
+    const matchingCount = topSlice.filter((item) => {
+      const sourceName = normalize(item.sourceName || item.sourceSlug || "");
+      return allowedSources.some(
+        (source) => sourceName === source || sourceName.endsWith(`.${source}`),
+      );
+    }).length;
+
+    if (matchingCount < minCount) {
+      return {
+        ok: false,
+        latencyMs,
+        reason: `Top-${topN} source coverage check failed: expected at least ${minCount} in [${allowedSources.join(", ")}], got ${matchingCount}`,
         queryUsed,
         correctionReason,
         topTitles,
