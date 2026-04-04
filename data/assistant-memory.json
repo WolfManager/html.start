@@ -9445,6 +9445,46 @@
       "helper": "general",
       "model": "rule-based",
       "at": "2026-04-02T17:34:00.329Z"
+    },
+    {
+      "id": "a-1775323860092-3042",
+      "ip": "::1",
+      "message": "ce faCI >?",
+      "reply": "Sunt bine si sunt aici sa te ajut. Putem vorbi normal sau putem merge direct pe ce ai nevoie.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-04-04T17:31:00.092Z"
+    },
+    {
+      "id": "a-1775324955719-8853",
+      "ip": "::1",
+      "message": "ce faci ?",
+      "reply": "Sunt bine si sunt aici sa te ajut. Putem vorbi normal sau putem merge direct pe ce ai nevoie.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-04-04T17:49:15.719Z"
+    },
+    {
+      "id": "a-1775324968096-9942",
+      "ip": "::1",
+      "message": "afara ploua",
+      "reply": "Sure. Tell me what you want, and if the message is too broad I will help narrow it down as we go.",
+      "provider": "fallback",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-04-04T17:49:28.096Z"
+    },
+    {
+      "id": "a-1775325667076-2424",
+      "ip": "::1",
+      "message": "Salut, spune pe scurt ce poti face.",
+      "reply": "Salut. Putem vorbi normal. Spune-mi ce vrei sa afli sau sa rezolvi si iti raspund direct.",
+      "provider": "local-hybrid",
+      "helper": "general",
+      "model": "rule-based",
+      "at": "2026-04-04T18:01:07.076Z"
     }
   ]
 }
