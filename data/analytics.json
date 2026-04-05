@@ -10396,6 +10396,13 @@
       "ip": "::1",
       "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
       "at": "2026-04-04T18:04:31.510Z"
+    },
+    {
+      "id": "p-1775385147187-789",
+      "page": "index.html",
+      "ip": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+      "at": "2026-04-05T10:32:27.187Z"
     }
   ],
   "resultClicks": []
