@@ -201,6 +201,8 @@ function createAssistantChatController({
         assistantMetrics.anthropicResponses += 1;
       } else if (ai.provider === "gemini") {
         assistantMetrics.geminiResponses += 1;
+      } else if (ai.provider === "ollama") {
+        assistantMetrics.ollamaResponses += 1;
       } else {
         assistantMetrics.localHybridResponses += 1;
       }

@@ -215,7 +215,7 @@ The project is production-ready with fallback mode active.
 
 ### Provider Architecture
 
-- Assistant supports multi-provider routing (OpenAI + Anthropic + Gemini) with primary/fallback selection.
+- Assistant supports multi-provider routing (OpenAI + Anthropic + Gemini + Ollama) with primary/fallback selection.
 - Routing can be automatic (`smart`) so the assistant picks the best available provider based on helper type and recent provider health.
 - Models can auto-rotate using candidate lists when a model is deprecated or unavailable.
 - If providers are unavailable or unconfigured, assistant falls back to local rule-based suggestions.
@@ -229,8 +229,8 @@ The project is production-ready with fallback mode active.
 
 Assistant tuning variables:
 
-- `AI_PRIMARY_PROVIDER` (`openai`, `anthropic`, or `gemini`)
-- `AI_FALLBACK_PROVIDER` (`openai`, `anthropic`, or `gemini`)
+- `AI_PRIMARY_PROVIDER` (`openai`, `anthropic`, `gemini`, or `ollama`)
+- `AI_FALLBACK_PROVIDER` (`openai`, `anthropic`, `gemini`, or `ollama`)
 - `AI_ROUTING_MODE` (`smart`, `priority`, or `random`)
 - `OPENAI_API_KEY`
 - `OPENAI_MODEL`
@@ -241,6 +241,11 @@ Assistant tuning variables:
 - `GEMINI_API_KEY`
 - `GEMINI_MODEL`
 - `GEMINI_MODEL_CANDIDATES` (comma-separated fallback list)
+- `OLLAMA_ENABLED` (`1` to enable local Ollama provider)
+- `OLLAMA_BASE_URL` (default: `http://127.0.0.1:11434`)
+- `OLLAMA_MODEL`
+- `OLLAMA_MODEL_CANDIDATES` (comma-separated fallback list)
+- `ASSISTANT_OLLAMA_MAX_TOKENS`
 - `ASSISTANT_CACHE_TTL_SECONDS`
 - `ASSISTANT_CACHE_MAX_ENTRIES`
 - `ASSISTANT_MEMORY_MAX_ITEMS`

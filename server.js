@@ -7,6 +7,9 @@ const jwt = require("jsonwebtoken");
 const { LRUCache } = require("lru-cache");
 const pino = require("pino");
 const { randomUUID } = require("crypto");
+
+require("dotenv").config();
+
 const { env } = require("./apps/api-node/src/config/env");
 const {
   analyticsPath,
@@ -159,8 +162,6 @@ const {
 } = require("./apps/api-node/src/routes/admin-export.routes");
 const { getClientIp } = require("./apps/api-node/src/utils/request");
 
-require("dotenv").config();
-
 const app = express();
 
 const {
@@ -183,6 +184,10 @@ const {
   GEMINI_MODEL_CANDIDATES,
   JWT_SECRET,
   LOG_LEVEL,
+  OLLAMA_BASE_URL,
+  OLLAMA_ENABLED,
+  OLLAMA_MODEL,
+  OLLAMA_MODEL_CANDIDATES,
   OPENAI_API_KEY,
   OPENAI_MODEL,
   OPENAI_MODEL_CANDIDATES,
@@ -473,6 +478,14 @@ const ASSISTANT_GEMINI_MAX_TOKENS = envNumber(
     max: 4000,
   },
 );
+const ASSISTANT_OLLAMA_MAX_TOKENS = envNumber(
+  "ASSISTANT_OLLAMA_MAX_TOKENS",
+  900,
+  {
+    min: 120,
+    max: 4000,
+  },
+);
 const ASSISTANT_CACHE_TTL_MS =
   envNumber("ASSISTANT_CACHE_TTL_SECONDS", 900, { min: 30, max: 86400 }) * 1000;
 const ASSISTANT_CACHE_MAX_ENTRIES = envNumber(
@@ -554,6 +567,7 @@ const assistantMetrics = {
   openaiResponses: 0,
   anthropicResponses: 0,
   geminiResponses: 0,
+  ollamaResponses: 0,
   fallbackResponses: 0,
   lastProviderError: "",
   lastProviderErrorAt: "",
@@ -704,13 +718,17 @@ const assistantStatusController = createAssistantStatusController({
   openaiApiKey: OPENAI_API_KEY,
   anthropicApiKey: ANTHROPIC_API_KEY,
   geminiApiKey: GEMINI_API_KEY,
+  ollamaEnabled: OLLAMA_ENABLED,
+  ollamaBaseUrl: OLLAMA_BASE_URL,
   openaiModel: OPENAI_MODEL,
   anthropicModel: ANTHROPIC_MODEL,
   geminiModel: GEMINI_MODEL,
+  ollamaModel: OLLAMA_MODEL,
   getActiveProviderModel,
   openaiModelCandidates: OPENAI_MODEL_CANDIDATES,
   anthropicModelCandidates: ANTHROPIC_MODEL_CANDIDATES,
   geminiModelCandidates: GEMINI_MODEL_CANDIDATES,
+  ollamaModelCandidates: OLLAMA_MODEL_CANDIDATES,
   assistantProviderHealthMap,
   assistantWindowMs: ASSISTANT_WINDOW_MS,
   assistantRateLimitCount: ASSISTANT_RATE_LIMIT_COUNT,
@@ -722,6 +740,7 @@ const assistantStatusController = createAssistantStatusController({
   assistantOpenaiMaxTokens: ASSISTANT_OPENAI_MAX_TOKENS,
   assistantAnthropicMaxTokens: ASSISTANT_ANTHROPIC_MAX_TOKENS,
   assistantGeminiMaxTokens: ASSISTANT_GEMINI_MAX_TOKENS,
+  assistantOllamaMaxTokens: ASSISTANT_OLLAMA_MAX_TOKENS,
   assistantSimpleQueryWords: ASSISTANT_SIMPLE_QUERY_WORDS,
   assistantCacheTtlMs: ASSISTANT_CACHE_TTL_MS,
   assistantCacheMaxEntries: ASSISTANT_CACHE_MAX_ENTRIES,
@@ -3156,6 +3175,51 @@ async function generateAssistantResponseGemini({ message, history, helper }) {
   };
 }
 
+async function generateAssistantResponseOllama({ message, history, helper }) {
+  if (!OLLAMA_ENABLED) {
+    throw new Error("Ollama is disabled.");
+  }
+
+  const model = getActiveProviderModel("ollama") || OLLAMA_MODEL;
+  const safeHistory = buildSafeAssistantHistory(history);
+  const payload = {
+    model,
+    temperature: ASSISTANT_MODEL_TEMPERATURE,
+    max_tokens: ASSISTANT_OLLAMA_MAX_TOKENS,
+    messages: [
+      { role: "system", content: buildAssistantSystemPrompt(helper) },
+      ...safeHistory,
+      { role: "user", content: String(message || "") },
+    ],
+  };
+
+  const baseUrl = String(OLLAMA_BASE_URL || "http://127.0.0.1:11434")
+    .trim()
+    .replace(/\/+$/, "");
+  const response = await fetch(`${baseUrl}/v1/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const providerError =
+      data?.error?.message || `Ollama provider error (${response.status}).`;
+    throw new Error(providerError);
+  }
+
+  const content = String(data?.choices?.[0]?.message?.content || "").trim();
+  const parsed = parseAssistantModelOutput(content);
+  return {
+    provider: "ollama",
+    model,
+    ...parsed,
+  };
+}
+
 function isProviderConfigured(provider) {
   if (provider === "openai") {
     return Boolean(OPENAI_API_KEY);
@@ -3169,6 +3233,10 @@ function isProviderConfigured(provider) {
     return Boolean(GEMINI_API_KEY);
   }
 
+  if (provider === "ollama") {
+    return Boolean(OLLAMA_ENABLED && OLLAMA_BASE_URL && OLLAMA_MODEL);
+  }
+
   return false;
 }
 
@@ -3180,6 +3248,7 @@ function getAssistantProviderOrder() {
     "openai",
     "anthropic",
     "gemini",
+    "ollama",
   ];
   const unique = [];
   for (const provider of ordered) {
@@ -3193,10 +3262,10 @@ function getAssistantProviderOrder() {
 
 function getHelperPreferredProviders(helper) {
   if (helper === "writing") {
-    return ["anthropic", "openai", "gemini"];
+    return ["anthropic", "openai", "gemini", "ollama"];
   }
 
-  return ["openai", "gemini", "anthropic"];
+  return ["openai", "gemini", "anthropic", "ollama"];
 }
 
 function getProviderHealth(provider) {
@@ -3221,6 +3290,10 @@ function getProviderModelCandidates(provider) {
 
   if (provider === "gemini") {
     return GEMINI_MODEL_CANDIDATES;
+  }
+
+  if (provider === "ollama") {
+    return OLLAMA_MODEL_CANDIDATES;
   }
 
   return [];
@@ -3376,6 +3449,19 @@ async function generateAssistantResponse({ message, history, helper }) {
         markProviderSuccess(provider);
         return result;
       }
+
+      if (provider === "ollama") {
+        const result = await generateAssistantResponseOllama({
+          message,
+          history,
+          helper,
+        });
+        if (isLowQualityAssistantReply(message, result.reply)) {
+          throw new Error("Ollama returned low-quality reply.");
+        }
+        markProviderSuccess(provider);
+        return result;
+      }
     } catch (error) {
       if (shouldRotateModelOnError(error)) {
         const rotated = advanceProviderModelCandidate(provider);
@@ -3418,6 +3504,19 @@ async function generateAssistantResponse({ message, history, helper }) {
               }
               markProviderSuccess(provider);
               return retryGemini;
+            }
+
+            if (provider === "ollama") {
+              const retryOllama = await generateAssistantResponseOllama({
+                message,
+                history,
+                helper,
+              });
+              if (isLowQualityAssistantReply(message, retryOllama.reply)) {
+                throw new Error("Ollama retry returned low-quality reply.");
+              }
+              markProviderSuccess(provider);
+              return retryOllama;
             }
           } catch (retryError) {
             markProviderFailure(provider, retryError);

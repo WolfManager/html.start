@@ -16,7 +16,14 @@ const CASES = [
   {
     name: "writing-ai",
     message: "write a short follow-up email after a project meeting",
-    acceptedProviders: ["openai", "anthropic", "gemini", "cache", "fallback"],
+    acceptedProviders: [
+      "openai",
+      "anthropic",
+      "gemini",
+      "ollama",
+      "cache",
+      "fallback",
+    ],
     maxLatencyMs: 12000,
   },
   {
@@ -28,6 +35,7 @@ const CASES = [
       "openai",
       "anthropic",
       "gemini",
+      "ollama",
       "cache",
       "fallback",
     ],

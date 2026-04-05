@@ -15,7 +15,8 @@ function normalizeAiProvider(input, fallback = "openai") {
   if (
     normalized === "openai" ||
     normalized === "anthropic" ||
-    normalized === "gemini"
+    normalized === "gemini" ||
+    normalized === "ollama"
   ) {
     return normalized;
   }
@@ -62,6 +63,16 @@ const GEMINI_API_KEY = String(process.env.GEMINI_API_KEY || "").trim();
 const GEMINI_MODEL =
   String(process.env.GEMINI_MODEL || "gemini-2.5-flash").trim() ||
   "gemini-2.5-flash";
+const OLLAMA_ENABLED = ["1", "true", "yes", "on"].includes(
+  String(process.env.OLLAMA_ENABLED || "")
+    .trim()
+    .toLowerCase(),
+);
+const OLLAMA_BASE_URL =
+  String(process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434").trim() ||
+  "http://127.0.0.1:11434";
+const OLLAMA_MODEL =
+  String(process.env.OLLAMA_MODEL || "llama3.1:8b").trim() || "llama3.1:8b";
 const AI_PRIMARY_PROVIDER = normalizeAiProvider(
   process.env.AI_PRIMARY_PROVIDER,
   "openai",
@@ -83,6 +94,9 @@ const env = {
   ANTHROPIC_MODEL,
   GEMINI_API_KEY,
   GEMINI_MODEL,
+  OLLAMA_ENABLED,
+  OLLAMA_BASE_URL,
+  OLLAMA_MODEL,
   OPENAI_MODEL_CANDIDATES: parseModelCandidates(
     process.env.OPENAI_MODEL_CANDIDATES,
     [OPENAI_MODEL, "gpt-5-mini", "gpt-4.1-mini", "gpt-4o-mini"],
@@ -94,6 +108,10 @@ const env = {
   GEMINI_MODEL_CANDIDATES: parseModelCandidates(
     process.env.GEMINI_MODEL_CANDIDATES,
     [GEMINI_MODEL, "gemini-2.5-flash", "gemini-2.5-pro", "gemini-flash-latest"],
+  ),
+  OLLAMA_MODEL_CANDIDATES: parseModelCandidates(
+    process.env.OLLAMA_MODEL_CANDIDATES,
+    [OLLAMA_MODEL, "llama3.1:8b", "mistral:7b", "phi3:mini"],
   ),
   AI_PRIMARY_PROVIDER,
   AI_FALLBACK_PROVIDER: normalizeAiProvider(
