@@ -6240,8 +6240,10 @@ function runSearchPage(
 async function buildQdrantQueryEmbedding(query) {
   if (!LITELLM_ENABLED || !LITELLM_BASE_URL || !LITELLM_API_KEY) {
     return null;
+
+    const text = String(query || "").trim();
   }
-+
+
   const text = String(query || "").trim();
   if (!text) {
     return null;
