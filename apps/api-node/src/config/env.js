@@ -97,8 +97,7 @@ const QDRANT_COLLECTION =
   String(process.env.QDRANT_COLLECTION || "magneto_docs").trim() ||
   "magneto_docs";
 const QDRANT_EMBEDDING_MODEL =
-  String(process.env.QDRANT_EMBEDDING_MODEL || "llm-fast").trim() ||
-  "llm-fast";
+  String(process.env.QDRANT_EMBEDDING_MODEL || "llm-fast").trim() || "llm-fast";
 const AI_PRIMARY_PROVIDER = normalizeAiProvider(
   process.env.AI_PRIMARY_PROVIDER,
   "openai",

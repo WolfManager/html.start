@@ -47,7 +47,8 @@ services:
       REDIS_AUTH: ${LANGFUSE_REDIS_AUTH:-myredissecret}
       REDIS_TLS_ENABLED: ${LANGFUSE_REDIS_TLS_ENABLED:-false}
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3030/api/health"]
+      test:
+        ["CMD", "wget", "--spider", "-q", "http://localhost:3030/api/health"]
       interval: 10s
       timeout: 5s
       retries: 20
@@ -142,7 +143,14 @@ services:
     volumes:
       - langfuse_redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${LANGFUSE_REDIS_AUTH:-myredissecret}", "ping"]
+      test:
+        [
+          "CMD",
+          "redis-cli",
+          "-a",
+          "${LANGFUSE_REDIS_AUTH:-myredissecret}",
+          "ping",
+        ]
       interval: 5s
       timeout: 5s
       retries: 20
