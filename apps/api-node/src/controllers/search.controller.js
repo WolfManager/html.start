@@ -9,6 +9,7 @@ function createSearchController({
   getSearchSuggestions,
   getRelatedQueries,
   setInSearchCache,
+  rerankPageBySemanticSignal,
 }) {
   return async (req, res) => {
     const query = String(req.query.q || req.query.query || "").trim();
@@ -69,7 +70,7 @@ function createSearchController({
       }
     }
 
-    const payload = runSearchPage(query, {
+    let payload = runSearchPage(query, {
       language,
       category,
       source,
@@ -77,6 +78,22 @@ function createSearchController({
       limit,
       page,
     });
+
+    if (
+      sort === "relevance" &&
+      typeof rerankPageBySemanticSignal === "function" &&
+      Array.isArray(payload.results) &&
+      payload.results.length > 1
+    ) {
+      try {
+        payload = await rerankPageBySemanticSignal({
+          payload,
+          query: payload.queryUsed || query,
+        });
+      } catch {
+        // Keep lexical ranking as safe default.
+      }
+    }
 
     logSearch({
       query,
@@ -126,6 +143,7 @@ function createSearchController({
         prevPage: payload.hasPrevPage ? payload.page - 1 : null,
       },
       facets: payload.facets,
+      semanticRerank: payload.semanticRerank || null,
       results: payload.results,
       servedBy: "node",
     };

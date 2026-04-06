@@ -85,6 +85,20 @@ const LITELLM_BASE_URL =
 const LITELLM_API_KEY = String(process.env.LITELLM_API_KEY || "").trim();
 const LITELLM_MODEL =
   String(process.env.LITELLM_MODEL || "llm-primary").trim() || "llm-primary";
+const QDRANT_ENABLED = ["1", "true", "yes", "on"].includes(
+  String(process.env.QDRANT_ENABLED || "")
+    .trim()
+    .toLowerCase(),
+);
+const QDRANT_BASE_URL =
+  String(process.env.QDRANT_BASE_URL || "http://127.0.0.1:6333").trim() ||
+  "http://127.0.0.1:6333";
+const QDRANT_COLLECTION =
+  String(process.env.QDRANT_COLLECTION || "magneto_docs").trim() ||
+  "magneto_docs";
+const QDRANT_EMBEDDING_MODEL =
+  String(process.env.QDRANT_EMBEDDING_MODEL || "llm-fast").trim() ||
+  "llm-fast";
 const AI_PRIMARY_PROVIDER = normalizeAiProvider(
   process.env.AI_PRIMARY_PROVIDER,
   "openai",
@@ -113,6 +127,10 @@ const env = {
   LITELLM_BASE_URL,
   LITELLM_API_KEY,
   LITELLM_MODEL,
+  QDRANT_ENABLED,
+  QDRANT_BASE_URL,
+  QDRANT_COLLECTION,
+  QDRANT_EMBEDDING_MODEL,
   OPENAI_MODEL_CANDIDATES: parseModelCandidates(
     process.env.OPENAI_MODEL_CANDIDATES,
     [OPENAI_MODEL, "gpt-5-mini", "gpt-4.1-mini", "gpt-4o-mini"],
@@ -266,6 +284,14 @@ const env = {
       max: 60000,
     },
   ),
+  QDRANT_SEARCH_TOP_K: envNumber("QDRANT_SEARCH_TOP_K", 30, {
+    min: 5,
+    max: 200,
+  }),
+  QDRANT_SEMANTIC_BOOST: envNumber("QDRANT_SEMANTIC_BOOST", 8, {
+    min: 0,
+    max: 50,
+  }),
   ASSISTANT_CACHE_TTL_MS:
     envNumber("ASSISTANT_CACHE_TTL_SECONDS", 3600, {
       min: 60,

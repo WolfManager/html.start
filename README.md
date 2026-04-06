@@ -253,6 +253,12 @@ Assistant tuning variables:
 - `ASSISTANT_LITELLM_MAX_TOKENS`
 - `ASSISTANT_OLLAMA_MAX_TOKENS`
 - `ASSISTANT_PROVIDER_TIMEOUT_MS`
+- `QDRANT_ENABLED` (`1` to enable semantic rerank over search page results)
+- `QDRANT_BASE_URL` (default: `http://127.0.0.1:6333`)
+- `QDRANT_COLLECTION` (default: `magneto_docs`)
+- `QDRANT_EMBEDDING_MODEL` (LiteLLM model used for query embeddings)
+- `QDRANT_SEARCH_TOP_K`
+- `QDRANT_SEMANTIC_BOOST`
 - `ASSISTANT_CACHE_TTL_SECONDS`
 - `ASSISTANT_CACHE_MAX_ENTRIES`
 - `ASSISTANT_MEMORY_MAX_ITEMS`
@@ -302,6 +308,7 @@ Run with:
 LiteLLM uses `infra/ai-stack/litellm.config.yaml` and can route to local Ollama and optional cloud providers.
 Set `LITELLM_API_KEY` in `.env` before stack startup; backend uses the same key to call LiteLLM.
 Open WebUI authentication is enabled by default (`WEBUI_AUTH=True`).
+Qdrant semantic rerank is optional and non-breaking: if collection/vectors are missing, lexical ranking stays active.
 
 - This includes provider config, routing mode, provider health, helper/provider metrics, cache hits, and last provider error (for quota/billing diagnostics)
 - It also includes active model per provider and model candidate lists used for automatic model rollover.

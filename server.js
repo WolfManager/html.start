@@ -189,6 +189,12 @@ const {
   LITELLM_MODEL,
   LITELLM_MODEL_CANDIDATES,
   LOG_LEVEL,
+  QDRANT_BASE_URL,
+  QDRANT_COLLECTION,
+  QDRANT_EMBEDDING_MODEL,
+  QDRANT_ENABLED,
+  QDRANT_SEARCH_TOP_K,
+  QDRANT_SEMANTIC_BOOST,
   OLLAMA_BASE_URL,
   OLLAMA_ENABLED,
   OLLAMA_MODEL,
@@ -691,6 +697,7 @@ const searchController = createSearchController({
   getSearchSuggestions,
   getRelatedQueries,
   setInSearchCache,
+  rerankPageBySemanticSignal: rerankSearchPageByQdrantSemanticSignal,
 });
 const assistantChatController = createAssistantChatController({
   checkAssistantRateLimit,
@@ -6228,6 +6235,181 @@ function runSearchPage(
       sources: buildSearchFacets(contextualSources).sources,
     },
   };
+}
+
+async function buildQdrantQueryEmbedding(query) {
+  if (!LITELLM_ENABLED || !LITELLM_BASE_URL || !LITELLM_API_KEY) {
+    return null;
+  }
++
+  const text = String(query || "").trim();
+  if (!text) {
+    return null;
+  }
+
+  const baseUrl = String(LITELLM_BASE_URL || "http://127.0.0.1:4000")
+    .trim()
+    .replace(/\/+$/, "");
+
+  const { response, data } = await fetchJsonWithProviderTimeout(
+    `${baseUrl}/v1/embeddings`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${LITELLM_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: QDRANT_EMBEDDING_MODEL,
+        input: [text],
+      }),
+    },
+    ASSISTANT_PROVIDER_TIMEOUT_MS,
+    "LiteLLM embeddings",
+  );
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const embedding = data?.data?.[0]?.embedding;
+  if (!Array.isArray(embedding) || embedding.length === 0) {
+    return null;
+  }
+
+  return embedding;
+}
+
+async function fetchQdrantSearchMatches(embedding, limit) {
+  if (!QDRANT_ENABLED) {
+    return [];
+  }
+
+  const baseUrl = String(QDRANT_BASE_URL || "http://127.0.0.1:6333")
+    .trim()
+    .replace(/\/+$/, "");
+
+  const { response, data } = await fetchJsonWithProviderTimeout(
+    `${baseUrl}/collections/${encodeURIComponent(QDRANT_COLLECTION)}/points/search`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        vector: embedding,
+        limit,
+        with_payload: true,
+        with_vector: false,
+      }),
+    },
+    ASSISTANT_PROVIDER_TIMEOUT_MS,
+    "Qdrant",
+  );
+
+  if (!response.ok || !Array.isArray(data?.result)) {
+    return [];
+  }
+
+  return data.result;
+}
+
+function getQdrantMatchKey(match) {
+  const payload = match?.payload || {};
+  const candidates = [
+    payload.url,
+    payload.sourceUrl,
+    payload.link,
+    payload.uri,
+    payload.id,
+    match?.id,
+  ];
+
+  for (const value of candidates) {
+    const normalized = normalizeIndexUrl(value);
+    if (normalized) {
+      return normalized;
+    }
+  }
+
+  return "";
+}
+
+async function rerankSearchPageByQdrantSemanticSignal({ payload, query }) {
+  if (!QDRANT_ENABLED || !payload || !Array.isArray(payload.results)) {
+    return payload;
+  }
+
+  const items = payload.results;
+  if (items.length <= 1) {
+    return payload;
+  }
+
+  try {
+    const embedding = await buildQdrantQueryEmbedding(query);
+    if (!embedding) {
+      return payload;
+    }
+
+    const matches = await fetchQdrantSearchMatches(embedding, QDRANT_SEARCH_TOP_K);
+    if (!Array.isArray(matches) || matches.length === 0) {
+      return payload;
+    }
+
+    const semanticScores = new Map();
+    let maxScore = 0;
+    for (const match of matches) {
+      const key = getQdrantMatchKey(match);
+      const score = Number(match?.score || 0);
+      if (!key || !Number.isFinite(score) || score <= 0) {
+        continue;
+      }
+      semanticScores.set(key, score);
+      if (score > maxScore) {
+        maxScore = score;
+      }
+    }
+
+    if (semanticScores.size === 0 || maxScore <= 0) {
+      return payload;
+    }
+
+    const boosted = items
+      .map((item, index) => {
+        const key = normalizeIndexUrl(item?.url || "");
+        const semanticRaw = Number(semanticScores.get(key) || 0);
+        const semanticNormalized = semanticRaw > 0 ? semanticRaw / maxScore : 0;
+        const lexicalRank = (items.length - index) / items.length;
+        const combinedScore = lexicalRank + semanticNormalized * (QDRANT_SEMANTIC_BOOST / 10);
+
+        return {
+          ...item,
+          _semanticCombinedScore: combinedScore,
+          _semanticRawScore: semanticRaw,
+        };
+      })
+      .sort((left, right) => {
+        if (right._semanticCombinedScore !== left._semanticCombinedScore) {
+          return right._semanticCombinedScore - left._semanticCombinedScore;
+        }
+        return Number(right._semanticRawScore || 0) - Number(left._semanticRawScore || 0);
+      })
+      .map(({ _semanticCombinedScore, _semanticRawScore, ...rest }) => rest);
+
+    return {
+      ...payload,
+      results: boosted,
+      semanticRerank: {
+        applied: true,
+        provider: "qdrant",
+        topK: QDRANT_SEARCH_TOP_K,
+        matchedResults: semanticScores.size,
+        boost: QDRANT_SEMANTIC_BOOST,
+      },
+    };
+  } catch {
+    return payload;
+  }
 }
 
 function runSearch(query, options = {}) {
