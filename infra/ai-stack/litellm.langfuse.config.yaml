@@ -1,0 +1,36 @@
+model_list:
+  - model_name: llm-primary
+    litellm_params:
+      model: ollama/llama3.1:8b
+      api_base: http://host.docker.internal:11434
+
+  - model_name: llm-fast
+    litellm_params:
+      model: ollama/llama3.2:1b
+      api_base: http://host.docker.internal:11434
+
+  - model_name: gpt-5-mini
+    litellm_params:
+      model: openai/gpt-5-mini
+      api_key: os.environ/OPENAI_API_KEY
+
+  - model_name: claude-sonnet
+    litellm_params:
+      model: anthropic/claude-sonnet-4-6
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+  - model_name: gemini-flash
+    litellm_params:
+      model: gemini/gemini-2.5-flash
+      api_key: os.environ/GEMINI_API_KEY
+
+litellm_settings:
+  success_callback: ["langfuse"]
+  failure_callback: ["langfuse"]
+  turn_off_message_logging: true
+  redact_user_api_key_info: true
+  langfuse_default_tags: ["proxy_base_url", "cache_hit"]
+
+general_settings:
+  disable_spend_logs: true
+  completion_model: llm-primary

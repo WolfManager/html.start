@@ -250,6 +250,10 @@ Assistant tuning variables:
 - `LITELLM_API_KEY`
 - `LITELLM_MODEL`
 - `LITELLM_MODEL_CANDIDATES` (comma-separated fallback list)
+- `LANGFUSE_HOST` (default local self-hosted UI: `http://127.0.0.1:3100`)
+- `LITELLM_LANGFUSE_HOST` (container-facing callback target, default: `http://host.docker.internal:3100`)
+- `LANGFUSE_PROJECT_PUBLIC_KEY`
+- `LANGFUSE_PROJECT_SECRET_KEY`
 - `ASSISTANT_LITELLM_MAX_TOKENS`
 - `ASSISTANT_OLLAMA_MAX_TOKENS`
 - `ASSISTANT_PROVIDER_TIMEOUT_MS`
@@ -299,16 +303,23 @@ This repository includes an optional local AI stack under `infra/ai-stack/`:
 - LiteLLM gateway (`http://127.0.0.1:4000`)
 - Qdrant vector DB (`http://127.0.0.1:6333`)
 - Open WebUI (`http://127.0.0.1:8080`)
+- Optional Langfuse observability stack (`http://127.0.0.1:3100`)
 
 Run with:
 
 - `npm.cmd run ai:stack:up`
 - `npm.cmd run ai:stack:down`
+- `npm.cmd run ai:stack:up:langfuse`
+- `npm.cmd run ai:stack:down:langfuse`
+- `npm.cmd run langfuse:up`
+- `npm.cmd run langfuse:down`
 
 LiteLLM uses `infra/ai-stack/litellm.config.yaml` and can route to local Ollama and optional cloud providers.
 Set `LITELLM_API_KEY` in `.env` before stack startup; backend uses the same key to call LiteLLM.
 Open WebUI authentication is enabled by default (`WEBUI_AUTH=True`).
 Qdrant semantic rerank is optional and non-breaking: if collection/vectors are missing, lexical ranking stays active.
+For Langfuse-backed tracing, start the Langfuse stack and use `ai:stack:up:langfuse`; this switches LiteLLM to `infra/ai-stack/litellm.langfuse.config.yaml`, enables Langfuse success/failure callbacks, and keeps prompt/response bodies redacted by default.
+The bundled Langfuse compose is intended for local or VM-scale usage and runs on separate ports to avoid conflicts with the MAGNETO backend (`3100` web, `3031` worker, `5433` Postgres, `6380` Redis).
 
 - This includes provider config, routing mode, provider health, helper/provider metrics, cache hits, and last provider error (for quota/billing diagnostics)
 - It also includes active model per provider and model candidate lists used for automatic model rollover.

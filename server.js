@@ -6240,8 +6240,6 @@ function runSearchPage(
 async function buildQdrantQueryEmbedding(query) {
   if (!LITELLM_ENABLED || !LITELLM_BASE_URL || !LITELLM_API_KEY) {
     return null;
-
-    const text = String(query || "").trim();
   }
 
   const text = String(query || "").trim();
@@ -6353,7 +6351,10 @@ async function rerankSearchPageByQdrantSemanticSignal({ payload, query }) {
       return payload;
     }
 
-    const matches = await fetchQdrantSearchMatches(embedding, QDRANT_SEARCH_TOP_K);
+    const matches = await fetchQdrantSearchMatches(
+      embedding,
+      QDRANT_SEARCH_TOP_K,
+    );
     if (!Array.isArray(matches) || matches.length === 0) {
       return payload;
     }
@@ -6382,7 +6383,8 @@ async function rerankSearchPageByQdrantSemanticSignal({ payload, query }) {
         const semanticRaw = Number(semanticScores.get(key) || 0);
         const semanticNormalized = semanticRaw > 0 ? semanticRaw / maxScore : 0;
         const lexicalRank = (items.length - index) / items.length;
-        const combinedScore = lexicalRank + semanticNormalized * (QDRANT_SEMANTIC_BOOST / 10);
+        const combinedScore =
+          lexicalRank + semanticNormalized * (QDRANT_SEMANTIC_BOOST / 10);
 
         return {
           ...item,
@@ -6394,7 +6396,10 @@ async function rerankSearchPageByQdrantSemanticSignal({ payload, query }) {
         if (right._semanticCombinedScore !== left._semanticCombinedScore) {
           return right._semanticCombinedScore - left._semanticCombinedScore;
         }
-        return Number(right._semanticRawScore || 0) - Number(left._semanticRawScore || 0);
+        return (
+          Number(right._semanticRawScore || 0) -
+          Number(left._semanticRawScore || 0)
+        );
       })
       .map(({ _semanticCombinedScore, _semanticRawScore, ...rest }) => rest);
 

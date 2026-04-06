@@ -20,10 +20,13 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       LITELLM_MASTER_KEY: ${LITELLM_API_KEY:-change-this-litellm-key}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PROJECT_PUBLIC_KEY:-}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_PROJECT_SECRET_KEY:-}
+      LANGFUSE_HOST: ${LITELLM_LANGFUSE_HOST:-http://host.docker.internal:3100}
     ports:
       - "4000:4000"
     volumes:
-      - ./litellm.config.yaml:/app/config.yaml:ro
+      - ./${LITELLM_CONFIG_FILE:-litellm.config.yaml}:/app/config.yaml:ro
     depends_on:
       - qdrant
 
