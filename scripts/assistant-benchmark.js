@@ -4,7 +4,13 @@ const CASES = [
   {
     name: "local-trivial",
     message: "health check",
-    acceptedProviders: ["local-hybrid", "ollama", "cache", "fallback"],
+    acceptedProviders: [
+      "local-hybrid",
+      "litellm",
+      "ollama",
+      "cache",
+      "fallback",
+    ],
     maxLatencyMs: 20000,
   },
   {
