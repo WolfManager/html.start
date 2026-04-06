@@ -234,6 +234,14 @@ const env = {
     min: 64,
     max: 8000,
   }),
+  ASSISTANT_PROVIDER_TIMEOUT_MS: envNumber(
+    "ASSISTANT_PROVIDER_TIMEOUT_MS",
+    15000,
+    {
+      min: 1000,
+      max: 60000,
+    },
+  ),
   ASSISTANT_CACHE_TTL_MS:
     envNumber("ASSISTANT_CACHE_TTL_SECONDS", 3600, {
       min: 60,

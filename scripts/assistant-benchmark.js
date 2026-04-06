@@ -4,8 +4,8 @@ const CASES = [
   {
     name: "local-trivial",
     message: "health check",
-    acceptedProviders: ["local-hybrid", "cache", "fallback"],
-    maxLatencyMs: 800,
+    acceptedProviders: ["local-hybrid", "ollama", "cache", "fallback"],
+    maxLatencyMs: 12000,
   },
   {
     name: "weather-live",

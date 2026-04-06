@@ -478,6 +478,14 @@ const ASSISTANT_GEMINI_MAX_TOKENS = envNumber(
     max: 4000,
   },
 );
+const ASSISTANT_PROVIDER_TIMEOUT_MS = envNumber(
+  "ASSISTANT_PROVIDER_TIMEOUT_MS",
+  15000,
+  {
+    min: 1000,
+    max: 60000,
+  },
+);
 const ASSISTANT_OLLAMA_MAX_TOKENS = envNumber(
   "ASSISTANT_OLLAMA_MAX_TOKENS",
   900,
@@ -3014,6 +3022,32 @@ function parseAssistantModelOutput(content) {
   };
 }
 
+async function fetchJsonWithProviderTimeout(
+  url,
+  options,
+  timeoutMs,
+  providerLabel,
+) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    const data = await response.json().catch(() => ({}));
+    return { response, data };
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new Error(`${providerLabel} provider timeout (${timeoutMs}ms).`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function generateAssistantResponseOpenAI({ message, history, helper }) {
   if (!OPENAI_API_KEY) {
     throw new Error("OpenAI is not configured.");
@@ -3032,16 +3066,20 @@ async function generateAssistantResponseOpenAI({ message, history, helper }) {
     ],
   };
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
+  const { response, data } = await fetchJsonWithProviderTimeout(
+    "https://api.openai.com/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify(payload),
     },
-    body: JSON.stringify(payload),
-  });
+    ASSISTANT_PROVIDER_TIMEOUT_MS,
+    "OpenAI",
+  );
 
-  const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const providerError =
       data?.error?.message || `OpenAI provider error (${response.status}).`;
@@ -3084,17 +3122,21 @@ async function generateAssistantResponseAnthropic({
     ],
   };
 
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
+  const { response, data } = await fetchJsonWithProviderTimeout(
+    "https://api.anthropic.com/v1/messages",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify(payload),
     },
-    body: JSON.stringify(payload),
-  });
+    ASSISTANT_PROVIDER_TIMEOUT_MS,
+    "Anthropic",
+  );
 
-  const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const providerError =
       data?.error?.message || `Anthropic provider error (${response.status}).`;
@@ -3142,7 +3184,7 @@ async function generateAssistantResponseGemini({ message, history, helper }) {
     },
   };
 
-  const response = await fetch(
+  const { response, data } = await fetchJsonWithProviderTimeout(
     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`,
     {
       method: "POST",
@@ -3151,9 +3193,10 @@ async function generateAssistantResponseGemini({ message, history, helper }) {
       },
       body: JSON.stringify(payload),
     },
+    ASSISTANT_PROVIDER_TIMEOUT_MS,
+    "Gemini",
   );
 
-  const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const providerError =
       data?.error?.message || `Gemini provider error (${response.status}).`;
@@ -3196,15 +3239,19 @@ async function generateAssistantResponseOllama({ message, history, helper }) {
   const baseUrl = String(OLLAMA_BASE_URL || "http://127.0.0.1:11434")
     .trim()
     .replace(/\/+$/, "");
-  const response = await fetch(`${baseUrl}/v1/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
+  const { response, data } = await fetchJsonWithProviderTimeout(
+    `${baseUrl}/v1/chat/completions`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
     },
-    body: JSON.stringify(payload),
-  });
+    ASSISTANT_PROVIDER_TIMEOUT_MS,
+    "Ollama",
+  );
 
-  const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const providerError =
       data?.error?.message || `Ollama provider error (${response.status}).`;
