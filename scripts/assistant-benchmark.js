@@ -31,7 +31,8 @@ const CASES = [
       "cache",
       "fallback",
     ],
-    maxLatencyMs: 12000,
+    // 35s allows for local Ollama inference; cloud providers typically respond in <5s
+    maxLatencyMs: 35000,
   },
   {
     name: "general-ai",
@@ -47,7 +48,8 @@ const CASES = [
       "cache",
       "fallback",
     ],
-    maxLatencyMs: 12000,
+    // 35s allows for local Ollama inference; cloud providers typically respond in <5s
+    maxLatencyMs: 35000,
   },
 ];
 

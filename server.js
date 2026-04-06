@@ -2351,7 +2351,7 @@ function isSimpleAssistantQuery(message) {
 
   const wordCount = normalized.split(/\s+/).filter(Boolean).length;
   const knownSimpleIntent =
-    /^(help|ajutor|hello|hi|salut|buna|weather|news|jobs?|career|cv|time|date)\b/.test(
+    /^(help|ajutor|hello|hi|salut|buna|weather|news|jobs?|career|cv|time|date|health)\b/.test(
       normalized,
     );
 
@@ -2374,6 +2374,13 @@ function buildRuleBasedAssistantResponse(message) {
 
   function reply(ro, en) {
     return isRomanian ? ro : en;
+  }
+
+  if (/^health\b/.test(q)) {
+    return {
+      reply: reply("OK", "OK"),
+      suggestions: [],
+    };
   }
 
   if (/^(hi|hello|hey|salut|buna|bună)\b/.test(q)) {
