@@ -16,7 +16,8 @@ function normalizeAiProvider(input, fallback = "openai") {
     normalized === "openai" ||
     normalized === "anthropic" ||
     normalized === "gemini" ||
-    normalized === "ollama"
+    normalized === "ollama" ||
+    normalized === "litellm"
   ) {
     return normalized;
   }
@@ -73,6 +74,17 @@ const OLLAMA_BASE_URL =
   "http://127.0.0.1:11434";
 const OLLAMA_MODEL =
   String(process.env.OLLAMA_MODEL || "llama3.1:8b").trim() || "llama3.1:8b";
+const LITELLM_ENABLED = ["1", "true", "yes", "on"].includes(
+  String(process.env.LITELLM_ENABLED || "")
+    .trim()
+    .toLowerCase(),
+);
+const LITELLM_BASE_URL =
+  String(process.env.LITELLM_BASE_URL || "http://127.0.0.1:4000").trim() ||
+  "http://127.0.0.1:4000";
+const LITELLM_API_KEY = String(process.env.LITELLM_API_KEY || "").trim();
+const LITELLM_MODEL =
+  String(process.env.LITELLM_MODEL || "llm-primary").trim() || "llm-primary";
 const AI_PRIMARY_PROVIDER = normalizeAiProvider(
   process.env.AI_PRIMARY_PROVIDER,
   "openai",
@@ -97,6 +109,10 @@ const env = {
   OLLAMA_ENABLED,
   OLLAMA_BASE_URL,
   OLLAMA_MODEL,
+  LITELLM_ENABLED,
+  LITELLM_BASE_URL,
+  LITELLM_API_KEY,
+  LITELLM_MODEL,
   OPENAI_MODEL_CANDIDATES: parseModelCandidates(
     process.env.OPENAI_MODEL_CANDIDATES,
     [OPENAI_MODEL, "gpt-5-mini", "gpt-4.1-mini", "gpt-4o-mini"],
@@ -112,6 +128,10 @@ const env = {
   OLLAMA_MODEL_CANDIDATES: parseModelCandidates(
     process.env.OLLAMA_MODEL_CANDIDATES,
     [OLLAMA_MODEL, "llama3.1:8b", "mistral:7b", "phi3:mini"],
+  ),
+  LITELLM_MODEL_CANDIDATES: parseModelCandidates(
+    process.env.LITELLM_MODEL_CANDIDATES,
+    [LITELLM_MODEL, "llm-fast", "llm-primary"],
   ),
   AI_PRIMARY_PROVIDER,
   AI_FALLBACK_PROVIDER: normalizeAiProvider(
@@ -231,6 +251,10 @@ const env = {
     },
   ),
   ASSISTANT_GEMINI_MAX_TOKENS: envNumber("ASSISTANT_GEMINI_MAX_TOKENS", 600, {
+    min: 64,
+    max: 8000,
+  }),
+  ASSISTANT_LITELLM_MAX_TOKENS: envNumber("ASSISTANT_LITELLM_MAX_TOKENS", 600, {
     min: 64,
     max: 8000,
   }),

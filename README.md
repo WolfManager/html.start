@@ -215,7 +215,7 @@ The project is production-ready with fallback mode active.
 
 ### Provider Architecture
 
-- Assistant supports multi-provider routing (OpenAI + Anthropic + Gemini + Ollama) with primary/fallback selection.
+- Assistant supports multi-provider routing (OpenAI + Anthropic + Gemini + LiteLLM + Ollama) with primary/fallback selection.
 - Routing can be automatic (`smart`) so the assistant picks the best available provider based on helper type and recent provider health.
 - Models can auto-rotate using candidate lists when a model is deprecated or unavailable.
 - If providers are unavailable or unconfigured, assistant falls back to local rule-based suggestions.
@@ -229,8 +229,8 @@ The project is production-ready with fallback mode active.
 
 Assistant tuning variables:
 
-- `AI_PRIMARY_PROVIDER` (`openai`, `anthropic`, `gemini`, or `ollama`)
-- `AI_FALLBACK_PROVIDER` (`openai`, `anthropic`, `gemini`, or `ollama`)
+- `AI_PRIMARY_PROVIDER` (`openai`, `anthropic`, `gemini`, `litellm`, or `ollama`)
+- `AI_FALLBACK_PROVIDER` (`openai`, `anthropic`, `gemini`, `litellm`, or `ollama`)
 - `AI_ROUTING_MODE` (`smart`, `priority`, or `random`)
 - `OPENAI_API_KEY`
 - `OPENAI_MODEL`
@@ -245,6 +245,12 @@ Assistant tuning variables:
 - `OLLAMA_BASE_URL` (default: `http://127.0.0.1:11434`)
 - `OLLAMA_MODEL`
 - `OLLAMA_MODEL_CANDIDATES` (comma-separated fallback list)
+- `LITELLM_ENABLED` (`1` to enable LiteLLM provider)
+- `LITELLM_BASE_URL` (default: `http://127.0.0.1:4000`)
+- `LITELLM_API_KEY`
+- `LITELLM_MODEL`
+- `LITELLM_MODEL_CANDIDATES` (comma-separated fallback list)
+- `ASSISTANT_LITELLM_MAX_TOKENS`
 - `ASSISTANT_OLLAMA_MAX_TOKENS`
 - `ASSISTANT_PROVIDER_TIMEOUT_MS`
 - `ASSISTANT_CACHE_TTL_SECONDS`
@@ -279,6 +285,24 @@ Voice environment variables:
 Assistant billing observability:
 
 - Check runtime/AI status from `GET /api/admin/assistant-status`
+
+### Local AI Stack (Open Source)
+
+This repository includes an optional local AI stack under `infra/ai-stack/`:
+
+- LiteLLM gateway (`http://127.0.0.1:4000`)
+- Qdrant vector DB (`http://127.0.0.1:6333`)
+- Open WebUI (`http://127.0.0.1:8080`)
+
+Run with:
+
+- `npm.cmd run ai:stack:up`
+- `npm.cmd run ai:stack:down`
+
+LiteLLM uses `infra/ai-stack/litellm.config.yaml` and can route to local Ollama and optional cloud providers.
+Set `LITELLM_API_KEY` in `.env` before stack startup; backend uses the same key to call LiteLLM.
+Open WebUI authentication is enabled by default (`WEBUI_AUTH=True`).
+
 - This includes provider config, routing mode, provider health, helper/provider metrics, cache hits, and last provider error (for quota/billing diagnostics)
 - It also includes active model per provider and model candidate lists used for automatic model rollover.
 

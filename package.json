@@ -78,6 +78,8 @@
     "contract:validate:gate:daily": "node scripts/contract-validation.js --json --out=data/backups/contract/latest-contract-gate.json --label=contract-daily",
     "contract:validate:gate:admin:daily": "node scripts/contract-validation.js --json --require-admin --out=data/backups/contract/latest-contract-gate-admin.json --label=contract-admin-daily",
     "assistant:benchmark": "node scripts/assistant-benchmark.js",
+    "ai:stack:up": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ai-stack-up.ps1",
+    "ai:stack:down": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ai-stack-down.ps1",
     "tts:install": ".\\.venv\\Scripts\\python.exe -m pip install coqui-tts && .\\.venv\\Scripts\\python.exe -m pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu && .\\.venv\\Scripts\\python.exe -m pip install torchcodec \"transformers<5\"",
     "tts:doctor": ".\\.venv\\Scripts\\python.exe -c \"import TTS, torch, torchaudio, transformers; print('ok', TTS.__version__, torch.__version__, torchaudio.__version__, transformers.__version__)\"",
     "tts:serve": ".\\.venv\\Scripts\\python.exe scripts/tts-serve.py",

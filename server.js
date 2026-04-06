@@ -183,6 +183,11 @@ const {
   GEMINI_MODEL,
   GEMINI_MODEL_CANDIDATES,
   JWT_SECRET,
+  LITELLM_API_KEY,
+  LITELLM_BASE_URL,
+  LITELLM_ENABLED,
+  LITELLM_MODEL,
+  LITELLM_MODEL_CANDIDATES,
   LOG_LEVEL,
   OLLAMA_BASE_URL,
   OLLAMA_ENABLED,
@@ -478,6 +483,14 @@ const ASSISTANT_GEMINI_MAX_TOKENS = envNumber(
     max: 4000,
   },
 );
+const ASSISTANT_LITELLM_MAX_TOKENS = envNumber(
+  "ASSISTANT_LITELLM_MAX_TOKENS",
+  900,
+  {
+    min: 120,
+    max: 4000,
+  },
+);
 const ASSISTANT_PROVIDER_TIMEOUT_MS = envNumber(
   "ASSISTANT_PROVIDER_TIMEOUT_MS",
   15000,
@@ -575,6 +588,7 @@ const assistantMetrics = {
   openaiResponses: 0,
   anthropicResponses: 0,
   geminiResponses: 0,
+  litellmResponses: 0,
   ollamaResponses: 0,
   fallbackResponses: 0,
   lastProviderError: "",
@@ -726,16 +740,21 @@ const assistantStatusController = createAssistantStatusController({
   openaiApiKey: OPENAI_API_KEY,
   anthropicApiKey: ANTHROPIC_API_KEY,
   geminiApiKey: GEMINI_API_KEY,
+  litellmEnabled: LITELLM_ENABLED,
+  litellmBaseUrl: LITELLM_BASE_URL,
+  litellmApiKey: LITELLM_API_KEY,
   ollamaEnabled: OLLAMA_ENABLED,
   ollamaBaseUrl: OLLAMA_BASE_URL,
   openaiModel: OPENAI_MODEL,
   anthropicModel: ANTHROPIC_MODEL,
   geminiModel: GEMINI_MODEL,
+  litellmModel: LITELLM_MODEL,
   ollamaModel: OLLAMA_MODEL,
   getActiveProviderModel,
   openaiModelCandidates: OPENAI_MODEL_CANDIDATES,
   anthropicModelCandidates: ANTHROPIC_MODEL_CANDIDATES,
   geminiModelCandidates: GEMINI_MODEL_CANDIDATES,
+  litellmModelCandidates: LITELLM_MODEL_CANDIDATES,
   ollamaModelCandidates: OLLAMA_MODEL_CANDIDATES,
   assistantProviderHealthMap,
   assistantWindowMs: ASSISTANT_WINDOW_MS,
@@ -748,6 +767,7 @@ const assistantStatusController = createAssistantStatusController({
   assistantOpenaiMaxTokens: ASSISTANT_OPENAI_MAX_TOKENS,
   assistantAnthropicMaxTokens: ASSISTANT_ANTHROPIC_MAX_TOKENS,
   assistantGeminiMaxTokens: ASSISTANT_GEMINI_MAX_TOKENS,
+  assistantLitellmMaxTokens: ASSISTANT_LITELLM_MAX_TOKENS,
   assistantOllamaMaxTokens: ASSISTANT_OLLAMA_MAX_TOKENS,
   assistantSimpleQueryWords: ASSISTANT_SIMPLE_QUERY_WORDS,
   assistantCacheTtlMs: ASSISTANT_CACHE_TTL_MS,
@@ -3218,6 +3238,56 @@ async function generateAssistantResponseGemini({ message, history, helper }) {
   };
 }
 
+async function generateAssistantResponseLiteLlm({ message, history, helper }) {
+  if (!LITELLM_ENABLED || !LITELLM_BASE_URL || !LITELLM_API_KEY) {
+    throw new Error("LiteLLM is not configured.");
+  }
+
+  const model = getActiveProviderModel("litellm") || LITELLM_MODEL;
+  const safeHistory = buildSafeAssistantHistory(history);
+  const payload = {
+    model,
+    temperature: ASSISTANT_MODEL_TEMPERATURE,
+    max_tokens: ASSISTANT_LITELLM_MAX_TOKENS,
+    messages: [
+      { role: "system", content: buildAssistantSystemPrompt(helper) },
+      ...safeHistory,
+      { role: "user", content: String(message || "") },
+    ],
+  };
+
+  const baseUrl = String(LITELLM_BASE_URL || "http://127.0.0.1:4000")
+    .trim()
+    .replace(/\/+$/, "");
+  const { response, data } = await fetchJsonWithProviderTimeout(
+    `${baseUrl}/v1/chat/completions`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${LITELLM_API_KEY}`,
+      },
+      body: JSON.stringify(payload),
+    },
+    ASSISTANT_PROVIDER_TIMEOUT_MS,
+    "LiteLLM",
+  );
+
+  if (!response.ok) {
+    const providerError =
+      data?.error?.message || `LiteLLM provider error (${response.status}).`;
+    throw new Error(providerError);
+  }
+
+  const content = String(data?.choices?.[0]?.message?.content || "").trim();
+  const parsed = parseAssistantModelOutput(content);
+  return {
+    provider: "litellm",
+    model,
+    ...parsed,
+  };
+}
+
 async function generateAssistantResponseOllama({ message, history, helper }) {
   if (!OLLAMA_ENABLED) {
     throw new Error("Ollama is disabled.");
@@ -3280,6 +3350,10 @@ function isProviderConfigured(provider) {
     return Boolean(GEMINI_API_KEY);
   }
 
+  if (provider === "litellm") {
+    return Boolean(LITELLM_ENABLED && LITELLM_BASE_URL && LITELLM_API_KEY);
+  }
+
   if (provider === "ollama") {
     return Boolean(OLLAMA_ENABLED && OLLAMA_BASE_URL && OLLAMA_MODEL);
   }
@@ -3295,6 +3369,7 @@ function getAssistantProviderOrder() {
     "openai",
     "anthropic",
     "gemini",
+    "litellm",
     "ollama",
   ];
   const unique = [];
@@ -3309,10 +3384,10 @@ function getAssistantProviderOrder() {
 
 function getHelperPreferredProviders(helper) {
   if (helper === "writing") {
-    return ["anthropic", "openai", "gemini", "ollama"];
+    return ["anthropic", "openai", "litellm", "gemini", "ollama"];
   }
 
-  return ["openai", "gemini", "anthropic", "ollama"];
+  return ["openai", "litellm", "gemini", "anthropic", "ollama"];
 }
 
 function getProviderHealth(provider) {
@@ -3337,6 +3412,10 @@ function getProviderModelCandidates(provider) {
 
   if (provider === "gemini") {
     return GEMINI_MODEL_CANDIDATES;
+  }
+
+  if (provider === "litellm") {
+    return LITELLM_MODEL_CANDIDATES;
   }
 
   if (provider === "ollama") {
@@ -3497,6 +3576,19 @@ async function generateAssistantResponse({ message, history, helper }) {
         return result;
       }
 
+      if (provider === "litellm") {
+        const result = await generateAssistantResponseLiteLlm({
+          message,
+          history,
+          helper,
+        });
+        if (isLowQualityAssistantReply(message, result.reply)) {
+          throw new Error("LiteLLM returned low-quality reply.");
+        }
+        markProviderSuccess(provider);
+        return result;
+      }
+
       if (provider === "ollama") {
         const result = await generateAssistantResponseOllama({
           message,
@@ -3551,6 +3643,19 @@ async function generateAssistantResponse({ message, history, helper }) {
               }
               markProviderSuccess(provider);
               return retryGemini;
+            }
+
+            if (provider === "litellm") {
+              const retryLiteLlm = await generateAssistantResponseLiteLlm({
+                message,
+                history,
+                helper,
+              });
+              if (isLowQualityAssistantReply(message, retryLiteLlm.reply)) {
+                throw new Error("LiteLLM retry returned low-quality reply.");
+              }
+              markProviderSuccess(provider);
+              return retryLiteLlm;
             }
 
             if (provider === "ollama") {
